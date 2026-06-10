@@ -6,6 +6,8 @@ These skills are designed to be small, easy to adapt, and composable. They work 
 
 Inspired by Matt Pocock's [skills](https://github.com/mattpocock/skills)
 
+All skills are prefixed with dm- to avoid conflicts with other plugins. For example, the `loopify` skill is `dm-loopify` in the agent.
+
 ## Quickstart
 
 ```bash
@@ -51,10 +53,10 @@ Each skill is symlinked into the agent's skills directory, so pulling the repo u
 
 ### Productivity
 
-| Skill                                                 | Description                                                                                                                                                                                                             |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`loopify`](skills/productivity/loopify/SKILL.md)     | Turn any goal into a directed optimization loop — discover quality dimensions, build a domain-specific rubric, score the artifact, then iterate critique → improve → score until output plateaus.                       |
-| [`pocockify`](skills/productivity/pocockify/SKILL.md) | Purpose-first workflow for creating, reviewing, or improving agent skills. Inspired by Matt Pocock's prompt engineering approach. Four modes: create from scratch, pocockify existing, review only, or update in place. |
+| Skill                                                       | Description                                                                                                                                                                                                             |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`dm-loopify`](skills/productivity/dm-loopify/SKILL.md)     | Turn any goal into a directed optimization loop — discover quality dimensions, build a domain-specific rubric, score the artifact, then iterate critique → improve → score until output plateaus.                       |
+| [`dm-pocockify`](skills/productivity/dm-pocockify/SKILL.md) | Purpose-first workflow for creating, reviewing, or improving agent skills. Inspired by Matt Pocock's prompt engineering approach. Four modes: create from scratch, pocockify existing, review only, or update in place. |
 
 ### Engineering
 
@@ -65,9 +67,9 @@ _No skills yet. Add yours to `skills/engineering/`._
 The `scripts/link-skills.sh` script finds every `SKILL.md` in the repo (skipping `deprecated/`) and creates a symlink in each agent's skills directory. For example:
 
 ```
-~/.claude/skills/loopify → ~/darkmark-skills/skills/productivity/loopify
-~/.codex/skills/loopify  → ~/darkmark-skills/skills/productivity/loopify
-~/.copilot/skills/loopify → ~/darkmark-skills/skills/productivity/loopify
+~/.claude/skills/loopify → ~/darkmark-skills/skills/productivity/dm-loopify
+~/.codex/skills/loopify  → ~/darkmark-skills/skills/productivity/dm-loopify
+~/.copilot/skills/loopify → ~/darkmark-skills/skills/productivity/dm-loopify
 ```
 
 Because these are symlinks, running `git pull` in the repo updates every agent's skills at once. No reinstalling, no copying.

@@ -1,7 +1,7 @@
 {
   "name": "darkmark-skills",
   "skills": [
-    "./skills/productivity/loopify",
-    "./skills/productivity/pocockify"
+    "./skills/productivity/dm-loopify",
+    "./skills/productivity/dm-pocockify"
   ]
 }

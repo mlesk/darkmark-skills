@@ -1,5 +1,5 @@
 ---
-name: pocockify
+name: dm-pocockify
 description: Purpose-first workflow for creating, reviewing, or pocockifying agent skills. Use when the user wants to create a new skill, improve an existing skill, review a skill, or create a stronger `<original-skill-name>-pocockified` version from an existing skill.
 ---
 

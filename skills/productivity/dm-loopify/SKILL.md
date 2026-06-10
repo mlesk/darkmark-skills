@@ -1,5 +1,5 @@
 ---
-name: loopify
+name: dm-loopify
 description: >-
   Turn any goal into a directed optimization loop — discover the quality
   dimensions that matter, build a domain-specific rubric, score the artifact,
