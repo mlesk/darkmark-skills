@@ -2,50 +2,38 @@
 name: dm-loopify
 description: >-
   Turn any goal into a directed optimization loop — discover the quality
-  dimensions that matter, build a domain-specific rubric, score the artifact,
+  dimensions that matter, build a domain-specific rubric, score the output,
   then iterate critique→improve→score until the output plateaus. Use when the
   user says "loopify this", "run the loop on this", "iterate until it's good",
   "optimize this", "refine this until it plateaus", "keep improving this",
   asks "is this as good as it can get?", or describes a quality-sensitive goal
-  where the first draft won't be enough. Do NOT use when a domain-specific
-  optimizer (design-optimizer-pocockified, ce-optimize) is already loaded, or
-  the user wants a quick one-shot answer.
+  where the first draft won't be enough. Do NOT use when the user wants a quick 
+  one-shot answer.
 ---
 
 # Loopify
 
-Generalize iterative optimization to any goal. Instead of shipping the first
+Generalized iterative optimization to any goal. Instead of shipping the first
 draft, collaborate with the user to discover what "good" means for their
-domain, build a weighted rubric, score the artifact, then run a directed
-critique→improve→score loop until the output plateaus. The rubric is the
+domain, build a weighted rubric, score the artifacts, then run a directed
+critique→improve→score loop until the outputs plateaus. The rubric is the
 ceiling — a well-built rubric makes the loop climb; a vague one caps it low.
-
-This skill is the generalized form of `design-optimizer-pocockified`. Where
-that skill owns UI design with a fixed set of visual dimensions, this skill
-discovers dimensions fresh for any domain: specs, plans, code, data models,
-architecture, documentation, research, analysis — anything where quality can
-be judged across multiple weighted dimensions.
 
 ## Trigger boundary
 
 **Positive triggers — load this skill when the user:**
 
 - Says "loopify this", "run the loop on this", "iterate until it's good"
-- Says "optimize this [artifact]", "refine this until it plateaus"
+- Says "optimize this [output]", "refine this until it plateaus"
 - Says "keep improving this", "make this as good as it can get"
 - Asks "is this as good as it can get?" or "is this done?"
-- Describes a quality-sensitive goal and the agent suspects the first draft
+- Describes a quality-sensitive goal and the agent suspects the first attempt
   won't be enough → proactively ask "Should I loopify this?"
-- Brings an existing artifact (file, document, code) and wants it hardened
+- Brings an existing artifact (file, document, code) and wants it improved
 
 **Near misses — do NOT load this skill when:**
 
-- `design-optimizer-pocockified` has already loaded for a UI design task
-  (let the domain-specific skill run — it has fixed visual dimensions this
-  skill would waste time rediscovering)
-- `ce-optimize` is appropriate (metric-driven code optimization with real
-  measurements and benchmarks)
-- The user wants a quick one-shot answer, wireframe, or throwaway draft
+- The user wants a quick one-shot answer, or throwaway first attempt
 - The user explicitly says "just give me a first pass", "rough draft",
   "quick version", or "don't iterate"
 - The task is trivial — a single dimension of quality, no tradeoffs to make
@@ -62,10 +50,10 @@ If uncertain whether to use this skill or a domain-specific one, ask:
 
 Before asking the user anything, inspect what is already available:
 
-- **The artifact.** Is there an existing file? Read it. Is there only a goal
+- **The artifacts.** Is there an existing file or set of files? Read them. Is there only a goal
   description? Note what's specified and what's ambiguous.
 - **The project context.** Existing standards, conventions, similar artifacts
-  in the codebase, DESIGN.md, CONTEXT.md, ADRs, coding standards.
+  in the codebase, DESIGN.md, CONTEXT.md, ADRs, writing standards, coding standards.
 - **The user's intent.** Did they bring a polished draft (invested) or a
   rough idea (exploratory)? Adjust iteration depth accordingly.
 - **Domain clues.** File extension, project type, user's role, surrounding
@@ -73,11 +61,11 @@ Before asking the user anything, inspect what is already available:
 
 **Exit criteria (do not proceed until all are true):**
 
-- [ ] You have read the artifact or goal description.
-- [ ] You know whether the artifact is existing (user brought it) or new
+- [ ] You have read the artifacts or goal description.
+- [ ] You know whether the artifacts are existing (user brought it) or new
       (goal only, needs generation).
-- [ ] You can state the artifact type in ≤5 words (e.g. "REST API spec",
-      "React component", "data pipeline design", "project plan").
+- [ ] You can state the output type in ≤5 words (e.g. "REST API spec",
+      "React component", "data pipeline design", "project plan", "code base").
 - [ ] You have noted any project conventions that will constrain quality
       dimensions.
 
@@ -92,11 +80,11 @@ user until you can name the dimensions that matter for this specific goal.
 
 Ask enough questions to nail down:
 
-- **What is the artifact?** A document, a design, working code, a data model,
+- **What is the target output?** A document, a design, working code, a data model,
   an architecture, a plan, an analysis?
-- **Who is the audience/user?** Who consumes this artifact and what do they
+- **Who is the audience/user?** Who consumes the output and what do they
   care about?
-- **What is the artifact's job?** What decision does it enable? What action
+- **What is the output's job?** What decision does it enable? What action
   does it trigger? What problem does it solve?
 - **What are the stakes?** Is this throwaway exploration, team-facing
   documentation, production code, a customer-facing deliverable?
