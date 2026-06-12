@@ -53,10 +53,8 @@ Each skill is symlinked into the agent's skills directory, so pulling the repo u
 
 ### Productivity
 
-| Skill                                                       | Description                                                                                                                                                                                                             |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`dm-loopify`](skills/productivity/dm-loopify/SKILL.md)     | Turn any goal into a directed optimization loop — discover quality dimensions, build a domain-specific rubric, score the artifact, then iterate critique → improve → score until output plateaus.                       |
-| [`dm-pocockify`](skills/productivity/dm-pocockify/SKILL.md) | Purpose-first workflow for creating, reviewing, or improving agent skills. Inspired by Matt Pocock's prompt engineering approach. Four modes: create from scratch, pocockify existing, review only, or update in place. |
+- [`dm-loopify`](skills/productivity/dm-loopify/SKILL.md) - Generalized rubric optimization loop for a goal, single artifact, related artifact set, or codebase. Clarifies the goal, builds the rubric, scores the baseline, and iterates until it reaches a target score or plateaus.
+- [`dm-pocockify`](skills/productivity/dm-pocockify/SKILL.md) - Purpose-first workflow for creating, reviewing, or improving agent skills. Inspired by Matt Pocock's prompt engineering approach. Four modes: create from scratch, pocockify existing, review only, or update in place.
 
 ### Engineering
 
