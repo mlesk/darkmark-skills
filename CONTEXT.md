@@ -1,3 +1,7 @@
 # Dark Mark Skills
 
-A collection of agent skills (slash commands and behaviors) loaded by Claude Code. Skills are organized into buckets and consumed by per-repo configuration emitted by `/setup-darkmark-skills`.
+A collection of agent skills loaded from the central `~/.agents/skills/` directory by Claude Code, Codex, GitHub Copilot, and other agents.
+
+Skills live in a flat list under `skills/`: `dm-decide`, `dm-loopify`, `dm-pocockify`, `dm-write`, `spec-creation` (with seven `specs/spec-*` sub-skills), and `spec-execution`. The top-level `README.md` is the index and lists every skill with a link to its `SKILL.md`.
+
+`scripts/link-skills.sh` symlinks each skill into `~/.agents/skills/`. `scripts/unlink-skills.sh` removes those links. Skills under `skills/deprecated/` are disabled and skipped.

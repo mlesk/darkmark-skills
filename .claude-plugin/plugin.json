@@ -1,7 +1,0 @@
-{
-  "name": "darkmark-skills",
-  "skills": [
-    "./skills/productivity/dm-loopify",
-    "./skills/productivity/dm-pocockify"
-  ]
-}
