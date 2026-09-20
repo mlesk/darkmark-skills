@@ -69,8 +69,9 @@ skipped=0
 
 # Iterate over every entry in the central skills directory
 for target in "$DEST"/*; do
-  # Handle empty directory (glob literal)
-  [[ -e "$target" ]] || continue
+  # Handle empty directory (glob literal). Test -L as well so dangling
+  # symlinks (e.g. left behind by a renamed skill) are still cleaned up.
+  [[ -e "$target" ]] || [[ -L "$target" ]] || continue
 
   name="$(basename "$target")"
 

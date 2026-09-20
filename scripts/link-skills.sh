@@ -78,12 +78,17 @@ fi
 # ---------------------------------------------------------------------------
 # Build the list of skills to link
 # ---------------------------------------------------------------------------
+# NOTE: agent-only sub-skills bundled inside a parent skill
+# (skills/dm-spec-creation/specs/*, marked user-invocable: false) are NOT
+# linked. The dm-spec-creation orchestrator reads them via relative paths;
+# linking them would expose them as standalone skills, and some agents
+# (e.g. OpenCode) ignore the user-invocable frontmatter field.
 SKILLS=()
 while IFS= read -r -d '' skill_md; do
   src="$(dirname "$skill_md")"
   name="$(basename "$src")"
   SKILLS+=("$name|$src")
-done < <(find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -print0)
+done < <(find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -not -path "$REPO/skills/dm-spec-creation/specs/*" -print0)
 
 if [[ ${#SKILLS[@]} -eq 0 ]]; then
   warn "No SKILL.md files found under $REPO/skills/."
