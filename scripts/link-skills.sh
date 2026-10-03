@@ -78,17 +78,18 @@ fi
 # ---------------------------------------------------------------------------
 # Build the list of skills to link
 # ---------------------------------------------------------------------------
-# NOTE: agent-only sub-skills bundled inside a parent skill
-# (skills/dm-spec-creation/specs/*, marked user-invocable: false) are NOT
-# linked. The dm-spec-creation orchestrator reads them via relative paths;
+# Only top-level skills (skills/<name>/SKILL.md) are linked. Sub-skills
+# nested deeper (e.g. skills/dm-spec-creation/specs/*, marked
+# user-invocable: false) are read by their parent via relative paths;
 # linking them would expose them as standalone skills, and some agents
 # (e.g. OpenCode) ignore the user-invocable frontmatter field.
+# skills/deprecated/<name>/SKILL.md sits at depth 3, so it is skipped too.
 SKILLS=()
 while IFS= read -r -d '' skill_md; do
   src="$(dirname "$skill_md")"
   name="$(basename "$src")"
   SKILLS+=("$name|$src")
-done < <(find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -not -path "$REPO/skills/dm-spec-creation/specs/*" -print0)
+done < <(find "$REPO/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print0 | sort -z)
 
 if [[ ${#SKILLS[@]} -eq 0 ]]; then
   warn "No SKILL.md files found under $REPO/skills/."
@@ -119,18 +120,18 @@ for entry in "${SKILLS[@]}"; do
       fi
     else
       warn "$target already exists — skipping (use --force to overwrite)"
-      ((skipped++))
+      skipped=$((skipped + 1))
       continue
     fi
   fi
 
   if $DRY_RUN; then
     info "[dry-run] would link  $name → $src"
-    ((linked++))
+    linked=$((linked + 1))
   else
     ln -sfn "$src" "$target"
     ok "$name"
-    ((linked++))
+    linked=$((linked + 1))
   fi
 done
 

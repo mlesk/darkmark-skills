@@ -1,13 +1,13 @@
 # Orchestration Protocol — dm-spec-execution
 
-The state machine lives in `.github/skills/dm-spec-creation/standards/planning-standards-inside-out-phases.md` §11. This file defines the **bootstrap** and the **error envelopes** around that loop. Do not duplicate the loop here.
+The state machine lives in `../dm-spec-creation/standards/planning-standards-inside-out-phases.md` §11. This file defines the **bootstrap** and the **error envelopes** around that loop. Do not duplicate the loop here.
 
 ## 1. Bootstrap (run every invocation)
 
 1. **Verify the sibling skill exists.** The following paths MUST resolve:
-   - `.github/skills/dm-spec-creation/standards/planning-standards-inside-out-phases.md`
-   - `.github/skills/dm-spec-creation/standards/coding-standards-testing.md`
-   - `.github/skills/dm-spec-creation/STANDARDS-PROTOCOL.md`
+   - `../dm-spec-creation/standards/planning-standards-inside-out-phases.md`
+   - `../dm-spec-creation/standards/coding-standards-testing.md`
+   - `../dm-spec-creation/STANDARDS-PROTOCOL.md`
 
    If any are missing, halt: `sibling skill 'dm-spec-creation' is missing or corrupt; restore it before invoking dm-spec-execution.`
 

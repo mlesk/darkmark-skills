@@ -1,7 +1,7 @@
 # Specification: Architecture Sidecar — `<slice-name>`
 
 <!--
-This is a `spec-02x` architecture sidecar. It is a conditional formal member of the spec-02 family — see `.github/skills/dm-spec-creation/SKILL.md` §"Architecture sidecar family" and the spec-02 sub-skill Phase H.
+This is a `spec-02x` architecture sidecar. It is a conditional formal member of the spec-02 family — see the `dm-spec-creation` skill's `SKILL.md` §"Architecture sidecar family" and the spec-02 sub-skill Phase H.
 
 A sidecar narrows base spec-02 for one bounded module or technical slice. It is **architecture**, not implementation guidance:
 - It MAY introduce normative technical contracts (lifecycle rules, idempotency, ordering, scope keys, lineage) downstream spec-06 Phases will cite literally via `spec-anchors: spec-02<letter>#anchor-id`.

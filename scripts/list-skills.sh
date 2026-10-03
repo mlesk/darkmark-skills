@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# list-skills.sh — List the top-level skills that link-skills.sh registers.
+
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 
 cd "$REPO"
-find . -name SKILL.md -not -path '*/node_modules/*' -not -path './skills/dm-spec-creation/specs/*' | sed 's|^\./||' | sort
+find skills -mindepth 2 -maxdepth 2 -name SKILL.md | sort

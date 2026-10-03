@@ -1,20 +1,20 @@
 ---
 name: dm-spec-execution
-description: Autonomous implementation loop for solutions specified by the sibling `dm-spec-creation` skill. Reads `01-specifications/spec-06-execution-plan.md` and maintains `01-specifications/execution-state.md` as the source of truth. Runs the inside-out Phase state machine defined in `.github/skills/dm-spec-creation/standards/planning-standards-inside-out-phases.md` §11 — pick next pending Phase whose dependencies are done, mark in-progress, read spec-anchors, resolve open decisions, implement deliverables, verify done-when, open PR, merge on green, mark done, loop. Stops cleanly on failure (state stays consistent), on context-budget halts (writes a resume-hint), and when all Phases are done. Use after `dm-spec-creation` reports DONE and you want to ship code.
+description: Autonomous implementation loop for solutions specified by the sibling `dm-spec-creation` skill. Reads `01-specifications/spec-06-execution-plan.md` and maintains `01-specifications/execution-state.md` as the source of truth. Runs the inside-out Phase state machine defined in `../dm-spec-creation/standards/planning-standards-inside-out-phases.md` §11 — pick next pending Phase whose dependencies are done, mark in-progress, read spec-anchors, resolve open decisions, implement deliverables, verify done-when, open PR, merge on green, mark done, loop. Stops cleanly on failure (state stays consistent), on context-budget halts (writes a resume-hint), and when all Phases are done. Use after `dm-spec-creation` reports DONE and you want to ship code.
 ---
 
 <what-to-do>
 
 You run the autonomous implementation loop for the system specified by the sibling `dm-spec-creation` skill. Your job is to make `execution-state.md` advance one honest tick at a time until all Phases are `done`, or to halt cleanly with the state file in a consistent, pushed condition.
 
-**Inputs (all required; halt loudly if any is missing):**
+**Inputs (all required; halt loudly if any is missing).** Paths starting `../dm-spec-creation/` are relative to this skill's directory: `dm-spec-creation` must be installed as a sibling skill.
 
 - `01-specifications/spec-06-execution-plan.md` — the plan. **Immutable during execution.**
 - `01-specifications/execution-state.md` — the state file you own and mutate. **Authoritative** progress source; git history is incidental.
 - `01-specifications/spec-02[a-z]-*.md` architecture sidecars referenced by spec-06 `spec-anchors:`. **Immutable during execution.**
-- `.github/skills/dm-spec-creation/standards/planning-standards-inside-out-phases.md` — canonical state machine (§11), failure protocol (§11a), context-budget halt protocol (§11b), forbidden patterns (§12), state schema (§10).
-- `.github/skills/dm-spec-creation/standards/coding-standards-testing.md` — pinned test toolchain and exact `done-when` commands.
-- `.github/skills/dm-spec-creation/STANDARDS-PROTOCOL.md` — which standards apply to which Phase layer.
+- `../dm-spec-creation/standards/planning-standards-inside-out-phases.md` — canonical state machine (§11), failure protocol (§11a), context-budget halt protocol (§11b), forbidden patterns (§12), state schema (§10).
+- `../dm-spec-creation/standards/coding-standards-testing.md` — pinned test toolchain and exact `done-when` commands.
+- `../dm-spec-creation/STANDARDS-PROTOCOL.md` — which standards apply to which Phase layer.
 
 **Workflow (run every invocation):**
 
@@ -50,7 +50,7 @@ Dry-run mode: emit the bootstrap status + the §11 step that would run next + th
 
 ## Relationship to dm-spec-creation
 
-`dm-spec-creation` produces the plan; this skill runs it. Siblings, not parent/child. This skill never modifies any file under `01-specifications/spec-*.md` (including `spec-02[a-z]-*.md` sidecars), never modifies anything under `.github/skills/dm-spec-creation/standards/`, and never re-invokes `dm-spec-creation`. If a Phase reveals a spec or standards defect, set the state block as described in "Hard rules" and halt.
+`dm-spec-creation` produces the plan; this skill runs it. Siblings, not parent/child. This skill never modifies any file under `01-specifications/spec-*.md` (including `spec-02[a-z]-*.md` sidecars), never modifies anything under `../dm-spec-creation/standards/`, and never re-invokes `dm-spec-creation`. If a Phase reveals a spec or standards defect, set the state block as described in "Hard rules" and halt.
 
 The standards bundle is owned by `dm-spec-creation`. Read from there directly. Do not copy or vendor.
 
@@ -106,7 +106,7 @@ At session end — DONE, BLOCKED, PAUSED, SPEC-DEFECT, STANDARDS-DEFECT, PLAN-DR
 - [ ] Plan-SHA in state header matches `git hash-object 01-specifications/spec-06-execution-plan.md`.
 - [ ] Every sidecar referenced by the touched Phase's `spec-anchors:` matches its recorded SHA in `sidecar-shas:`.
 - [ ] No `01-specifications/spec-*.md` file was modified in this session.
-- [ ] No `.github/skills/dm-spec-creation/standards/**` file was modified in this session.
+- [ ] No `../dm-spec-creation/standards/**` file was modified in this session.
 - [ ] Every deliverable ticked in this session has a corresponding targeted test that passed.
 - [ ] If a Phase was marked `done`, its full `done-when` block ran and every command exited 0.
 - [ ] If a Phase was marked `blocked`, `blocked-by:` is populated and the branch + state file are pushed.

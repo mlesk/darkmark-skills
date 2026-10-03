@@ -1,6 +1,6 @@
 # Execution State File Template
 
-> Canonical schema lives in `.github/skills/dm-spec-creation/standards/planning-standards-inside-out-phases.md` §10. This template is the **initial** file content the agent writes during planning standard §11 step 0. Fill `<plan-sha>`, `<sidecar-shas>`, and the per-Phase blocks from `spec-06-execution-plan.md`.
+> Canonical schema lives in `../dm-spec-creation/standards/planning-standards-inside-out-phases.md` §10. This template is the **initial** file content the agent writes during planning standard §11 step 0. Fill `<plan-sha>`, `<sidecar-shas>`, and the per-Phase blocks from `spec-06-execution-plan.md`.
 
 ```markdown
 # Execution State
