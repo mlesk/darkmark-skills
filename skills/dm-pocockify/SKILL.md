@@ -98,6 +98,8 @@ Exit criteria:
 
 Ask one question at a time. Choose only the single highest-leverage unresolved question, wait for the answer, then reassess. Do not ask the whole list.
 
+If the sibling skill `dm-grill` is installed, run Phases 2-4 through it and pass the question menus below as its lens menu.
+
 Use these questions as a menu:
 
 1. **Job:** What repeated task should this skill make easier, safer, or more reliable?
@@ -272,6 +274,7 @@ Before declaring done, check:
 - [ ] Optional support files are justified or omitted.
 - [ ] The folder can be extracted and still works without repo-local materials.
 - [ ] At least three positive trigger examples and two near-miss examples have been tested against the description.
+- [ ] If the sibling skill `dm-skill-eval` is installed, its lint passes and its trigger evals were run, or the user declined.
 - [ ] Extraction safety has been checked by reading the draft as if copied into an empty skills directory: no repo-local paths, private references, or prior-chat dependencies are required.
 
 End by telling the user what was created or reviewed, what assumptions were made, and how the result was verified.
