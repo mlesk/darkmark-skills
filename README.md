@@ -53,7 +53,7 @@ Each skill is symlinked into that directory, so pulling the repo updates the ski
 - [`dm-loopify`](skills/dm-loopify/SKILL.md) - Rubric-driven optimization loop for a file, document set, workflow, skill, subsystem, codebase, or goal. Agrees a rubric and threshold, scores a baseline, runs judged improvement rounds to a stop rule, and closes with a `dm-critic` review. Also the engine `dm-write` and `dm-decide` run on.
 - [`dm-critic`](skills/dm-critic/SKILL.md) - Independent adversarial review by two fresh-context reviewers (a critic hunting defects and an explorer proposing higher-ceiling alternatives), verified and merged into one table of next-step options.
 - [`dm-decide`](skills/dm-decide/SKILL.md) - Structured decision-making on the `dm-loopify` engine. Grills the decision through mental-model lenses scaled to reversibility, vetoes options that fail must-pass constraints, scores the rest including the status quo, stress-tests the leader, and delivers a decision record.
-- [`dm-write`](skills/dm-write/SKILL.md) - Improves non-fiction prose with Williams' *Style: Lessons in Clarity and Grace* on the `dm-loopify` engine. Diagnoses against ten rules, revises in scored rounds, checks with a cold reader, and delivers revised text with a change log.
+- [`dm-write`](skills/dm-write/SKILL.md) - Improves non-fiction prose with Williams' _Style: Lessons in Clarity and Grace_ on the `dm-loopify` engine. Diagnoses against ten rules, revises in scored rounds, checks with a cold reader, and delivers revised text with a change log.
 
 ### Building
 
@@ -66,7 +66,8 @@ Each skill is symlinked into that directory, so pulling the repo updates the ski
   - [`spec-04-user-interface`](skills/dm-spec-creation/specs/spec-04-user-interface/SKILL.md) (agent-only)
   - [`spec-05-app-use-cases`](skills/dm-spec-creation/specs/spec-05-app-use-cases/SKILL.md) (agent-only)
   - [`spec-06-execution-plan`](skills/dm-spec-creation/specs/spec-06-execution-plan/SKILL.md) (agent-only)
-- [`dm-spec-execution`](skills/dm-spec-execution/SKILL.md) - Autonomous implementation loop that executes the Phase state machine from `spec-06-execution-plan.md`, tracking progress in `execution-state.md`. Needs `dm-spec-creation` installed alongside it.
+  - [`dm-spec-execution`](skills/dm-spec-execution/SKILL.md) - Autonomous implementation loop that executes the Phase state machine from `spec-06-execution-plan.md`, tracking progress in `execution-state.md`. Needs `dm-spec-creation` installed alongside it.
+  - [`dm-agent-team`](skills/experimental/dm-agent-team/SKILL.md) - Five-agent greenfield team (analyst, architect, designer, builder, reviewer) with run modes, worktree-parallel slices, and a driver script. Work in progress, intended to eventually replace `dm-spec-creation` + `dm-spec-execution`. Agent-only sub-agents: [`dm-at-analyst`](skills/experimental/dm-agent-team/agents/dm-at-analyst/SKILL.md), [`dm-at-architect`](skills/experimental/dm-agent-team/agents/dm-at-architect/SKILL.md), [`dm-at-designer`](skills/experimental/dm-agent-team/agents/dm-at-designer/SKILL.md), [`dm-at-builder`](skills/experimental/dm-agent-team/agents/dm-at-builder/SKILL.md), [`dm-at-reviewer`](skills/experimental/dm-agent-team/agents/dm-at-reviewer/SKILL.md).
 
 ### Skills about skills
 
@@ -75,8 +76,6 @@ Each skill is symlinked into that directory, so pulling the repo updates the ski
 - [`dm-learn`](skills/dm-learn/SKILL.md) - Turns a session's corrections and failures into small, approved edits to `AGENTS.md`, `CLAUDE.md`, or a skill, so the next session doesn't repeat them.
 
 ### Experimental (not linked)
-
-- [`dm-agent-team`](skills/experimental/dm-agent-team/SKILL.md) - Five-agent greenfield team (analyst, architect, designer, builder, reviewer) with run modes, worktree-parallel slices, and a driver script. Work in progress, intended to eventually replace `dm-spec-creation` + `dm-spec-execution`. Agent-only sub-agents: [`dm-at-analyst`](skills/experimental/dm-agent-team/agents/dm-at-analyst/SKILL.md), [`dm-at-architect`](skills/experimental/dm-agent-team/agents/dm-at-architect/SKILL.md), [`dm-at-designer`](skills/experimental/dm-agent-team/agents/dm-at-designer/SKILL.md), [`dm-at-builder`](skills/experimental/dm-agent-team/agents/dm-at-builder/SKILL.md), [`dm-at-reviewer`](skills/experimental/dm-agent-team/agents/dm-at-reviewer/SKILL.md).
 
 ### How the skills compose
 
