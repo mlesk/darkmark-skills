@@ -7,8 +7,10 @@ description: >-
   as good as it can get", or wants a rubric, baseline, and iterative loop over
   a file, document, implementation, artifact set, workflow, subsystem, full
   codebase, or open-ended goal where both rigor and creative exploration
-  matter. Do NOT use for quick first passes, trivial single-dimension tweaks,
-  or when a domain-specific optimizer already owns the task.
+  matter. Closes with an independent adversarial review (critic plus
+  orthogonal explorer) merged into next-step options. Do NOT use for quick
+  first passes, trivial single-dimension tweaks, or when a domain-specific
+  optimizer already owns the task.
 ---
 
 # Loopify
@@ -18,7 +20,9 @@ The optimization target can be a single artifact, a related set of artifacts,
 a subsystem, a full codebase, or a goal with no baseline yet. The loop stays 
 the same: clarify the goal, build the rubric, score the baseline, improve 
 the highest-leverage weakness, re-score, and stop only when a threshold is
-reached or progress plateaus.
+reached or progress plateaus. Before delivering, two independent reviewers
+attack the result from opposite angles and their findings become explicit
+next-step options.
 
 ## Operating principles
 
@@ -45,6 +49,9 @@ reached or progress plateaus.
   stop.
 - **Durable outputs only.** Each round should leave behind a usable artifact,
   code change, plan update, or scorecard.
+- **Independent eyes before delivery.** The loop optimizes against its own
+  rubric, so it cannot see its own blind spots. A critic and an orthogonal
+  explorer with fresh context review the result before it ships.
 
 ## Minimum compliance
 
@@ -56,6 +63,9 @@ Do not claim to have used loopify unless you can show all of these:
 3. A baseline scorecard shown before changing the target.
 4. At least one full critique -> improve -> score round.
 5. An explicit stop reason: threshold, plateau, or max rounds.
+6. An adversarial review (critic plus orthogonal explorer) with verified,
+   merged recommendations and the user's next-step decision - unless the
+   contract records that the user opted out.
 
 If any item is missing, the loop is not complete yet. Return to the last
 satisfied gate instead of pretending the workflow happened.
@@ -69,8 +79,10 @@ Use this when you need a quick execution map:
 3. Build the rubric and wait for approval.
 4. Score the baseline and wait for calibration approval.
 5. Run critique -> improve -> score rounds.
-6. Stop only on threshold, plateau, or max rounds, then deliver artifact,
-   scorecard, trajectory, and remaining gap.
+6. Stop only on threshold, plateau, or max rounds, then verify.
+7. Spawn the critic and orthogonal explorer, merge their reviews, and wait for
+   the user's next-step decision.
+8. Deliver artifact, scorecard, trajectory, review summary, and remaining gap.
 
 ## Working templates
 
@@ -83,6 +95,7 @@ Optimization contract
 - Search posture:
 - Threshold:
 - Plateau fallback:
+- Adversarial review: on / opted out
 ```
 
 ```text
@@ -101,6 +114,16 @@ Round N
 - Score:
 - Decision: accepted/rejected
 - Best score now:
+```
+
+```text
+ADVERSARIAL REVIEW
+
+ID  Source  Type               Status     Dimension  Effort  Recommendation
+----------------------------------------------------------------------------
+R1  A       defect             confirmed  ...        S       ...
+R2  B       opportunity        -          outside    L       ...
+R3  A+B     rubric blind spot  confirmed  (new)      M       ...
 ```
 
 Prefer short, durable artifacts over long narration between rounds.
@@ -264,6 +287,10 @@ Ask if needed:
 > best-of-N escape round, then stop and report the remaining gap." If the user
 > has no preference, default to 85/100.
 
+The adversarial review in Phase 6 is on by default. Record an opt-out in the
+contract only if the user explicitly declines it, for example for throwaway
+exploration.
+
 **Exit criteria:**
 
 - [ ] The goal fits in one sentence.
@@ -272,6 +299,7 @@ Ask if needed:
 - [ ] The unit of iteration is chosen for large targets.
 - [ ] A threshold score is defined.
 - [ ] A plateau fallback is defined.
+- [ ] The adversarial review is on, or the user's opt-out is recorded.
 
 ## Phase 2 - Build the rubric
 
@@ -548,7 +576,8 @@ Stop when:
 - You have either tried one best-of-N escape round or already met the
   threshold.
 
-Hard-stop at 8 rounds regardless.
+Hard-stop at 8 rounds regardless. Review follow-up rounds chosen in Phase 6
+have their own separate budget.
 
 **Exit criteria:**
 
@@ -576,7 +605,107 @@ If any check fails, adjust the rubric or run one more iteration.
 
 - [ ] All 4 checks pass, or failures are documented.
 
-## Phase 6 - Deliver
+## Phase 6 - Adversarial review
+
+The loop optimizes against its own rubric, so it cannot see its own blind
+spots. Before delivering, get two independent reviews of `best` and merge them
+into explicit next-step options.
+
+Skip this phase only if the contract records that the user opted out. Then go
+straight to Phase 7 and say in the delivery that no adversarial review ran.
+
+### Step 6.1 - Build the review packet
+
+Write a durable review packet containing:
+
+- The optimization contract, goal, constraints, and audience.
+- `best`, or for large targets the diff from baseline plus the paths needed to
+  inspect the whole target.
+- The baseline, so regressions are visible.
+- The directions, candidates, and escape approaches already tried and
+  rejected, each with one line on why it lost.
+
+Control what each reviewer sees so neither simply ratifies the loop:
+
+- **The critic** gets the rubric anchors, but not the scores or rationales.
+- **The explorer** gets the goal, constraints, and rejected directions, but not
+  the rubric. The rubric may be the thing that needs escaping.
+
+### Step 6.2 - Spawn two reviewers in parallel
+
+Each reviewer starts with fresh context and never sees the other's output.
+
+- **Reviewer A - Critic.** Find contradictions, gaps, unsupported claims,
+  constraint violations, integration breaks, and places where the score
+  overstates reality. Each finding names location, evidence, severity
+  (blocker / major / minor), affected rubric dimension or "outside rubric",
+  and a suggested fix. No praise. No rewrites.
+- **Reviewer B - Orthogonal explorer.** Propose 3-5 materially different ways
+  to raise the ceiling: change structure, framing, audience emphasis, system
+  boundary, interaction model, sequencing, or distribution of responsibility,
+  or borrow from adjacent domains. Not polish. Each proposal names the move,
+  the expected upside, the cost, the constraint it strains, and how it differs
+  from the directions already tried.
+
+If sub-agents are unavailable, run A then B sequentially in the current
+context, save A's review before starting B, do not revise A after reading B,
+and label the review "single-agent, reduced independence."
+
+### Step 6.3 - Verify and merge
+
+Reviewers can be wrong. Check every finding and proposal against the actual
+target and mark it **confirmed**, **disputed** (with a one-line reason), or
+**out of scope**. Never drop a finding silently; disputed items stay in the
+table.
+
+Merge both reviews into one table using the adversarial review template:
+
+- Deduplicate findings that both reviewers raised and mark them `A+B`.
+- Classify each item as defect, gap, opportunity, or rubric blind spot.
+- Estimate the effort and the rubric dimensions each item would move.
+- Where the critic and the explorer pull in different directions, keep both as
+  alternatives instead of resolving the conflict yourself.
+
+### Step 6.4 - Choose next steps (HARD GATE)
+
+Present the merged table, then these options:
+
+1. **Deliver now.** Record confirmed but unfixed findings under Remaining gap.
+2. **Targeted fix rounds.** Apply confirmed blockers and majors as full
+   critique -> improve -> score rounds with the same rubric and margin, up to
+   2 extra rounds. This budget is separate from the 8-round cap and continues
+   the same history.
+3. **Amend the rubric.** Add the missing dimension or anchor for a confirmed
+   blind spot, get explicit approval, re-score both baseline and `best` so the
+   trajectory stays comparable, then choose option 1 or 2.
+4. **New direction.** Adopt an orthogonal proposal and restart from Phase 1
+   with diverge then converge. Include the current `best` as one of the Phase 3
+   candidates so it remains the fallback.
+
+Then ask:
+
+> Which next step should we take? Options can be combined, for example 3 then
+> 2.
+>
+> Recommended answer: 2 if confirmed blockers exist; 3 if a rubric blind spot
+> was confirmed; 4 only if a proposal plausibly clears the current ceiling
+> within constraints; otherwise 1.
+
+Do not act on any finding before the user chooses.
+
+Run one adversarial review per loop. After option 2 or 3, re-run Phase 5 and
+then deliver; do not review again unless the user asks. Option 4 starts a new
+loop, which gets its own review.
+
+**Exit criteria:**
+
+- [ ] Both reviews exist as durable artifacts, or the opt-out is recorded.
+- [ ] The critic did not see scores and the explorer did not see the rubric.
+- [ ] Every finding and proposal has a verification status.
+- [ ] The merged table and next-step options were shown.
+- [ ] The user chose a next step, and it was carried out.
+
+## Phase 7 - Deliver
 
 Deliver in this order:
 
@@ -601,19 +730,27 @@ Baseline -> R1 -> R2 -> ... -> Final
    XX    -> XX -> XX -> ... ->  XX
 ```
 
+Mark review follow-up rounds and any rubric amendment in the trajectory.
+
 ### 4. What changed
 
 List the 2-3 biggest improvements from baseline to final. Make them observable.
 
-### 5. Remaining gap
+### 5. Adversarial review summary
+
+Show the merged review table, the option the user chose, and which findings
+were fixed, disputed, or deferred.
+
+### 6. Remaining gap
 
 If the final score is below threshold, name what prevented the target from
-getting there.
+getting there. List confirmed review findings that were not fixed.
 
-### 6. Rubric preservation
+### 7. Rubric preservation
 
 Save the rubric alongside the deliverable, as an appendix, comment, adjacent
-file, or other durable location so the loop can resume later.
+file, or other durable location so the loop can resume later. Keep the review
+packet and both reviews with it.
 
 ## Anti-patterns
 
@@ -640,6 +777,13 @@ file, or other durable location so the loop can resume later.
 - **Convenience stop.** Ending because the work is decent now, despite not
   hitting the threshold or plateau condition.
 - **Plateau denial.** Burning rounds after the search has obviously converged.
+- **Rubber-stamp review.** Showing reviewers the scores, the rationales, or the
+  answer you hope for, so they ratify the loop instead of attacking it.
+- **Review theater.** Spawning reviewers and then ignoring, filtering, or
+  acting on their findings before the user chooses a next step.
+- **Unscored adoption.** Applying a reviewer suggestion without scoring it
+  against the rubric and the margin.
+- **Endless review.** Re-running the adversarial review after every fix.
 
 ## Quick reference: target-specific dimension prompts
 
@@ -692,6 +836,9 @@ Before declaring done, verify:
 - [ ] Threshold and plateau are both explicit stop conditions.
 - [ ] The loop stops for threshold, plateau, or max rounds, not convenience.
 - [ ] The loop leaves behind durable outputs, not just advice.
+- [ ] The adversarial review ran with two independent reviewers (or a recorded
+  opt-out), every finding has a verification status, and the next-step gate
+  was respected.
 - [ ] The skill stays standalone and extractable.
 - [ ] At least 3 positive trigger examples and 2 near-miss examples fit the
       description.
