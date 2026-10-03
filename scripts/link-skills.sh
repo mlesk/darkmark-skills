@@ -83,7 +83,8 @@ fi
 # user-invocable: false) are read by their parent via relative paths;
 # linking them would expose them as standalone skills, and some agents
 # (e.g. OpenCode) ignore the user-invocable frontmatter field.
-# skills/deprecated/<name>/SKILL.md sits at depth 3, so it is skipped too.
+# skills/deprecated/<name>/ and skills/experimental/<name>/ sit one level
+# deeper, so they are skipped too.
 SKILLS=()
 while IFS= read -r -d '' skill_md; do
   src="$(dirname "$skill_md")"
