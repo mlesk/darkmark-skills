@@ -78,7 +78,7 @@ for target in "$DEST"/*; do
   if [[ ! -L "$target" ]]; then
     # Not a symlink — wasn't created by link-skills.sh, skip it.
     info "skipping $name (not a symlink, not managed by link-skills.sh)"
-    ((skipped++))
+    skipped=$((skipped + 1))
     continue
   fi
 
@@ -90,16 +90,16 @@ for target in "$DEST"/*; do
     "$REPO/skills/"*)
       if $DRY_RUN; then
         info "[dry-run] would remove  $name → $resolved"
-        ((unlinked++))
+        unlinked=$((unlinked + 1))
       else
         rm "$target"
         ok "removed $name"
-        ((unlinked++))
+        unlinked=$((unlinked + 1))
       fi
       ;;
     *)
       info "skipping $name (points outside this repo: $resolved)"
-      ((skipped++))
+      skipped=$((skipped + 1))
       ;;
   esac
 done

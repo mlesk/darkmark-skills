@@ -1,6 +1,6 @@
 # Tactical / Implementation Decisions
 
-> Living log. Updated inline by the `dm-spec-creation` skill. See `.github/skills/dm-spec-creation/DECISIONS-PROTOCOL.md`.
+> Living log. Updated inline by the `dm-spec-creation` skill. See `DECISIONS-PROTOCOL.md` in the `dm-spec-creation` skill bundle.
 
 ## D-NNN — <short title>
 

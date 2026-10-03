@@ -12,7 +12,7 @@ All user-invocable skills use the `dm-` prefix to avoid conflicts with other plu
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/mlesk/skills.git ~/darkmark-skills
+git clone https://github.com/mlesk/darkmark-skills.git ~/darkmark-skills
 
 # 2. Link the skills into the central agent skills directory
 cd ~/darkmark-skills
@@ -47,10 +47,17 @@ Each skill is symlinked into that directory, so pulling the repo updates the ski
 
 ## Available Skills
 
-- [`dm-decide`](skills/dm-decide/SKILL.md) - Structured decision-making process. Grills the decision across seven mental models, builds a weighted rubric, scores the options, iterates to refine guidance, and delivers the options, the process used, and a final recommended decision.
-- [`dm-loopify`](skills/dm-loopify/SKILL.md) - Generalized rubric optimization loop for a goal, single artifact, related artifact set, or codebase. Clarifies the goal, builds the rubric, scores the baseline, and iterates until it reaches a target score or plateaus.
-- [`dm-pocockify`](skills/dm-pocockify/SKILL.md) - Purpose-first workflow for creating, reviewing, or improving agent skills. Inspired by Matt Pocock's prompt engineering approach. Four modes: create from scratch, pocockify existing, review only, or update in place.
-- [`dm-write`](skills/dm-write/SKILL.md) - Improve any non-fiction prose using Williams' Style: Lessons in Clarity and Grace. Diagnoses against ten rules, then delivers a revised version with scorecard and change log.
+### Thinking and improving
+
+- [`dm-grill`](skills/dm-grill/SKILL.md) - Interviews you one question at a time, each with a recommended answer, until a plan, decision, or requirement is sharp enough to act on. Leaves a grill record. The other skills use it for their intake.
+- [`dm-loopify`](skills/dm-loopify/SKILL.md) - Rubric-driven optimization loop for a file, document set, workflow, skill, subsystem, codebase, or goal. Agrees a rubric and threshold, scores a baseline, runs judged improvement rounds to a stop rule, and closes with a `dm-critic` review. Also the engine `dm-write` and `dm-decide` run on.
+- [`dm-critic`](skills/dm-critic/SKILL.md) - Independent adversarial review by two fresh-context reviewers (a critic hunting defects and an explorer proposing higher-ceiling alternatives), verified and merged into one table of next-step options.
+- [`dm-decide`](skills/dm-decide/SKILL.md) - Structured decision-making on the `dm-loopify` engine. Grills the decision through mental-model lenses scaled to reversibility, vetoes options that fail must-pass constraints, scores the rest including the status quo, stress-tests the leader, and delivers a decision record.
+- [`dm-write`](skills/dm-write/SKILL.md) - Improves non-fiction prose with Williams' *Style: Lessons in Clarity and Grace* on the `dm-loopify` engine. Diagnoses against ten rules, revises in scored rounds, checks with a cold reader, and delivers revised text with a change log.
+
+### Building
+
+- [`dm-debug`](skills/dm-debug/SKILL.md) - Hypothesis-driven debugging: reproduce, shrink, rank hypotheses, run experiments that tell them apart, and fix the root cause with a regression test seen failing first. Keeps a debug log.
 - [`dm-spec-creation`](skills/dm-spec-creation/SKILL.md) - Gate-driven specification workflow for C# / ASP.NET Core / .NET Aspire / EF Core + TypeScript / React (Vite + shadcn), Clean Architecture, and inside-out phased planning. Bundles standards, templates, gates, and orchestration docs.
   - [`spec-00-prd`](skills/dm-spec-creation/specs/spec-00-prd/SKILL.md) (agent-only)
   - [`spec-01-domain-model`](skills/dm-spec-creation/specs/spec-01-domain-model/SKILL.md) (agent-only)
@@ -59,11 +66,33 @@ Each skill is symlinked into that directory, so pulling the repo updates the ski
   - [`spec-04-user-interface`](skills/dm-spec-creation/specs/spec-04-user-interface/SKILL.md) (agent-only)
   - [`spec-05-app-use-cases`](skills/dm-spec-creation/specs/spec-05-app-use-cases/SKILL.md) (agent-only)
   - [`spec-06-execution-plan`](skills/dm-spec-creation/specs/spec-06-execution-plan/SKILL.md) (agent-only)
-- [`dm-spec-execution`](skills/dm-spec-execution/SKILL.md) - Autonomous implementation loop that executes the Phase state machine from `spec-06-execution-plan.md`, tracking progress in `execution-state.md`.
+- [`dm-spec-execution`](skills/dm-spec-execution/SKILL.md) - Autonomous implementation loop that executes the Phase state machine from `spec-06-execution-plan.md`, tracking progress in `execution-state.md`. Needs `dm-spec-creation` installed alongside it.
+
+### Skills about skills
+
+- [`dm-pocockify`](skills/dm-pocockify/SKILL.md) - Purpose-first workflow for creating, reviewing, or improving agent skills. Inspired by Matt Pocock's prompt engineering approach. Four modes: create from scratch, pocockify existing, review only, or update in place.
+- [`dm-skill-eval`](skills/dm-skill-eval/SKILL.md) - Tests a skill: static lint (`scripts/lint-skill.py`), trigger evals with near misses, and behavior scenarios run by fresh sub-agents with a separate judge. Saves a pass-rate report next to the skill.
+- [`dm-learn`](skills/dm-learn/SKILL.md) - Turns a session's corrections and failures into small, approved edits to `AGENTS.md`, `CLAUDE.md`, or a skill, so the next session doesn't repeat them.
+
+### Experimental (not linked)
+
+- [`dm-agent-team`](skills/experimental/dm-agent-team/SKILL.md) - Five-agent greenfield team (analyst, architect, designer, builder, reviewer) with run modes, worktree-parallel slices, and a driver script. Work in progress, intended to eventually replace `dm-spec-creation` + `dm-spec-execution`. Agent-only sub-agents: [`dm-at-analyst`](skills/experimental/dm-agent-team/agents/dm-at-analyst/SKILL.md), [`dm-at-architect`](skills/experimental/dm-agent-team/agents/dm-at-architect/SKILL.md), [`dm-at-designer`](skills/experimental/dm-agent-team/agents/dm-at-designer/SKILL.md), [`dm-at-builder`](skills/experimental/dm-agent-team/agents/dm-at-builder/SKILL.md), [`dm-at-reviewer`](skills/experimental/dm-agent-team/agents/dm-at-reviewer/SKILL.md).
+
+### How the skills compose
+
+Skills call siblings by relative path (`../dm-grill/SKILL.md`), so install the whole set with `link-skills.sh`.
+
+```
+dm-decide ─┐                ┌─> dm-grill   (intake interview)
+dm-write  ─┴─> dm-loopify ──┴─> dm-critic  (final independent review)
+dm-pocockify ─> dm-grill, dm-skill-eval
+dm-debug, dm-learn          (standalone; dm-debug may hand off to dm-learn)
+dm-spec-creation ─> dm-spec-execution
+```
 
 ## How It Works
 
-The `scripts/link-skills.sh` script finds every user-invocable `SKILL.md` in the repo (skipping `deprecated/` and the agent-only sub-skills under `skills/dm-spec-creation/specs/`, which carry `user-invocable: false`) and creates a symlink in `~/.agents/skills/`. For example:
+The `scripts/link-skills.sh` script links every top-level skill (`skills/<name>/SKILL.md`) into `~/.agents/skills/`. Anything nested deeper is skipped: the agent-only sub-skills under `skills/dm-spec-creation/specs/`, and everything in `skills/experimental/` and `skills/deprecated/`. For example:
 
 ```
 ~/.agents/skills/dm-loopify → ~/darkmark-skills/skills/dm-loopify
@@ -74,10 +103,11 @@ Because these are symlinks, running `git pull` in the repo updates every agent's
 
 ## Contributing
 
-1. Create a new folder directly under `skills/` (for example `skills/my-skill/`)
-2. Add a `SKILL.md` following the existing conventions
-3. List it in the table above
-4. Run `./scripts/link-skills.sh` to make it available locally
+1. Create a new folder directly under `skills/` (for example `skills/dm-my-skill/`), or under `skills/experimental/` while it is a work in progress
+2. Add a `SKILL.md` following the existing conventions (`dm-pocockify` can draft it)
+3. List it in the README under Available Skills
+4. Lint it: `python3 skills/dm-skill-eval/scripts/lint-skill.py --all skills`
+5. Run `./scripts/link-skills.sh` to make it available locally
 
 ## FAQ
 
@@ -85,4 +115,4 @@ Because these are symlinks, running `git pull` in the repo updates every agent's
 Delete the symlink from `~/.agents/skills/`, run `./scripts/unlink-skills.sh`, or move the skill folder to `skills/deprecated/` and re-run `link-skills.sh`.
 
 **What if I only want a subset of skills?**
-Move the skills you don't want into a different directory, or put them in `skills/deprecated/`. The script skips `deprecated/` automatically.
+Move the skills you don't want into `skills/deprecated/`. The script only links top-level skills, so anything there is skipped. Note that `dm-write` and `dm-decide` need `dm-loopify`, `dm-grill`, and `dm-critic`.
