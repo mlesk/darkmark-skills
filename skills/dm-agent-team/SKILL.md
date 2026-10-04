@@ -29,6 +29,8 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 
 **Hard stops in every mode:** adding a dependency that is not on the allowlist; touching anything outside the project root; deleting files the team did not create; `git push`, publish, or deploy; anything involving secrets or credentials.
 
+**Human override.** At an escalation stop, the human may accept the work despite REVISE findings. They must give a reason in words. Log a `D-###` with `kind: override`, the reason, and the finding IDs it waives; write the gate or slice as `approved (override)`. An override is never automatic, and never applies to a BLOCK, a builder `blocked`, a hard stop, or a red verify. The acceptance review lists every override.
+
 **Auto-approval** writes the gate row as `approved (auto-<mode>)` and logs a `D-###`. Collect every auto-approved gate, auto-answered question, and open `ASM` into `state.md` §Open items so the next human stop shows them.
 
 ### The stop rule

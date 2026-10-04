@@ -80,7 +80,7 @@ Audit the whole system once all slices are done, and write `reviews/acceptance.m
 4. **UX walkthrough:** for each `SCR`, confirm every state is reachable and implemented. If a local browser or automation tool is available, use it.
 5. **Clean-room audit:** list every installed dependency with its license and compare against the allowlist.
 6. Confirm the README explains how to install, run, test, and configure the project.
-7. Confirm there are no open CRs or blocking Qs, and list every remaining `ASM` for the human.
+7. Confirm there are no open CRs or blocking Qs, and list every remaining `ASM` and every `kind: override` decision for the human.
 
 ## Skeleton — review file
 
@@ -92,13 +92,15 @@ checked-against: <paths>
 | Command | Exit | Summary |
 ## Findings
 | # | Severity | Location | Finding | Required fix | Rule/ID |
-## Checklist
-| Check | Result | Note |
+## Checklist (one row per numbered check of this mode)
+| # | Check | Result (PASS / FAIL / n/a) | Evidence |
 ## Proposed CRs (BLOCK only)
 ```
 
 ## Guardrails
 
 - **Evidence over opinion.** Every blocker or major either cites a rule or ID or comes with command output.
+- **No checklist, no review.** The Checklist has one row for every numbered check of your mode (plus the extra checks for this spec), in order. Every row has evidence: a § or ID, a `file:line`, or `command · exit · log path`. "Looked fine" is not evidence. Every FAIL row has a matching finding; that finding may be a minor under a PASS verdict.
+- **Never re-run a failed command hoping for green.** If the same command gives different results on the same tree, report it as a flaky test, severity major, citing both logs.
 - **Re-review what can regress.** On round 2 or later, check that each earlier finding is fixed. For a spec, then re-run every check, because specs are small and fixes ripple. For code, re-run verify and the scope, clean-room, and faking checks in full, and re-read only the files changed since the previous round.
 - **No taste vetoes.** A preference that no spec, standard, or rule supports is at most a minor.

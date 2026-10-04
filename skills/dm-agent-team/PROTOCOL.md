@@ -55,7 +55,7 @@ session-dispatches: <count since this session started>
 | G0 | brief.md | pending | – | – | – | |
 
 Hash is `git hash-object <artifact>` recorded at approval (see SKILL.md §Spec integrity). It works on untracked files.
-Gate status: pending | in-review | approved | approved (auto-<mode>) | reopened (CR-###) | recheck (CR-###)
+Gate status: pending | in-review | approved | approved (auto-<mode>) | approved (override) | reopened (CR-###) | recheck (CR-###)
 
 ## Build
 current-milestone: –
@@ -232,6 +232,8 @@ Risks: <top 3>
 Your options: Approve · Request changes (say what) · Switch mode · Stop
 ```
 
+An **escalation** stop (the author or builder ran out of REVISE rounds) also offers **Override (give a reason)**: the human accepts the work despite the open findings. See SKILL.md §Human override.
+
 In `checkpoint` mode, G4 presents G1–G4 as one stop with one block per spec. If the host has a structured question tool, use it for the options.
 
 ## Command output
@@ -241,6 +243,7 @@ Build, test, and verify output can be thousands of lines. Never read it whole.
 1. Redirect everything to a file in the workspace: `<cmd> > <workspace>/logs/<id>-<what>.log 2>&1; echo "exit=$?"`.
 2. Read only the exit code and the summary: the last 30 lines, plus the names and first assertion line of each failing test (use `grep` on the log).
 3. Quote at most 10 lines of output in any report or review.
+4. Never re-run a failed command unchanged in the hope that it passes. Re-run only after a change, and say what changed. If the same command gives different results on the same tree, that is a flaky test: report it, don't retry it away.
 
 ## Slice diff
 
