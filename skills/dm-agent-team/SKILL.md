@@ -142,8 +142,8 @@ Ask at most one follow-up batch. Write `brief.md` using [PROTOCOL.md §Brief](./
 Run each phase as this loop:
 
 1. **Write the author handoff** ([PROTOCOL.md §Handoff](./PROTOCOL.md#handoff)). Inputs: the brief, `decisions.md`, and every approved upstream spec.
-2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per phase; after that, the author records the rest as `ASM` with its recommended answer. In P2, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `02-architecture.md` §2.1–§2.2.
-3. **Dispatch `dm-at-reviewer`** in `spec-review` mode.
+2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per phase; after that, the author records the rest as `ASM` with its recommended answer. In P2, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `02-architecture.md` §2.1–§2.2.
+3. **Dispatch `dm-at-reviewer`** in `spec-review` mode. Its inputs are the spec, every approved upstream spec, and `decisions.md`.
 4. **Route the verdict:**
    - **PASS:** go to the gate.
    - **REVISE:** re-dispatch the author with the review file as input, escalated per [ROUTING.md §Escalation ladder](./ROUTING.md#escalation-ladder). Allow the profile's REVISE rounds; one more non-PASS escalates to the human.

@@ -37,7 +37,8 @@ Check the target spec against its own *Done when*, its *Self-check* (if it has o
 3. **Consistency:** glossary terms, IDs, names, and values match across all approved specs. No contradictions.
 4. **Scope fence:** the spec contains no content that belongs to another phase. Look for technology in 01, layout in 02, implementation in 03, and code in 04.
 5. **Hallucination check:** look for any fact, number, or rule that has no source in the brief, a `D-###`, or an upstream spec. If you find one, it must become an `ASM` or a `Q`.
-6. **Open items:** no blocking `Q` remains, and every `ASM` lists a risk.
+6. **Open items:** no `Q` is still open in a spec put forward for approval, and every `ASM` has a default, a risk, and a *Confirm by*.
+7. **Decisions landed:** every current `D-###` (not superseded) whose `affects:` names this spec is reflected in it. Read `decisions.md` for this; the handoff lists it as an input.
 
 Extra checks for specific specs:
 

@@ -34,6 +34,18 @@ Do not interview from a blank page. Write a complete first draft of `01-requirem
 4. non-functional needs, made measurable (for example "p95 < 300 ms for 1,000 rows", not "fast")
 5. what is explicitly out of scope
 
+While drafting, run each of these **probes** against the brief. They are prompts, not quotas. Each one lands in the draft as a `REQ`, a `BR`, an `NFR` (only with a metric), an `ASM`, or a line in §11 Coverage reading `n/a — <reason>`:
+
+- **Hidden scope:** what would a reader assume is in v1 that isn't? Put it in §8.
+- **Users and permissions:** who may do what, and is there more than one kind of user?
+- **History:** must past states or changes be kept or audited?
+- **Durability:** what must never be lost, and what can be rebuilt?
+- **Repeats and collisions:** what happens on a duplicate submission, a re-run, or two concurrent changes to the same thing?
+- **Performance:** how much data, how often, and how fast must it answer?
+- **Kept or derived:** for each information noun in the glossary, is it stored, or computed from other data?
+
+A vague answer from the human ("later", "the usual", "whatever's standard") is not a decision: keep your default as an `ASM` with a *Confirm by*.
+
 Never ask anything the brief or `decisions.md` already answers. Return `needs-human` with the batch. On the next round, apply the answers (each is a `D-###`), and ask a further batch only if an answer opened a new high-risk gap. After 3 rounds, stop asking; what remains stays an `ASM`.
 
 **Done when:** every *Must* journey is confirmed by a `D-###` or recorded as an `ASM` with a stated risk.
@@ -84,7 +96,7 @@ Rationale: <why; cite brief or D-###>
 | ID | Quality | Metric and threshold | How measured |
 ## 8. Out of scope (v1)
 ## 9. Assumptions
-| ID | Assumption | Risk if wrong | Confirm by |
+| ASM | Default | Risk if wrong | Confirm by |
 ## 10. Open questions
 | ID | Question | Blocking? | Owner |
 ## 11. Coverage

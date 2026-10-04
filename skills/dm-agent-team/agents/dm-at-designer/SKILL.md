@@ -89,6 +89,8 @@ interactions: <keyboard, focus order, shortcuts>
 ## 8. Responsive behaviour (breakpoints and what changes)
 ## 9. Content and voice (tone, error message pattern)
 ## 10. Prototypes (path → what it demonstrates)
+## 10a. Assumptions
+| ASM | Default | Risk if wrong | Confirm by |
 ## 11. Coverage
 | REQ | FLOW | SCR (state) |
 ```

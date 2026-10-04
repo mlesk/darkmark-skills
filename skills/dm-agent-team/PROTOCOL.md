@@ -113,7 +113,18 @@ IDs are never reused or renumbered. A removed item stays in the file as `~~REQ-0
 
 **IDs in code.** Most languages don't allow `-` or `.` in identifiers, so a test for an acceptance criterion writes its ID with both replaced by `_`: `REQ-004.2` becomes `REQ_004_2` (for example `REQ_004_2_rejects_duplicate_email`). Anyone searching for a criterion's test searches for that form.
 
-Each `D-###` in `decisions.md` records `source: human | auto-checkpoint | auto-yolo`. An auto decision is binding until a human overrides it.
+Each `D-###` in `decisions.md` is an entry in this form. An auto decision is binding until a human overrides it. A decision that replaces an earlier one names it in `supersedes:`; the earlier entry is never edited.
+
+```markdown
+## D-012 <title>
+source: human | auto-checkpoint | auto-yolo
+kind: answer | gate | deviation | override | out-of-scope
+affects: <spec paths + IDs this decision must show up in | none>
+supersedes: <D-### | –>
+decision: <what was decided, in one or two sentences>
+```
+
+**Assumptions** use the same table in every spec: `| ASM | Default | Risk if wrong | Confirm by |`.
 
 ## Handoff
 
@@ -183,7 +194,10 @@ Agents never talk to the human directly when dispatched. They return **one batch
 Q-012 [blocking] <question>
   recommended: <answer> — <one-line reason>
   options: <a> | <b> | <c>
+  affects: <the spec sections and IDs the answer changes>
 ```
+
+The Lead copies `affects:` into the `D-###` that records the answer, so the reviewer can check that the decision reached the spec without the Lead reading specs.
 
 The Lead presents the whole batch in one message (use the host's structured question tool if it has one) and tells the human they can reply "accept all" or answer only the ones they disagree with. Each answer becomes a `D-###`.
 
