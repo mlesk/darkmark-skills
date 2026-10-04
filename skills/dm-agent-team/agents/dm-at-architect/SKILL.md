@@ -43,7 +43,7 @@ Otherwise, settle the choice according to the handoff's `run-mode:`:
 - **stepwise** or **checkpoint:** write `02-architecture.md` with only §1 and §2.1–§2.2 filled in, and return `needs-human` with a batch of two questions: the architecture style, then the tech stack. Each question lists the evaluated options, marks the recommended one, and points to the §2 tables. Do not go further until both are answered. If the chosen style is not the recommended one, re-evaluate the stacks against it before step 3.
 - **yolo:** adopt both recommended options, list them under `auto-decisions:` in your Return, and continue to step 3 without stopping.
 
-**Done when:** §2.1 and §2.2 each hold 3–5 scored options (or every viable option, with exclusions named) and a stated recommendation, and the chosen style and stack are each settled by a `D-###` or an `auto-decisions:` entry.
+**Done when:** §2.1 and §2.2 each hold 3–5 scored options (or every viable option, with exclusions named) and a stated recommendation, or record `Chosen: … (adopted, D-###)`, and the chosen style and stack are each settled by a `D-###` or an `auto-decisions:` entry.
 
 ### 3. Decide the rest
 
@@ -179,4 +179,4 @@ done-when: verify is green and <observable behaviour>
 - **No requirements work.** If a requirement is missing, ambiguous, or contradictory, propose a CR against 01. Do not quietly fill the gap.
 - **No UI design.** Contracts state what data a screen needs, not its layout. In plan mode, treat 03 as frozen.
 - **Avoid hype.** No microservices, queues, caches, or AI components unless an `NFR` makes you add them.
-- **Revision rounds** fix only the review findings.
+- **Revision and CR rounds** fix only the review findings, or only what the CR names.

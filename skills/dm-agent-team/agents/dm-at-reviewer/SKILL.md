@@ -32,17 +32,17 @@ Every finding gives its location (file plus ID or line), what is wrong, the requ
 
 Check the target spec against its own *Done when*, its *Self-check* (if it has one), and its *Guardrails* in its agent file. Then apply these common checks:
 
-1. **Trace:** every item traces upstream, and every upstream item is covered (use the spec's coverage table, then spot-check at least 5 rows against the source). No cited ID is struck through (removed).
+1. **Trace:** every item traces upstream (to the brief, a `D-###`, an upstream spec, or an existing spec listed in the handoff), and every upstream item is covered (use the spec's coverage table, then spot-check at least 5 rows against the source). No cited ID is struck through (removed).
 2. **Testability:** every acceptance criterion, contract, and state is concrete enough to write a failing test or a check from.
 3. **Consistency:** glossary terms, IDs, names, and values match across all approved specs. No contradictions.
 4. **Scope fence:** the spec contains no content that belongs to another phase. Look for technology in 01, layout in 02, implementation in 03, and code in 04.
-5. **Hallucination check:** look for any fact, number, or rule that has no source in the brief, a `D-###`, or an upstream spec. If you find one, it must become an `ASM` or a `Q`.
+5. **Hallucination check:** look for any fact, number, or rule that has no source in the brief, a `D-###`, an upstream spec, or an existing spec listed in the handoff. If you find one, it must become an `ASM` or a `Q`.
 6. **Open items:** no `Q` is still open in a spec put forward for approval, and every `ASM` has a default, a risk, and a *Confirm by*.
 7. **Decisions landed:** every current `D-###` (not superseded) whose `affects:` names this spec is reflected in it. Read `decisions.md` for this; the handoff lists it as an input.
 
 Extra checks for specific specs:
 
-- **02:** §2.1 and §2.2 each evaluate 3–5 viable options (or name what the constraints ruled out, or record `Chosen (adopted, D-###)` from an existing spec), score every option against every driver, state one recommendation with a driver-based reason, and record the chosen option with its `D-###` or `auto-yolo`; no option violates the brief's required or forbidden technologies; every allowlist entry has a license and an ADR; the verify command is runnable and hermetic (no fixed ports or shared state outside the working directory); hotspot files are listed; every §7 subsection is filled with checkable lines or `n/a — reason`, cites an ADR or NFR, and names where it is enforced; multi-entity writes state atomicity; job-written `DATA` states its `writes:` rule; every non-screen trigger in §6.1 maps to an `API`.
+- **02:** unless §2.1 and §2.2 record `Chosen: … (adopted, D-###)` from an existing spec, each evaluates 3–5 viable options (or names what the constraints ruled out), scores every option against every driver, states one recommendation with a driver-based reason, and records the chosen option with its `D-###` or `auto-yolo`; no option violates the brief's required or forbidden technologies; every allowlist entry has a license and an ADR; the verify command is runnable and hermetic (no fixed ports or shared state outside the working directory); hotspot files are listed; every §7 subsection is filled with checkable lines or `n/a — reason`, cites an ADR or NFR, and names where it is enforced; multi-entity writes state atomicity; job-written `DATA` states its `writes:` rule; every non-screen trigger in §6.1 maps to an `API`.
 - **03:** every screen has all its states; tokens are used and never raw values.
 - **04:** the walking skeleton comes first and creates the hotspot files; slices are vertical; no slice depends on a later one; `touches:` are exact; slices in the same wave have disjoint `touches:`; coverage is complete.
 

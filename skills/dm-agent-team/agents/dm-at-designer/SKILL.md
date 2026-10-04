@@ -100,4 +100,4 @@ interactions: <keyboard, focus order, shortcuts>
 - **No new scope.** A design idea that needs a new requirement becomes a `Q` for the human.
 - **No implementation.** No framework components, file paths, or CSS class names. Those belong to the builder.
 - **Prototypes are throwaway.** The builder implements from `03-ux.md`, not from prototype markup.
-- **Revision rounds** fix only the review findings.
+- **Revision and CR rounds** fix only the review findings, or only what the CR names.

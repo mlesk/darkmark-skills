@@ -50,9 +50,9 @@ next-action: <one line a fresh session can execute>
 session-dispatches: <count since this session started>
 
 ## Gates
-| Gate | Artifact | Status | Round | Approved | Hash | Notes |
-|---|---|---|---|---|---|---|
-| G0 | brief.md | pending | – | – | – | |
+| Gate | Artifact | Status | Round | Approved | Hash | Reopens | Notes |
+|---|---|---|---|---|---|---|---|
+| G0 | brief.md | pending | – | – | – | 0 | |
 
 Hash is `git hash-object <artifact>` recorded at approval (see SKILL.md §Spec integrity). It works on untracked files.
 Gate status: pending | in-review | approved | approved (auto-<mode>) | approved (override) | reopened (CR-###) | recheck (CR-###)
@@ -173,7 +173,7 @@ summary: <≤5 lines>
 trace: <IDs created or covered>
 assumptions: <ASM ids | none>
 questions: <question batch per §Questions | none>
-auto-decisions: <yolo only: each question you settled yourself, with the answer adopted | none>
+auto-decisions: <yolo only: each as Q-### · answer adopted · affects: <spec IDs> | none>
 change-requests: <proposed CR text with class | none>
 blocked-by: <only when status is blocked: spec-gap | test-red | env | dependency — evidence (spec ID, or test · command · exit · log path)>
 verify: <command · exit · one-line summary | n/a>
@@ -227,13 +227,15 @@ decision: D-###
 
 Once a CR is approved, the Lead applies it in this order:
 
-1. Dispatch the owner of the edited spec to apply it, and set that spec's gate row to `reopened (CR-###)`.
+1. Dispatch the owner of the edited spec to apply it, set that spec's gate row to `reopened (CR-###)`, and add 1 to its Reopens count.
 2. Dispatch the reviewer in `spec-review` mode on the edited spec.
-3. Set every downstream spec named in the CR's `impact:` to `recheck (CR-###)`, then dispatch its owner to bring it in line, followed by a `spec-review`, in spec order (01 → 04). An owner that finds nothing to change says so in its Return, and a clean review returns that row to `approved` without a stop.
+3. For every downstream spec named in the CR's `impact:` whose gate is **already approved**, set the row to `recheck (CR-###)`, then dispatch its owner to bring it in line, followed by a `spec-review`, in spec order (01 → 04). An owner that finds nothing to change says so in its Return's `summary:`, and a clean review returns the row to the status it had before, without a stop. A downstream spec that is not approved yet simply gets the CR file as an input on its next author round.
 4. A spec whose content changed is approved again per the mode table (its gate stops or auto-approves as it did originally), and its hash and copy are re-recorded.
 5. Mark every slice listed in `impact:`, or tracing to a changed ID, as `stale`. Those slices are rebuilt.
 
-A third reopen of the same spec in one run is a stop in every mode: the spec keeps being wrong, so the human should look at it.
+Each of these author dispatches uses the author's usual mode, lists `changes/CR-###.md` as an input, and has the task "apply CR-### only". **A CR round changes only what the CR names**, the same way a revision round fixes only the review findings.
+
+A spec reaching Reopens 3 in one run is a stop in every mode: the spec keeps being wrong, so the human should look at it.
 
 ## Gate presentation
 
@@ -304,7 +306,7 @@ Compute these from `log.md` and `state.md` for `retro.md`:
 
 1. **Local only.** Read and write only inside the project root and this skill's folder. No web search, no URL fetching, no MCP or remote tools, no issue trackers. Use the local filesystem, local git, and local build and test commands.
 2. **One network exception.** The package manager may install dependencies that appear in the **dependency allowlist** in `specs/02-architecture.md`. Anything else needs a CR.
-3. **Dirty room.** Only `dm-at-analyst` may read the paths listed under *Reference material* in `brief.md`. *Existing specs* are different: they are the human's own documents for this project, and the agents the brief maps them to may read them. The analyst describes behaviour in requirements and never copies code or exact text. Every other agent must not open those paths.
+3. **Dirty room.** Only `dm-at-analyst` may read the paths listed under *Reference material* in `brief.md`. *Existing specs* are different: they are the human's own documents for this project, and the agents the brief maps them to may read them. An author treats an existing spec in its handoff inputs as settled unless it contradicts the brief, a `D-###`, or another existing spec; each contradiction or gap becomes a `Q` with the existing text as the recommended answer. Anything taken from one cites it as its source (`from <path> §<section>`), and the reviewer accepts that citation like a `D-###`. The analyst describes behaviour in requirements and never copies code or exact text. Every other agent must not open those paths.
 4. **Spec-derived code.** `dm-at-builder` writes code only from approved specs. It does not reproduce code from memory of a specific named project. If a spec is too thin to implement without inventing behaviour, the builder returns `blocked` and proposes a CR.
 5. **Provenance.** Every slice report lists the sources consulted, which must be spec IDs and project files only. `dm-at-reviewer` audits this, and also checks dependencies against the allowlist and its recorded licenses.
 

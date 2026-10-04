@@ -14,7 +14,7 @@ Read this only when `brief.md` lists **Existing specs**. It lets a project that 
 2. Map each path to the spec it feeds, and record the map in the brief:
 
    ```markdown
-   ## Existing specs (human-owned)
+   ## Existing specs (human-owned; see references/ADOPTION.md)
    - <path> → 01 | 02 | 03 — <what it is>
    ```
 
@@ -38,6 +38,5 @@ Standards files the old specs cite live inside the old skill's folder, which the
 ## During P1–P3
 
 - The Lead adds every mapped path to the owning author's handoff **Inputs**, on every dispatch of that phase, and to the reviewer's inputs for that spec.
-- The author treats the existing text as settled unless it contradicts the brief, a `D-###`, or another existing spec. Each contradiction or gap becomes a `Q` with the existing text as the recommended answer.
-- Every `REQ`, `ADR`, `SCR`, or other item taken from an existing spec cites it as its source (`from <path> §<section>`), the same way it would cite a `D-###`.
+- How authors and the reviewer treat existing specs (settled unless contradicted, cited as `from <path> §<section>`) is in [PROTOCOL.md §Clean room](../PROTOCOL.md#clean-room), rule 3, so every agent has it.
 - **Adopted architecture.** If an existing 02-type document already fixes the architecture style and the tech stack, the architect skips the style-and-stack question batch, writes `Chosen: <option> (adopted, D-###)` in §2.1 and §2.2, and does not score alternatives. The reviewer's 3–5 option check does not apply.

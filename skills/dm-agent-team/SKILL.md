@@ -21,15 +21,15 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 | G1 requirements, G2 architecture, G3 UX | **stop** at each | auto on reviewer PASS | auto on reviewer PASS |
 | G4 build plan (specs freeze) | **stop** | **stop**: present G1–G4 together | auto on reviewer PASS |
 | G5 milestone demo | **stop** at each | auto, one-line log | auto, one-line log |
-| Slice escalation (third non-PASS, or `blocked`) | **stop** | park the slice, continue independent slices | park the slice, continue independent slices |
+| Slice escalation (one non-PASS more than the profile allows, `test-red` after the deep retry, or a second stale rebuild) | **stop** | park the slice, continue independent slices | park the slice, continue independent slices |
 | Change request | **stop** | **stop** | auto-approve if `class: clarification`, otherwise **stop** |
 | Spec drift (an approved artifact changed outside a CR) | **stop** | **stop** | **stop** |
 | Third reopen of the same spec | **stop** | **stop** | **stop** |
-| Circuit breaker, stalled build, G6 acceptance, hard stops | **stop** | **stop** | **stop** |
+| Circuit breaker, stalled build, builder `blocked-by: env`, G6 acceptance, hard stops | **stop** | **stop** | **stop** |
 
 **Hard stops in every mode:** adding a dependency that is not on the allowlist; touching anything outside the project root; deleting files the team did not create; `git push`, publish, or deploy; anything involving secrets or credentials.
 
-**Human override.** At an escalation stop, the human may accept the work despite REVISE findings. They must give a reason in words. Log a `D-###` with `kind: override`, the reason, and the finding IDs it waives; write the gate or slice as `approved (override)`. An override is never automatic, and never applies to a BLOCK, a builder `blocked`, a hard stop, or a red verify. The acceptance review lists every override.
+**Human override.** At an escalation stop, the human may accept the work despite REVISE findings. They must give a reason in words. Log a `D-###` with `kind: override`, the reason, and the finding IDs it waives; write a gate as `approved (override)`. For a slice, route the override as a PASS (commit, then integrate), mark it `done`, and write `override D-###` in its Notes. An override is never automatic, and never applies to a BLOCK, a builder `blocked`, a hard stop, or a red verify. The acceptance review lists every override.
 
 **Auto-approval** writes the gate row as `approved (auto-<mode>)` and logs a `D-###`. Collect every auto-approved gate, auto-answered question, and open `ASM` into `state.md` §Open items so the next human stop shows them.
 
@@ -113,7 +113,7 @@ If no state exists (never overwrite files already in `.agent-team/`; if the fold
 
 ### 2. Kickoff — P0, gate G0
 
-Draft as much of `brief.md` as the human's invocation already answers. Then ask **one batch** of at most 8 questions covering only the gaps, each with a recommended answer the human can accept as-is:
+Draft as much of `brief.md` as the human's invocation already answers. Then ask **one batch** of at most 9 questions covering only the gaps, each with a recommended answer the human can accept as-is:
 
 - problem, target users, and the single outcome that matters most
 - success measures (at most three)
@@ -158,9 +158,9 @@ Run each phase as this loop:
 Approved artifacts must not change behind the team's back: a hand edit after approval makes `state.md` lie, and slices built from the old text never get rebuilt.
 
 - **Record.** When a gate is approved, write `git hash-object <artifact>` into its Hash column and copy the artifact to `approved/<file>` (overwriting any earlier copy): `brief.md` for G0, the spec file for G1–G4. G3 covers `03-ux.md` only; prototypes are throwaway.
-- **Check** at boot, before each wave, and before presenting each gate: re-hash every artifact with a recorded hash. Skip a file that an approved CR is currently being applied to.
-- **Drift** (a hash differs): a `blocked` stop in every mode, with `halt: drift: <file> changed since G<n>`. Show the human what changed with `git diff --no-index approved/<file> specs/<file>` (written to a log; quote at most the changed hunks' headers and 10 lines). The human either **adopts** the edit, which the Lead then runs as a CR (so the reviewer re-checks it and the affected slices go stale), or **reverts** it.
-- **Re-record** the hash and the copy only when an applied CR passes review, a gate is re-approved, or the human adopts an edit through a CR. Never re-record just to clear a drift stop.
+- **Check** at boot, before each wave, and before presenting each gate: re-hash every artifact with a recorded hash. Skip any artifact whose gate row is `reopened` or `recheck`: a CR is being applied to it.
+- **Drift** (a hash differs): a `blocked` stop in every mode, with `halt: drift: <file> changed since G<n>`. Show the human what changed with `git diff --no-index <workspace>/approved/<file> <workspace>/<artifact path>` (written to a log; quote at most the changed hunks' headers and 10 lines). The human either **adopts** the edit, which the Lead then runs as a CR (so the reviewer re-checks it and the affected slices go stale), or **reverts** it.
+- **Re-record** the hash and the copy only when a gate is approved again: after a CR, after a re-check, or after the human adopts an edit through a CR. Never re-record just to clear a drift stop.
 
 ### 4. Build — P5
 
@@ -173,7 +173,7 @@ Each slice in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build i
 **Run a wave:**
 
 1. **Isolate.** Every slice gets its own worktree, even in a wave of one, so the project root only ever changes by integration: `git worktree add .agent-team/worktrees/SLICE-### -b at/SLICE-###` from the current `HEAD`. Record that `HEAD` as the handoff's `base:`, and name the worktree as its `workdir:`. Mark the slice `in-progress`.
-2. **Build.** Write one builder handoff per slice: the slice entry, the spec sections it traces to, and the base commit. Dispatch all builders in the wave **in parallel** (one message with several subagent calls).
+2. **Build.** Write one builder handoff per slice. Its inputs are the slice entry, the spec sections it traces to, `02-architecture.md` §7–§11, and the `03-ux.md` tokens and states of every `SCR` it touches; it also names the base commit. Dispatch all builders in the wave **in parallel** (one message with several subagent calls).
 3. **Check, then review.** As each builder returns `done`, mark the slice `in-review` and dispatch `dm-at-reviewer` in `precheck` mode (light tier) in the same working directory. A precheck FAIL goes straight back to the builder as a REVISE, without a deep review. On a precheck PASS, dispatch `dm-at-reviewer` in `slice-review` mode with the precheck file as an input; it reuses the precheck's verify evidence. Prechecks and reviews run in parallel across the wave. In the `prototype` profile, a precheck PASS is enough until the milestone review.
 4. **Route each verdict:**
    - **PASS:** commit in the slice's working directory as `SLICE-###: <title>` (never push).
@@ -189,7 +189,9 @@ Each slice in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build i
 
 **Circuit breaker:** 3 escalations in a row stop the build in every mode. The plan is probably wrong; recommend sending P4 back to the architect.
 
-**Fix slices.** The plan is frozen, so a fix slice (`SLICE-F##`) lives only in `state.md` and its handoff. Add a Build row for it with the finding IDs it fixes, the owning slice, `touches:` (the owning slice's `touches:` plus any file the finding names), and no dependencies. Its handoff lists the review file, the owning slice's plan entry, and the spec sections that slice traces to. It then runs through the same wave loop as any slice.
+**Blocked slices.** When the cause of a builder's `blocked` is resolved (the human fixed the environment, or the slice's CR was decided), remove its worktree and branch (`git worktree remove --force`, `git branch -D`) and mark the slice `stale`, so it is rebuilt from the new `HEAD`. If the CR was rejected and the slice cannot be built as specified, mark it `escalated`.
+
+**Fix slices.** The plan is frozen, so a fix slice (`SLICE-F##`) lives only in `state.md` and its handoff. Add a Build row for it with the finding IDs it fixes, the owning slice, `touches:` (the owning slice's `touches:` plus any file the finding names), and no dependencies. Its handoff lists the review file, the owning slice's plan entry, the spec sections that slice traces to, and the same `02` and `03` sections as any builder handoff. It then runs through the same wave loop as any slice.
 
 **Recover.** On resume, before planning a wave:
 
