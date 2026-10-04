@@ -50,9 +50,10 @@ For each decision below, pick 2–3 options with trade-offs (speed of delivery, 
 1. Persistence and data model shape
 2. Contract style for each boundary (in-process interface, REST, CLI, events)
 3. Auth and authorisation, if any `REQ` needs them
-4. Error, logging, and configuration approach
+4. Cross-cutting conventions: errors, validation, logging, configuration and environments, timeouts and retries, and static analysis (one ADR covering all of them is fine)
 5. Test strategy: test levels, tools, and the single **verify command**
 6. Dependency allowlist
+7. Runtime topology: which processes run, how they start and stop, and how health is checked (for a CLI or library, one line)
 
 Record the style, the stack, and each decision here as an `ADR` (context, options, decision, consequences). Each ADR cites the `D-###` that settled it, or `auto-yolo` for a decision you adopted in yolo mode.
 
@@ -67,7 +68,11 @@ Write `02-architecture.md` using the skeleton below. Rules:
 - **Allowlist:** for each entry, give the package, the pinned version or range, the license, the purpose, and the `ADR`. Keep it minimal. Prefer the standard library.
 - **Project structure:** the folder layout and naming conventions the builder will follow. Design for **extension by addition**: a new feature adds files and registers itself by convention (per-feature modules, route or command discovery) rather than editing a central file. List the shared files that every feature must still edit as **hotspots**. Test, lint, and build tooling must ignore `.agent-team/`.
 - **Hermetic verify:** the verify command must run green from any git worktree, concurrently with other copies: no fixed ports, no shared files or databases outside the working directory, no network beyond the allowlisted install. Keep it fast; state its expected duration.
-- **Standards:** if the repo already has standards files, reference them and list only the deviations. Otherwise write at most one page of concrete rules (naming, error handling, tests).
+- **Standards:** if the repo already has standards files, reference them and list only the deviations. Otherwise write at most one page of concrete rules in §9, each as `rule → where it is enforced` (verify, precheck, or slice review).
+- **Cross-cutting conventions (§7) are the contract parallel builders share.** Builders read only §7–§11 plus their slice, and up to four run at once, so anything §7 leaves open gets invented differently by each of them. Write every §7 subsection as 1–3 checkable lines, or `n/a — <reason>`. Each cites its ADR or NFR and says where it is enforced. Keep §7 to about a page.
+- **Contracts:** an `API` that writes more than one `DATA` entity states its atomicity; one that changes a shared record states its concurrency rule (or cites §7.8). A `DATA` entity written by an import, sync, or scheduled job states `writes: replace | update | append` and its matching key, so re-runs are predictable.
+- **Non-screen triggers:** list in §6.1 everything that starts behaviour without a user at a screen (schedules, file drops, inbound calls, CLI invocations by other programs), each mapped to the `API` it calls.
+- **Test seams (§10):** name the test double for each thing a test can't control: the clock (only if the design reads time), network services, and files outside the working directory.
 
 **Done when:** every `REQ` and `NFR` appears in the coverage table mapped to at least one `COMP`/`API`/`ADR`, and the verify command is written out exactly.
 
@@ -91,8 +96,19 @@ Recommended: <option> — <reason citing drivers> · Chosen: <option> (D-### | a
 ## 5. Data model
 ### DATA-001 <entity> — fields (type, required, constraints) · invariants · lifecycle
 ## 6. Contracts
-### API-001 <operation> — input · output · errors · idempotency · traces REQ
-## 7. Cross-cutting: errors · logging · configuration · security · performance budgets
+### API-001 <operation> — input · output · errors · idempotency · atomicity · concurrency · traces REQ
+### 6.1 Non-screen triggers (trigger → API)
+## 7. Cross-cutting conventions (1–3 checkable lines each, or n/a — reason; cite ADR/NFR; say where enforced)
+### 7.1 Errors: kinds, how each is represented, how each maps at boundaries (exit code, status, message)
+### 7.2 Validation: where input is validated, and what a failure returns
+### 7.3 Logging: levels, format, what is never logged
+### 7.4 Configuration and environments: sources and precedence, per-environment values, secrets by name only
+### 7.5 Composition: how components are wired, and object lifetimes
+### 7.6 Persistence: keys, migrations, transactions
+### 7.7 Timeouts, retries, and cancellation
+### 7.8 Security and concurrency defaults: authorisation model, conflicting writes
+### 7.9 Static analysis: type-check strictness, lint, warnings as errors
+### 7.10 Runtime topology and performance budgets
 ## 8. Project structure (tree), conventions, and hotspot files
 ## 9. Coding standards (or the repo standards file plus deviations)
 ## 10. Test strategy: levels · tools · fixtures · verify command: `<exact command>`
@@ -100,6 +116,7 @@ Recommended: <option> — <reason citing drivers> · Chosen: <option> (D-### | a
 | Package | Version | License | Purpose | ADR |
 ## 12. Risks and mitigations
 ## 13. Assumptions and open questions
+| ASM | Default | Risk if wrong | Confirm by |
 ## 14. Coverage
 | REQ/NFR | COMP | API | DATA | ADR |
 ```
@@ -116,7 +133,7 @@ Read every approved spec (01–03) and `decisions.md`.
 
 Cut the work into **tracer-bullet** slices. Each slice is a thin, vertical, end-to-end path that a user or test can exercise. Do not cut by layer.
 
-- `SLICE-001` is always the **walking skeleton**: the project builds, the verify command runs green, and one trivial path works end to end through every layer. It also creates every hotspot file with its registration points, so later slices rarely need to touch them.
+- `SLICE-001` is always the **walking skeleton**: the project builds, the verify command runs green, and one trivial path works end to end through every layer. It also creates every hotspot file with its registration points, lays down the shared §7 plumbing (error types, configuration loading, logging setup), and writes a README with install, run, and test commands, so later slices rarely need to touch any of them.
 - A slice must be finishable in one builder session. As a rough size guide, it touches at most 10 files and has at most 5 new acceptance tests. Split any slice that is bigger. Merge slices that are trivially small; each dispatch has a fixed cost.
 - Order slices by risk first (unknowns early), then by dependency, then by value.
 - **Plan for parallel builders.** `depends-on:` lists only real dependencies. `touches:` lists exact files or narrow folders, never `src/`. Two slices with overlapping `touches:` cannot run at the same time, so shape slices to keep them disjoint. A slice that must edit a hotspot names it in `touches:`.

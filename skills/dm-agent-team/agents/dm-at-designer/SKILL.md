@@ -51,6 +51,7 @@ Write `03-ux.md` using the skeleton below. Rules:
 - **Every interactive element** defines its hover, focus, active, and disabled styles, plus keyboard behaviour.
 - **Design tokens** are named and valued: colour (primary, surface, text, muted, border, success, warning, error), type scale, spacing scale (4 px or 8 px base), radii, shadows, and motion. Screens reference token names, never raw values.
 - **Accessibility:** WCAG 2.2 AA. State contrast ratios for text tokens, focus order, labels, and the target sizes you will use.
+- **Errors and destructive actions:** each `SCR` says where validation feedback appears, has a named state for every `API` error it can receive, and gives every destructive action a confirmation or an undo.
 - **Data needs:** each `SCR` lists the `API`/`DATA` it uses. If a screen needs data no contract provides, propose a CR against 02. Do not invent fields.
 - Build one **key-screen prototype** for the primary journey, using the real tokens. Skip it when the handoff's `quality-bar` is `prototype`, unless the human asked for one.
 

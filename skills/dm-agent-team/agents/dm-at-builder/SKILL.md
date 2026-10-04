@@ -30,6 +30,7 @@ Write code and tests only inside the handoff's `workdir:`. It is a git worktree 
 - an acceptance criterion is ambiguous enough that two reasonable tests would disagree
 - you need a package that is not on the allowlist
 - you need a contract, field, or behaviour the specs do not define
+- the slice needs a cross-cutting choice (an error shape, a config key, a log format, a retry rule) that `02-architecture.md` §7 does not settle
 - the slice cannot be done without changing a frozen spec or another slice's finished behaviour
 
 **Done when:** you can write the test name for every acceptance criterion in the slice.

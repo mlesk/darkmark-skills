@@ -41,7 +41,7 @@ Check the target spec against its own *Done when*, its *Self-check* (if it has o
 
 Extra checks for specific specs:
 
-- **02:** §2.1 and §2.2 each evaluate 3–5 viable options (or name what the constraints ruled out), score every option against every driver, state one recommendation with a driver-based reason, and record the chosen option with its `D-###` or `auto-yolo`; no option violates the brief's required or forbidden technologies; every allowlist entry has a license and an ADR; the verify command is runnable and hermetic (no fixed ports or shared state outside the working directory); hotspot files are listed.
+- **02:** §2.1 and §2.2 each evaluate 3–5 viable options (or name what the constraints ruled out), score every option against every driver, state one recommendation with a driver-based reason, and record the chosen option with its `D-###` or `auto-yolo`; no option violates the brief's required or forbidden technologies; every allowlist entry has a license and an ADR; the verify command is runnable and hermetic (no fixed ports or shared state outside the working directory); hotspot files are listed; every §7 subsection is filled with checkable lines or `n/a — reason`, cites an ADR or NFR, and names where it is enforced; multi-entity writes state atomicity; job-written `DATA` states its `writes:` rule; every non-screen trigger in §6.1 maps to an `API`.
 - **03:** every screen has all its states; tokens are used and never raw values.
 - **04:** the walking skeleton comes first and creates the hotspot files; slices are vertical; no slice depends on a later one; `touches:` are exact; slices in the same wave have disjoint `touches:`; coverage is complete.
 
@@ -61,7 +61,7 @@ Work in the handoff's `workdir:`. Scope the review with the slice diff ([PROTOCO
 
 1. **Verify evidence.** If the handoff lists a precheck file with verdict PASS for this round, take its verify command, exit code, and summary as your evidence; the precheck ran in its own fresh context. Otherwise run verify yourself, per [PROTOCOL.md §Command output](../../PROTOCOL.md#command-output), with output going to `.agent-team/logs/SLICE-###-r<round>-review.log`. A red verify is a blocker, whatever the report says.
 2. Check that every acceptance criterion in the slice has a test. Read each test and confirm it would fail if the behaviour broke: it must not be tautological, over-mocked, or asserting on a constant.
-3. Check the code against `02-architecture.md` structure, contracts, and standards, and the UI against `03-ux.md` tokens and states.
+3. Check the code against `02-architecture.md`: structure (§8), contracts (§6), the cross-cutting conventions (§7), and standards (§9). A breach of §7 or §9 is a cited rule violation, not a matter of taste. Check the UI against `03-ux.md` tokens and states.
 4. **Scope:** compare the changed files in the slice diff with the slice's `touches:`. Confirm there is no untraced behaviour.
 5. **Clean room:** check the dependency manifest against the allowlist, and look for network calls, hard-coded secrets, and copied external code. Check the *Sources consulted* list.
 6. **Faking:** look for skipped or disabled tests, lowered thresholds, hard-coded outputs, and TODO stubs.
