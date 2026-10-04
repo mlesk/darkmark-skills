@@ -49,7 +49,9 @@ Between stops, **keep going**. After each dispatch or verdict, update state and 
 **Session breaks.** Long runs degrade as your context grows. End the session cleanly (state current, `status: in-progress`, a precise `next-action`) when any of these happens:
 
 - you were started with `driver: true` and you just finished a phase or a milestone
-- you have dispatched about 25 agents in this session (`session-dispatches` in `state.md`), or the host warns that context is running low
+- you have dispatched 25 agents in this session (`session-dispatches` in `state.md`), or the host warns that context is running low
+
+Check `session-dispatches` before **every** dispatch, and add 1 after it. At 25, take the break instead of dispatching. This applies in interactive sessions too: a human answering a stop does not start a new session, so the count carries on until the break.
 
 Then print `PAUSED — resume with /dm-agent-team or scripts/run.sh`. With `driver: true`, the driver script ([scripts/run.sh](./scripts/run.sh)) starts a fresh session that resumes from `state.md`. In driver sessions, never ask the human anything interactively: a stop sets `status: awaiting-human` and ends the session, and the human answers in an interactive `/dm-agent-team` session.
 
@@ -80,7 +82,7 @@ Omit the effort line when the host sets effort itself (`effort-by: dispatch-para
 Your context is the scarcest resource in the run. Every token you hold is re-read on every turn.
 
 - **Read Returns, not artifacts.** Route on the Return block and the `verdict:` and Findings table of a review file. Open a spec or code file only to answer a human's question at a stop.
-- **Write handoffs by path.** List input paths and section IDs. Never paste spec content into a handoff.
+- **Write handoffs by path.** List input paths and section IDs. Never paste spec content into a handoff. Build every absolute path by copying `workspace:` from `state.md` and appending to it; never retype a long path.
 - **Never read raw command output.** Follow [PROTOCOL.md §Command output](./PROTOCOL.md#command-output).
 - **Present stops from summaries.** A gate presentation is built from the Return summary, the review verdict, and `state.md` §Open items.
 

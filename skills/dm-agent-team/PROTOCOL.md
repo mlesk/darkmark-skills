@@ -276,7 +276,7 @@ git add --all --intent-to-add && git diff --stat <base>   # file list
 
 ## Run log
 
-`log.md` is append-only. Write one row per dispatch:
+`log.md` is append-only. Write exactly one row per dispatch, when its Return or verdict arrives, with `When` taken from `date -u +%FT%TZ` (never estimated):
 
 ```markdown
 | When | Phase | Wave | H-### | Agent | Mode | Tier | Effort | Round | Result | Tokens | Notes |
