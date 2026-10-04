@@ -24,6 +24,7 @@ All team state lives in `.agent-team/` at the project root. Source code lives wh
 ├── build/              # dm-at-builder. SLICE-###-report.md per slice
 ├── reviews/            # dm-at-reviewer. One file per review round
 ├── logs/               # Whoever ran the command. Full command output, never read whole
+├── approved/           # Lead-owned. Copy of each artifact as approved at its gate, for drift diffs
 ├── changes/            # Lead-owned. CR-###.md change requests
 ├── handoffs/           # Lead-owned. H-###.md; the agent appends only ## Return
 ├── worktrees/          # Lead-owned. One git worktree per slice being built
@@ -49,9 +50,11 @@ next-action: <one line a fresh session can execute>
 session-dispatches: <count since this session started>
 
 ## Gates
-| Gate | Artifact | Status | Round | Approved | Notes |
-|---|---|---|---|---|---|
-| G0 | brief.md | pending | – | – | |
+| Gate | Artifact | Status | Round | Approved | Hash | Notes |
+|---|---|---|---|---|---|---|
+| G0 | brief.md | pending | – | – | – | |
+
+Hash is `git hash-object <artifact>` recorded at approval (see SKILL.md §Spec integrity). It works on untracked files.
 
 ## Build
 current-milestone: –
@@ -158,10 +161,18 @@ assumptions: <ASM ids | none>
 questions: <question batch per §Questions | none>
 auto-decisions: <yolo only: each question you settled yourself, with the answer adopted | none>
 change-requests: <proposed CR text with class | none>
+blocked-by: <only when status is blocked: spec-gap | test-red | env | dependency — evidence (spec ID, or test · command · exit · log path)>
 verify: <command · exit · one-line summary | n/a>
 ```
 
-`needs-human` means the agent needs answers before it can finish. `blocked` means the agent cannot proceed without changing something it does not own.
+`needs-human` means the agent needs answers before it can finish. `blocked` means the agent cannot proceed without changing something it does not own, and `blocked-by:` says which kind:
+
+| blocked-by | Meaning | The Lead routes it to |
+|---|---|---|
+| `spec-gap` | a spec is missing, ambiguous, or contradictory | a change request |
+| `test-red` | a test will not go green after 3 genuine attempts | the escalation ladder's deep retry, then escalation |
+| `env` | a tool, runtime, or permission is missing on this machine | a `blocked` stop for the human |
+| `dependency` | a package that is not on the allowlist is needed | a change request (a hard stop in every mode) |
 
 ## Questions
 

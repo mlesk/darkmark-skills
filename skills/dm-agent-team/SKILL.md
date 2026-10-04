@@ -23,6 +23,7 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 | G5 milestone demo | **stop** at each | auto, one-line log | auto, one-line log |
 | Slice escalation (third non-PASS, or `blocked`) | **stop** | park the slice, continue independent slices | park the slice, continue independent slices |
 | Change request | **stop** | **stop** | auto-approve if `class: clarification`, otherwise **stop** |
+| Spec drift (an approved artifact changed outside a CR) | **stop** | **stop** | **stop** |
 | Circuit breaker, stalled build, G6 acceptance, hard stops | **stop** | **stop** | **stop** |
 
 **Hard stops in every mode:** adding a dependency that is not on the allowlist; touching anything outside the project root; deleting files the team did not create; `git push`, publish, or deploy; anything involving secrets or credentials.
@@ -36,7 +37,7 @@ A **stop** means: update `state.md`, present the stop with [PROTOCOL.md §Gate p
 Set the status by the kind of stop:
 
 - **A decision for the human** (a gate, a question batch, a change request, a hard stop): `status: awaiting-human`, and `next-action:` says what the human must decide.
-- **Something the human must fix** (the circuit breaker, a stalled build, a missing tool, a git failure): `status: blocked`, plus `halt: <kind>: <evidence>` and a `next-action:` that says what the human must do. The human's answer is logged as a `D-###`; then clear `halt:` and set `status: in-progress`.
+- **Something the human must fix** (the circuit breaker, a stalled build, spec drift, a missing tool, a git failure): `status: blocked`, plus `halt: <kind>: <evidence>` and a `next-action:` that says what the human must do. The human's answer is logged as a `D-###`; then clear `halt:` and set `status: in-progress`.
 
 ### The drive rule
 
@@ -95,7 +96,7 @@ Your context is the scarcest resource in the run. Every token you hold is re-rea
 
 ### 1. Boot
 
-Find the project root (the git root, or the current directory if there is no git repo). If `.agent-team/state.md` exists, read it and `decisions.md`, set `session-dispatches: 0`, then resume at `next-action`. If a stop is still pending (`status: awaiting-human` or `blocked`), re-present it and end the turn. If any slice is `in-progress` or `in-review`, or the project root has an unfinished merge, run step 4 §Recover first.
+Find the project root (the git root, or the current directory if there is no git repo). If `.agent-team/state.md` exists, read it and `decisions.md`, set `session-dispatches: 0`, then resume at `next-action`. Print a short **resume report**: phase, status, the last approved gate, slice counts by status, and `next-action`. Then run the integrity check (§Spec integrity). If a stop is still pending (`status: awaiting-human` or `blocked`), re-present it and end the turn. If any slice is `in-progress` or `in-review`, or the project root has an unfinished merge, run step 4 §Recover first.
 
 If no state exists:
 
@@ -148,6 +149,15 @@ Run each phase as this loop:
 
 **Done when:** G4 is approved. The specs are now frozen; only an approved change request may edit them.
 
+#### Spec integrity
+
+Approved artifacts must not change behind the team's back: a hand edit after approval makes `state.md` lie, and slices built from the old text never get rebuilt.
+
+- **Record.** When a gate is approved, write `git hash-object <artifact>` into its Hash column and copy the artifact to `approved/<file>` (overwriting any earlier copy): `brief.md` for G0, the spec file for G1–G4. G3 covers `03-ux.md` only; prototypes are throwaway.
+- **Check** at boot, before each wave, and before presenting each gate: re-hash every artifact with a recorded hash. Skip a file that an approved CR is currently being applied to.
+- **Drift** (a hash differs): a `blocked` stop in every mode, with `halt: drift: <file> changed since G<n>`. Show the human what changed with `git diff --no-index approved/<file> specs/<file>` (written to a log; quote at most the changed hunks' headers and 10 lines). The human either **adopts** the edit, which the Lead then runs as a CR (so the reviewer re-checks it and the affected slices go stale), or **reverts** it.
+- **Re-record** the hash and the copy only when an applied CR passes review, a gate is re-approved, or the human adopts an edit through a CR. Never re-record just to clear a drift stop.
+
 ### 4. Build — P5
 
 Each slice in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build in **waves**.
@@ -164,7 +174,8 @@ Each slice in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build i
 4. **Route each verdict:**
    - **PASS:** commit in the slice's working directory as `SLICE-###: <title>` (never push).
    - **REVISE:** re-dispatch the builder with the review as input, escalated per [ROUTING.md §Escalation ladder](./ROUTING.md#escalation-ladder). One more non-PASS than the profile allows is an escalation.
-   - **BLOCK**, or builder status `blocked`: open a change request. If the builder is blocked only because tests would not go green, first apply the ladder's deep retry.
+   - **BLOCK:** open a change request.
+   - **Builder `blocked`:** route on `blocked-by:` ([PROTOCOL.md §Return](./PROTOCOL.md#return)): `spec-gap` and `dependency` open a change request, `test-red` gets the ladder's deep retry before it counts as an escalation, and `env` is a `blocked` stop.
    - **Escalation:** per the mode table. A parked slice is `escalated`; every slice that depends on it waits.
 5. **Integrate** passed slices one at a time in plan order, in the project root: `git merge --no-ff --no-commit at/SLICE-###`, run verify on the merged tree ([PROTOCOL.md §Command output](./PROTOCOL.md#command-output)), and commit only if it is green. Then `git worktree remove .agent-team/worktrees/SLICE-###` and `git branch -d at/SLICE-###`.
    On a merge conflict or a red verify: `git merge --abort`, then `git worktree remove --force .agent-team/worktrees/SLICE-###` and `git branch -D at/SLICE-###`, mark the slice `stale` with the reason, and add 1 to its `Stale` count. It is rebuilt in a later wave from the new `HEAD`. A stale rebuild does not count as a REVISE round, but a slice going stale a **second** time is an escalation: two slices keep colliding, so the plan's `touches:` are probably wrong.
