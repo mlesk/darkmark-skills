@@ -250,3 +250,37 @@ The Lead uses the first mechanism your host supports and records it in `.agent-t
 **Versioning and change control.** The skill lives in git, and `state.md` records the skill version each run used. Change prompts only from retro evidence: one change, one reason, one commit. Compare first-pass rates across versions to see whether a change helped.
 
 **Do today:** link the skills, open an empty folder, run `/dm-agent-team` on a toy idea, and stop after G1. Read `reviews/` and `log.md` to see how the handoffs and verdicts actually behave before you trust the team with real work.
+
+---
+
+## Migrating from the spec skills
+
+`dm-agent-team` replaces `dm-spec-creation` and `dm-spec-execution`. Both still work for now; they will move to `skills/deprecated/` later, together, because `dm-spec-execution` reads files from `dm-spec-creation`.
+
+**What carried over.** The parts of the spec skills that earned their keep now live in the team:
+
+| From the spec skills | In `dm-agent-team` |
+|---|---|
+| Plan and sidecar SHA checks (`PLAN-DRIFT`) | §Spec integrity: approved artifacts are hashed and copied; an edit outside a CR is a stop |
+| Failure classes and halts (`SPEC-DEFECT`, `STANDARDS-DEFECT`) | `blocked-by:` with four kinds (spec-gap, test-red, env, dependency), and `status: blocked` with a `halt:` line |
+| Cross-spec consistency, fix at the lowest spec | CRs against approved specs; `reopened` and `recheck` gate rows; downstream re-checks from `impact:` |
+| Gate checklists | Reviewer checklists with an evidence column; never re-run a red check unchanged; a logged human override |
+| spec-03 implementation guidance and the spec-02x sidecars | `02-architecture.md` §7 cross-cutting conventions, §6 atomicity and concurrency, §10 test seams |
+| spec-00 posture questions and the decision logs | Analyst probes; one `D-###` form with `affects:` the reviewer checks |
+| `ADOPTION-PROTOCOL.md` | [references/ADOPTION.md](./references/ADOPTION.md) |
+
+**What did not.** The fixed .NET/React stack (the architect now chooses a stack per project), the seven-spec chain, numeric gate rubrics, HTML anchors, the layer-by-layer phase plan, and PR-per-phase delivery with merge-on-green (the team never pushes; it commits locally, one slice at a time).
+
+**If you have a project on the spec skills:**
+
+| Where the project is | What to do |
+|---|---|
+| Specs not started | Use `/dm-agent-team`. |
+| Specs in progress or gate-passed, no code yet | Start `/dm-agent-team` in the project and list the `01-specifications/` files as *Existing specs* at G0. [ADOPTION.md](./references/ADOPTION.md) maps each old spec to 01, 02, or 03. The team writes its own specs from them, and re-plans spec-06 as vertical slices. |
+| `execution-state.md` exists and Phases are in progress | Finish with `dm-spec-execution`. Switching mid-build means re-planning the remaining work. If you do switch, adopt the specs as above and tell the architect at P4 which features are already built. |
+
+**Things to watch:**
+
+- **Standards files.** The old specs cite standards inside the `dm-spec-creation` skill folder. The team's clean room won't read another skill's folder, so copy the standards you want into the project and list them under the brief's *Constraints*.
+- **Old pointers.** A committed `spec-06-execution-plan.md` and the spec skills' own handoff text tell the agent to run `dm-spec-execution`. Ignore that once you have switched.
+- **Links after the move.** When the spec skills move to `skills/deprecated/`, run `scripts/unlink-skills.sh` and then `scripts/link-skills.sh`; otherwise their old links in `~/.agents/skills/` dangle.
