@@ -62,7 +62,9 @@ write next-action, and end. End the session after finishing the current phase or
 run_host() {
   case "$HOST" in
     opencode) (cd "$PROJECT" && opencode run "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
-    claude)   (cd "$PROJECT" && claude -p "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
+    # The prompt goes first: options such as --allowedTools take a variable
+    # number of values and would swallow a prompt placed after them.
+    claude)   (cd "$PROJECT" && claude -p "$PROMPT" "${EXTRA[@]+"${EXTRA[@]}"}") ;;
     copilot)  (cd "$PROJECT" && copilot -p "$PROMPT" "${EXTRA[@]+"${EXTRA[@]}"}") ;;
     codex)    (cd "$PROJECT" && codex exec "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
     *) echo "Unsupported host: $HOST" >&2; exit 1 ;;
