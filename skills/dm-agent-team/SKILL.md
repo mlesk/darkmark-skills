@@ -101,7 +101,7 @@ Your context is the scarcest resource in the run. Every token you hold is re-rea
 
 Find the project root (the git root, or the current directory if there is no git repo). If `.agent-team/state.md` exists, read it and `decisions.md`, set `session-dispatches: 0`, then resume at `next-action`. Print a short **resume report**: phase, status, the last approved gate, slice counts by status, and `next-action`. Then run the integrity check (§Spec integrity). If a stop is still pending (`status: awaiting-human` or `blocked`), re-present it and end the turn. If any slice is `in-progress` or `in-review`, or the project root has an unfinished merge, run step 4 §Recover first.
 
-If no state exists:
+If no state exists (never overwrite files already in `.agent-team/`; if the folder exists without `state.md`, ask the human what it is first):
 
 1. **Git.** The build phase needs git (worktrees, per-slice commits, scope checks). If the folder is not a git repo, ask the human whether to run `git init`. If they decline, the run can still produce the specs up to G4, but P5 is a `blocked` stop.
 2. **Ignore the workspace.** Add `.agent-team/` (the whole folder) to `.gitignore`. Team state is never committed: worktrees would otherwise get stale copies of it, and it would show up in every slice's `git status`.
@@ -120,6 +120,7 @@ Draft as much of `brief.md` as the human's invocation already answers. Then ask 
 - in scope for v1, and at least three things explicitly out of scope
 - platform and constraints: target runtime, required or forbidden technologies, standards files in the repo
 - reference material (the dirty room): paths only the analyst may read
+- existing specs (human-owned requirements or design documents for this project, such as a `01-specifications/` folder): if any, follow [references/ADOPTION.md](./references/ADOPTION.md)
 - quality bar (prototype, internal, or production) and the time or budget ceiling
 - **run mode**: stepwise (recommended for a first run), checkpoint, or yolo
 - **max-parallel builders**: 1 to 4 (recommend 3 if the project is a git repo and the host runs parallel subagents, otherwise 1)
@@ -141,8 +142,8 @@ Ask at most one follow-up batch. Write `brief.md` using [PROTOCOL.md §Brief](./
 
 Run each phase as this loop:
 
-1. **Write the author handoff** ([PROTOCOL.md §Handoff](./PROTOCOL.md#handoff)). Inputs: the brief, `decisions.md`, and every approved upstream spec.
-2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per phase; after that, the author records the rest as `ASM` with its recommended answer. In P2, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `02-architecture.md` §2.1–§2.2.
+1. **Write the author handoff** ([PROTOCOL.md §Handoff](./PROTOCOL.md#handoff)). Inputs: the brief, `decisions.md`, every approved upstream spec, and any existing specs the brief maps to this phase ([references/ADOPTION.md](./references/ADOPTION.md)).
+2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per phase; after that, the author records the rest as `ASM` with its recommended answer. In P2, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `02-architecture.md` §2.1–§2.2. Skip that batch when an adopted existing spec already fixes both.
 3. **Dispatch `dm-at-reviewer`** in `spec-review` mode. Its inputs are the spec, every approved upstream spec, and `decisions.md`.
 4. **Route the verdict:**
    - **PASS:** go to the gate.

@@ -86,6 +86,8 @@ Fix slices (`SLICE-F##`) also go in this table; Notes gives the finding IDs, the
 ## Constraints (platform, required/forbidden tech, repo standards files)
 ## Reference material — dirty room (dm-at-analyst only)
 - <path> — <what it is>
+## Existing specs (human-owned; see references/ADOPTION.md)
+- <path> → 01 | 02 | 03 — <what it is>
 ## Quality bar: prototype | internal | production
 ## Time / budget ceiling
 ## Run: mode <stepwise | checkpoint | yolo> · max-parallel <n>
@@ -302,7 +304,7 @@ Compute these from `log.md` and `state.md` for `retro.md`:
 
 1. **Local only.** Read and write only inside the project root and this skill's folder. No web search, no URL fetching, no MCP or remote tools, no issue trackers. Use the local filesystem, local git, and local build and test commands.
 2. **One network exception.** The package manager may install dependencies that appear in the **dependency allowlist** in `specs/02-architecture.md`. Anything else needs a CR.
-3. **Dirty room.** Only `dm-at-analyst` may read the paths listed under *Reference material* in `brief.md`. The analyst describes behaviour in requirements and never copies code or exact text. Every other agent must not open those paths.
+3. **Dirty room.** Only `dm-at-analyst` may read the paths listed under *Reference material* in `brief.md`. *Existing specs* are different: they are the human's own documents for this project, and the agents the brief maps them to may read them. The analyst describes behaviour in requirements and never copies code or exact text. Every other agent must not open those paths.
 4. **Spec-derived code.** `dm-at-builder` writes code only from approved specs. It does not reproduce code from memory of a specific named project. If a spec is too thin to implement without inventing behaviour, the builder returns `blocked` and proposes a CR.
 5. **Provenance.** Every slice report lists the sources consulted, which must be spec IDs and project files only. `dm-at-reviewer` audits this, and also checks dependencies against the allowlist and its recorded licenses.
 

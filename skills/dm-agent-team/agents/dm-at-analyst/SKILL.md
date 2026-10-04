@@ -105,6 +105,6 @@ Rationale: <why; cite brief or D-###>
 
 ## Guardrails
 
-- **Don't invent requirements.** Every `REQ` traces to the brief, a `D-###`, or reference material. If you think a feature is needed and nobody asked for it, raise it as a `Q`.
+- **Don't invent requirements.** Every `REQ` traces to the brief, a `D-###`, reference material, or an existing spec listed in the handoff. If you think a feature is needed and nobody asked for it, raise it as a `Q`.
 - **Don't solve.** If you catch yourself naming a database, endpoint, or screen layout, delete it.
 - **Revision rounds** fix only the review findings. Do not restructure approved content.

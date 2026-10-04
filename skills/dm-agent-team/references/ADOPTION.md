@@ -1,0 +1,43 @@
+# Adopting existing specs
+
+Read this only when `brief.md` lists **Existing specs**. It lets a project that already has requirements or design documents (including a `01-specifications/` folder from the older `dm-spec-creation` skill) enter the team without re-interviewing everything.
+
+## What adoption means
+
+- Existing specs are **human-owned input**, not the dirty room. The human wrote them, or approved them, for this project. Unlike reference material, every agent the brief maps them to may read them.
+- They are **inputs, not outputs.** Agents still write the team's own `01`, `02`, and `03`, using the existing text as the first answer to every question. Nothing is copied over unread: the reviewer still checks every claim against its source, and every gate still runs.
+- **Nothing in the existing folder is edited.** The team writes only in `.agent-team/`.
+
+## At kickoff (P0)
+
+1. Ask for the paths in the G0 batch, with the recommended answer "none" unless the human mentioned documents.
+2. Map each path to the spec it feeds, and record the map in the brief:
+
+   ```markdown
+   ## Existing specs (human-owned)
+   - <path> → 01 | 02 | 03 — <what it is>
+   ```
+
+3. Log the map as a `D-###` with `kind: answer` and `affects:` naming the target specs.
+
+## Mapping from dm-spec-creation
+
+| Old spec | Feeds | Notes |
+|---|---|---|
+| `spec-00` PRD | 01 | Capabilities become `REQ`s; acceptance criteria keep their Given/When/Then. |
+| `spec-01` glossary and exclusions | 01 | §3 Glossary and §8 Out of scope. |
+| `spec-01` modules, entities, relationships | 02 | §4 Components and §5 Data model. |
+| `spec-02`, `spec-02x` sidecars, `spec-03`, both decision logs | 02 | Style and stack in §2, conventions in §7, standards in §9, decisions as ADRs. |
+| `spec-05` app use cases | 02 | §6 Contracts. Use cases are app design, so they can't go in 01. |
+| `spec-04` user interface | 03 | Screens, states, and navigation. |
+| `spec-06` execution plan | none | Re-plan in P4. The old Phase plan cuts by layer; the team cuts vertical slices. |
+| `execution-state.md` | none | Finish the run with `dm-spec-execution`, or start this team fresh. |
+
+Standards files the old specs cite live inside the old skill's folder, which the clean room does not allow agents to read. Copy any you want to keep into the project and list them under the brief's *Constraints*.
+
+## During P1–P3
+
+- The Lead adds every mapped path to the owning author's handoff **Inputs**, on every dispatch of that phase, and to the reviewer's inputs for that spec.
+- The author treats the existing text as settled unless it contradicts the brief, a `D-###`, or another existing spec. Each contradiction or gap becomes a `Q` with the existing text as the recommended answer.
+- Every `REQ`, `ADR`, `SCR`, or other item taken from an existing spec cites it as its source (`from <path> §<section>`), the same way it would cite a `D-###`.
+- **Adopted architecture.** If an existing 02-type document already fixes the architecture style and the tech stack, the architect skips the style-and-stack question batch, writes `Chosen: <option> (adopted, D-###)` in §2.1 and §2.2, and does not score alternatives. The reviewer's 3–5 option check does not apply.

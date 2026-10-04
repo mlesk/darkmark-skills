@@ -36,7 +36,9 @@ Evaluate the solution as a whole before deciding any detail. Produce two evaluat
 
 For each option, score fit against every driver from step 1, plus delivery speed, complexity and running cost, operability, and the main risk. Use one table per evaluation. Then name **one recommended option** in each and give the reason in at most three lines, citing drivers. Weight against complexity: recommend a modular monolith unless a driver demands otherwise. Do not pad with straw-man options; if the constraints leave fewer than three viable options, list those and say what the constraints ruled out.
 
-Then settle the choice according to the handoff's `run-mode:`:
+**Adopted architecture.** If an existing spec in your handoff inputs already fixes the style and the stack, don't evaluate alternatives: write `Chosen: <option> (adopted, D-###)` in §2.1 and §2.2, skip the question batch below, and go to step 3.
+
+Otherwise, settle the choice according to the handoff's `run-mode:`:
 
 - **stepwise** or **checkpoint:** write `02-architecture.md` with only §1 and §2.1–§2.2 filled in, and return `needs-human` with a batch of two questions: the architecture style, then the tech stack. Each question lists the evaluated options, marks the recommended one, and points to the §2 tables. Do not go further until both are answered. If the chosen style is not the recommended one, re-evaluate the stacks against it before step 3.
 - **yolo:** adopt both recommended options, list them under `auto-decisions:` in your Return, and continue to step 3 without stopping.
