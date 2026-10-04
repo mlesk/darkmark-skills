@@ -22,7 +22,7 @@ You never edit the artifact or code under review. Findings are your only output.
 |---|---|
 | **PASS** | zero blocker and zero major findings. Minors are listed but don't hold the gate. |
 | **REVISE** | one or more blocker or major findings that the author can fix inside the files they own |
-| **BLOCK** | the defect lives in a frozen upstream spec, or a guardrail was violated (clean-room breach, unapproved dependency, scope creep, faked tests, edits outside ownership). Propose a CR. |
+| **BLOCK** | the defect lives in an approved or frozen upstream spec, or a guardrail was violated (clean-room breach, unapproved dependency, scope creep, faked tests, edits outside ownership). Propose a CR against the spec where the defect starts. Never PASS work that only works around an upstream defect. |
 
 **Severity:** a *blocker* makes the artifact wrong or unsafe. A *major* would cause a downstream agent to guess, or would ship a defect. A *minor* is polish.
 
@@ -32,7 +32,7 @@ Every finding gives its location (file plus ID or line), what is wrong, the requ
 
 Check the target spec against its own *Done when*, its *Self-check* (if it has one), and its *Guardrails* in its agent file. Then apply these common checks:
 
-1. **Trace:** every item traces upstream, and every upstream item is covered (use the spec's coverage table, then spot-check at least 5 rows against the source).
+1. **Trace:** every item traces upstream, and every upstream item is covered (use the spec's coverage table, then spot-check at least 5 rows against the source). No cited ID is struck through (removed).
 2. **Testability:** every acceptance criterion, contract, and state is concrete enough to write a failing test or a check from.
 3. **Consistency:** glossary terms, IDs, names, and values match across all approved specs. No contradictions.
 4. **Scope fence:** the spec contains no content that belongs to another phase. Look for technology in 01, layout in 02, implementation in 03, and code in 04.

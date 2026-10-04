@@ -55,6 +55,7 @@ session-dispatches: <count since this session started>
 | G0 | brief.md | pending | – | – | – | |
 
 Hash is `git hash-object <artifact>` recorded at approval (see SKILL.md §Spec integrity). It works on untracked files.
+Gate status: pending | in-review | approved | approved (auto-<mode>) | reopened (CR-###) | recheck (CR-###)
 
 ## Build
 current-milestone: –
@@ -192,7 +193,7 @@ Ask only what changes the artifact. Never ask what the brief, `decisions.md`, or
 
 ## Change requests
 
-A change request (CR) is opened when an agent finds a defect in a frozen spec, or needs something outside its ownership. Agents only *propose* CR text in their Return. The Lead writes `changes/CR-###.md`:
+A change request (CR) is opened when an agent finds a defect in an approved or frozen spec, or needs something outside its ownership. Fix a defect in the spec where it starts, not in the spec where it was noticed. Agents only *propose* CR text in their Return. The Lead writes `changes/CR-###.md`:
 
 ```markdown
 # CR-###: <title>
@@ -208,7 +209,15 @@ decision: D-###
 
 `clarification` means the change resolves an ambiguity without adding, removing, or widening a `REQ`, `NFR`, `API`, or dependency. Anything else is not a clarification. When in doubt, it is not.
 
-Once a CR is approved, the Lead dispatches the owning author to apply it and the reviewer checks the edited spec. Every slice it touches is marked `stale` in `state.md` and rebuilt.
+Once a CR is approved, the Lead applies it in this order:
+
+1. Dispatch the owner of the edited spec to apply it, and set that spec's gate row to `reopened (CR-###)`.
+2. Dispatch the reviewer in `spec-review` mode on the edited spec.
+3. Set every downstream spec named in the CR's `impact:` to `recheck (CR-###)`, then dispatch its owner to bring it in line, followed by a `spec-review`, in spec order (01 → 04). An owner that finds nothing to change says so in its Return, and a clean review returns that row to `approved` without a stop.
+4. A spec whose content changed is approved again per the mode table (its gate stops or auto-approves as it did originally), and its hash and copy are re-recorded.
+5. Mark every slice listed in `impact:`, or tracing to a changed ID, as `stale`. Those slices are rebuilt.
+
+A third reopen of the same spec in one run is a stop in every mode: the spec keeps being wrong, so the human should look at it.
 
 ## Gate presentation
 

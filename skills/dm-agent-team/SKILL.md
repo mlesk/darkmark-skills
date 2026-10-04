@@ -24,6 +24,7 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 | Slice escalation (third non-PASS, or `blocked`) | **stop** | park the slice, continue independent slices | park the slice, continue independent slices |
 | Change request | **stop** | **stop** | auto-approve if `class: clarification`, otherwise **stop** |
 | Spec drift (an approved artifact changed outside a CR) | **stop** | **stop** | **stop** |
+| Third reopen of the same spec | **stop** | **stop** | **stop** |
 | Circuit breaker, stalled build, G6 acceptance, hard stops | **stop** | **stop** | **stop** |
 
 **Hard stops in every mode:** adding a dependency that is not on the allowlist; touching anything outside the project root; deleting files the team did not create; `git push`, publish, or deploy; anything involving secrets or credentials.
@@ -144,10 +145,10 @@ Run each phase as this loop:
 4. **Route the verdict:**
    - **PASS:** go to the gate.
    - **REVISE:** re-dispatch the author with the review file as input, escalated per [ROUTING.md §Escalation ladder](./ROUTING.md#escalation-ladder). Allow the profile's REVISE rounds; one more non-PASS escalates to the human.
-   - **BLOCK:** open a change request ([PROTOCOL.md §Change requests](./PROTOCOL.md#change-requests)) and handle it per the mode table.
-5. **Gate:** stop or auto-approve per the mode table. Requested changes go back to the author as a new round.
+   - **BLOCK:** open a change request ([PROTOCOL.md §Change requests](./PROTOCOL.md#change-requests)) against the spec where the defect starts, which may be an already-approved one, and handle it per the mode table.
+5. **Gate:** stop or auto-approve per the mode table. Requested changes to this spec go back to the author as a new round. Requested changes to an earlier, approved spec (common at checkpoint mode's combined G1–G4 stop) become a change request.
 
-**Done when:** G4 is approved. The specs are now frozen; only an approved change request may edit them.
+**Done when:** G4 is approved and no gate row is `reopened` or `recheck`. The specs are now frozen; only an approved change request may edit them.
 
 #### Spec integrity
 
