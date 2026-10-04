@@ -50,7 +50,9 @@ fi
 mkdir -p "$LOGS"
 
 field() { grep -m1 "^$1:" "$STATE" | sed "s/^$1:[[:space:]]*//" || true; }
-state_hash() { git hash-object "$STATE" 2>/dev/null || cksum < "$STATE"; }
+# Progress = any change to state.md other than the per-session dispatch counter,
+# which every session rewrites even when nothing else moves.
+state_hash() { grep -v '^session-dispatches:' "$STATE" | cksum; }
 
 PROMPT="Read $SKILL_DIR/SKILL.md and act as the dm-agent-team Lead it defines. driver: true. \
 Project root: $PROJECT. Resume from .agent-team/state.md at next-action. \
@@ -80,6 +82,7 @@ for ((i = 1; i <= MAX_SESSIONS; i++)); do
   fi
   if [[ "$st" == "awaiting-human" || "$st" == "blocked" ]]; then
     echo "STOP ($st) at $phase — $(field next-action)"
+    if [[ "$st" == "blocked" ]]; then echo "  halt: $(field halt)"; fi
     echo "Answer it in an interactive /dm-agent-team session, then rerun this script."
     exit 2
   fi

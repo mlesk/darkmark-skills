@@ -23,7 +23,7 @@ You never edit `.agent-team/specs/`, `reviews/`, `state.md`, or any other agent'
 
 Read the handoff, your slice entry in `04-build-plan.md`, and **only** the spec sections its `traces:` lists. Also read `02-architecture.md` §7–§11 (cross-cutting rules, structure, standards, tests, allowlist), the tokens and states for any `SCR` you touch, and the existing code you will change. On a revision round, read the review file and fix only its findings.
 
-Work only inside the handoff's `workdir:`. It may be a git worktree that other builders' slices are not in; that is expected. If its dependencies are not installed yet, install them from the allowlist first.
+Write code and tests only inside the handoff's `workdir:`. It is a git worktree branched from `base:`, without other builders' unfinished slices; that is expected. It has no copy of `.agent-team/`: read specs and write your report and logs through the handoff's absolute `workspace:` path ([PROTOCOL.md §Workspace](../../PROTOCOL.md#workspace)). If the worktree's dependencies are not installed yet, install them from the allowlist first.
 
 **Pre-flight. Return `blocked` with a proposed CR if any of these is true:**
 
@@ -38,7 +38,7 @@ Work only inside the handoff's `workdir:`. It may be a git worktree that other b
 
 For each acceptance criterion in the slice, in order:
 
-1. **Red:** write one test named after the criterion ID (for example `REQ_004_2_rejects_duplicate_email`). Run it and watch it fail for the right reason.
+1. **Red:** write one test named after the criterion ID in code form ([PROTOCOL.md §IDs and traceability](../../PROTOCOL.md#ids-and-traceability): `REQ-004.2` → `REQ_004_2_rejects_duplicate_email`). Run it and watch it fail for the right reason.
 2. **Green:** write the minimum code that passes it.
 3. **Refactor:** align the code with the architecture's structure and standards, then re-run.
 
@@ -60,7 +60,7 @@ Run the exact **verify command** from the build plan, with output going to `.age
 
 The reviewer will check these. Fix any failure now, because a REVISE round costs far more than a fix:
 
-- `git status` shows only files inside this slice's `touches:`, plus its tests and report.
+- `git status --untracked-files=all` in the workdir shows only files inside this slice's `touches:`, plus its tests. (The workspace is git-ignored, so your report and logs don't appear.)
 - every acceptance criterion has a test that would fail if the behaviour broke: not tautological, not asserting a constant, not mocking the unit under test.
 - no skipped tests, lowered thresholds, hard-coded results, TODO stubs, or debug leftovers.
 - the dependency manifest contains nothing outside the allowlist.

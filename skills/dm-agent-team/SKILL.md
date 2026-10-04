@@ -23,7 +23,7 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 | G5 milestone demo | **stop** at each | auto, one-line log | auto, one-line log |
 | Slice escalation (third non-PASS, or `blocked`) | **stop** | park the slice, continue independent slices | park the slice, continue independent slices |
 | Change request | **stop** | **stop** | auto-approve if `class: clarification`, otherwise **stop** |
-| Circuit breaker, G6 acceptance, hard stops | **stop** | **stop** | **stop** |
+| Circuit breaker, stalled build, G6 acceptance, hard stops | **stop** | **stop** | **stop** |
 
 **Hard stops in every mode:** adding a dependency that is not on the allowlist; touching anything outside the project root; deleting files the team did not create; `git push`, publish, or deploy; anything involving secrets or credentials.
 
@@ -31,7 +31,12 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 
 ### The stop rule
 
-A **stop** means: update `state.md` (`status: awaiting-human`, `next-action:` says what the human must decide), present the stop with [PROTOCOL.md §Gate presentation](./PROTOCOL.md#gate-presentation), and **end your turn**. Do not dispatch anything else in the same turn. Never write `approved` for a gate unless a human message in this session approved it or the mode table auto-approves it. Never answer an agent's question on the human's behalf unless the mode is `yolo`.
+A **stop** means: update `state.md`, present the stop with [PROTOCOL.md §Gate presentation](./PROTOCOL.md#gate-presentation), and **end your turn**. Do not dispatch anything else in the same turn. Never write `approved` for a gate unless a human message in this session approved it or the mode table auto-approves it. Never answer an agent's question on the human's behalf unless the mode is `yolo`.
+
+Set the status by the kind of stop:
+
+- **A decision for the human** (a gate, a question batch, a change request, a hard stop): `status: awaiting-human`, and `next-action:` says what the human must decide.
+- **Something the human must fix** (the circuit breaker, a stalled build, a missing tool, a git failure): `status: blocked`, plus `halt: <kind>: <evidence>` and a `next-action:` that says what the human must do. The human's answer is logged as a `D-###`; then clear `halt:` and set `status: in-progress`.
 
 ### The drive rule
 
@@ -60,7 +65,7 @@ Every agent runs as a **subagent** in a fresh context. You never load an agent's
 
 The dispatch prompt for every subagent is:
 
-> Effort: `<level>` — `<meaning from ROUTING.md>`. You are `<agent>`. Read `<absolute path to agent SKILL.md>` and `<absolute path to PROTOCOL.md>`, then follow them exactly. Your handoff is `<absolute path to handoff file>`. Work in `<absolute working directory>`. Read only the inputs it lists. Append your `## Return` to the handoff file, then reply with only the Return block.
+> Effort: `<level>` — `<meaning from ROUTING.md>`. You are `<agent>`. Read `<absolute path to agent SKILL.md>` and `<absolute path to PROTOCOL.md>`, then follow them exactly. Your handoff is `<absolute path to handoff file>`. Work in `<absolute working directory>`. The team workspace is `<absolute path to .agent-team/>`. Read only the inputs it lists. Append your `## Return` to the handoff file, then reply with only the Return block.
 
 Omit the effort line when the host sets effort itself (`effort-by: dispatch-param` or `variant-agents` in `models.md`).
 
@@ -90,11 +95,17 @@ Your context is the scarcest resource in the run. Every token you hold is re-rea
 
 ### 1. Boot
 
-Find the project root (the git root, or the current directory if there is no git repo). If `.agent-team/state.md` exists, read it and `decisions.md`, set `session-dispatches: 0`, then resume at `next-action`. If a stop is still pending, re-present it. If any slice is `in-progress` with a worktree, see step 4 §Recover.
+Find the project root (the git root, or the current directory if there is no git repo). If `.agent-team/state.md` exists, read it and `decisions.md`, set `session-dispatches: 0`, then resume at `next-action`. If a stop is still pending (`status: awaiting-human` or `blocked`), re-present it and end the turn. If any slice is `in-progress` or `in-review`, or the project root has an unfinished merge, run step 4 §Recover first.
 
-If no state exists, create the workspace in [PROTOCOL.md §Workspace](./PROTOCOL.md#workspace). If the folder is not a git repo, ask the human whether to run `git init` (parallel building needs git). Add `.agent-team/worktrees/` to `.gitignore`. Record the skill version (`git -C <this skill dir> rev-parse --short HEAD`, or `unknown`) in `state.md`. Write `.agent-team/models.md` per [ROUTING.md §Applying a route](./ROUTING.md#applying-a-route).
+If no state exists:
 
-**Done when:** `state.md` and `models.md` exist, and `state.md` names the mode, phase, and next action.
+1. **Git.** The build phase needs git (worktrees, per-slice commits, scope checks). If the folder is not a git repo, ask the human whether to run `git init`. If they decline, the run can still produce the specs up to G4, but P5 is a `blocked` stop.
+2. **Ignore the workspace.** Add `.agent-team/` (the whole folder) to `.gitignore`. Team state is never committed: worktrees would otherwise get stale copies of it, and it would show up in every slice's `git status`.
+3. **First commit.** If the repo has no commits yet, commit `.gitignore` as `chore: agent-team workspace`. `git worktree add` needs a commit to branch from.
+4. **Workspace.** Create the workspace in [PROTOCOL.md §Workspace](./PROTOCOL.md#workspace) and record its absolute path as `workspace:` in `state.md`, with the skill version (`git -C <this skill dir> rev-parse --short HEAD`, or `unknown`).
+5. **Routing.** Write `.agent-team/models.md` per [ROUTING.md §Applying a route](./ROUTING.md#applying-a-route).
+
+**Done when:** `.gitignore` lists `.agent-team/`, `state.md` and `models.md` exist, and `state.md` names the workspace, mode, phase, and next action.
 
 ### 2. Kickoff — P0, gate G0
 
@@ -143,30 +154,38 @@ Each slice in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build i
 
 **Plan a wave.** A slice is *ready* when its status is `pending` or `stale` and every slice in `depends-on` is `done`. Pick up to `max-parallel` ready slices in plan order whose `touches:` sets do not overlap each other or any slice listed as a hotspot owner in the plan. A wave of one is normal.
 
+**Stalled build.** If no slice is ready but some are still `pending` or `stale`, every remaining slice is waiting on an `escalated` or `blocked` one. This is a `blocked` stop in every mode (`halt: stalled`): present the escalated slices and the slices waiting on each.
+
 **Run a wave:**
 
-1. **Isolate.** For a wave of one, the builder works in the project root. For a larger wave, create one worktree per slice: `git worktree add .agent-team/worktrees/SLICE-### -b at/SLICE-###`. The handoff names the worktree as its working directory.
+1. **Isolate.** Every slice gets its own worktree, even in a wave of one, so the project root only ever changes by integration: `git worktree add .agent-team/worktrees/SLICE-### -b at/SLICE-###` from the current `HEAD`. Record that `HEAD` as the handoff's `base:`, and name the worktree as its `workdir:`. Mark the slice `in-progress`.
 2. **Build.** Write one builder handoff per slice: the slice entry, the spec sections it traces to, and the base commit. Dispatch all builders in the wave **in parallel** (one message with several subagent calls).
-3. **Check, then review.** As each builder returns `done`, dispatch `dm-at-reviewer` in `precheck` mode (light tier) in the same working directory. A precheck FAIL goes straight back to the builder as a REVISE, without a deep review. On a precheck PASS, dispatch `dm-at-reviewer` in `slice-review` mode with the precheck file as an input; it reuses the precheck's verify evidence. Prechecks and reviews run in parallel across the wave. In the `prototype` profile, a precheck PASS is enough until the milestone review.
+3. **Check, then review.** As each builder returns `done`, mark the slice `in-review` and dispatch `dm-at-reviewer` in `precheck` mode (light tier) in the same working directory. A precheck FAIL goes straight back to the builder as a REVISE, without a deep review. On a precheck PASS, dispatch `dm-at-reviewer` in `slice-review` mode with the precheck file as an input; it reuses the precheck's verify evidence. Prechecks and reviews run in parallel across the wave. In the `prototype` profile, a precheck PASS is enough until the milestone review.
 4. **Route each verdict:**
    - **PASS:** commit in the slice's working directory as `SLICE-###: <title>` (never push).
    - **REVISE:** re-dispatch the builder with the review as input, escalated per [ROUTING.md §Escalation ladder](./ROUTING.md#escalation-ladder). One more non-PASS than the profile allows is an escalation.
    - **BLOCK**, or builder status `blocked`: open a change request. If the builder is blocked only because tests would not go green, first apply the ladder's deep retry.
    - **Escalation:** per the mode table. A parked slice is `escalated`; every slice that depends on it waits.
-5. **Integrate** worktree slices one at a time in plan order: `git merge --no-ff --no-commit at/SLICE-###`, run verify on the merged tree ([PROTOCOL.md §Command output](./PROTOCOL.md#command-output)), and commit only if it is green. Then `git worktree remove` and delete the branch. On a merge conflict or a red verify, `git merge --abort`, mark the slice `stale` with the reason, and rebuild it in the next wave from the new base. A stale rebuild does not count as a REVISE round.
+5. **Integrate** passed slices one at a time in plan order, in the project root: `git merge --no-ff --no-commit at/SLICE-###`, run verify on the merged tree ([PROTOCOL.md §Command output](./PROTOCOL.md#command-output)), and commit only if it is green. Then `git worktree remove .agent-team/worktrees/SLICE-###` and `git branch -d at/SLICE-###`.
+   On a merge conflict or a red verify: `git merge --abort`, then `git worktree remove --force .agent-team/worktrees/SLICE-###` and `git branch -D at/SLICE-###`, mark the slice `stale` with the reason, and add 1 to its `Stale` count. It is rebuilt in a later wave from the new `HEAD`. A stale rebuild does not count as a REVISE round, but a slice going stale a **second** time is an escalation: two slices keep colliding, so the plan's `touches:` are probably wrong.
 6. **Record.** Mark merged slices `done`, reset `consecutive-escalations` on any PASS, and append one `log.md` row per dispatch.
 
-**Milestone end.** In the `prototype` profile, dispatch `dm-at-reviewer` in `milestone-review` mode over the milestone's diff and route findings as fix slices (`SLICE-F##`). Then handle **G5 · MS-n** per the mode table. A G5 presentation includes what now works, the exact run commands, the verify summary, and open assumptions.
+**Milestone end.** In the `prototype` profile, dispatch `dm-at-reviewer` in `milestone-review` mode over the milestone's diff and route findings as fix slices. Then handle **G5 · MS-n** per the mode table. A G5 presentation includes what now works, the exact run commands, the verify summary, and open assumptions.
 
 **Circuit breaker:** 3 escalations in a row stop the build in every mode. The plan is probably wrong; recommend sending P4 back to the architect.
 
-**Recover.** On resume, for each slice that is `in-progress` with a worktree: if its handoff has a Return, continue at review; otherwise remove the worktree and branch and rebuild the slice.
+**Fix slices.** The plan is frozen, so a fix slice (`SLICE-F##`) lives only in `state.md` and its handoff. Add a Build row for it with the finding IDs it fixes, the owning slice, `touches:` (the owning slice's `touches:` plus any file the finding names), and no dependencies. Its handoff lists the review file, the owning slice's plan entry, and the spec sections that slice traces to. It then runs through the same wave loop as any slice.
 
-**Done when:** every slice is `done` (or `escalated` and presented to the human) and every milestone gate is approved.
+**Recover.** On resume, before planning a wave:
+
+1. If the project root has an unfinished merge (`git rev-parse -q --verify MERGE_HEAD`), run `git merge --abort`, then run step 5 (Integrate) for that slice again; it already passed review.
+2. For each slice that is `in-progress` or `in-review`: if the latest handoff for it has a Return, route that Return or verdict as normal. Otherwise re-dispatch the same handoff: a builder rebuilds from `base:` in a fresh worktree (`git worktree remove --force`, `git branch -D`, then step 1), and an interrupted precheck or review is simply re-run.
+
+**Done when:** every slice is `done`, or `escalated` and presented to the human together with the slices waiting on it, and every milestone gate is approved.
 
 ### 5. Acceptance — P6, gate G6
 
-Dispatch `dm-at-reviewer` in `acceptance` mode. Route findings to the builder as fix slices (`SLICE-F##`) through the step 4 loop. Present **G6** with `reviews/acceptance.md` and every auto-approved decision of the run. G6 is always a stop.
+Dispatch `dm-at-reviewer` in `acceptance` mode. Route findings to the builder as fix slices (`SLICE-F##`, see step 4) through the step 4 loop, then dispatch acceptance again as the next round. Present **G6** only after an acceptance PASS, with `reviews/acceptance.md` and every auto-approved decision of the run. G6 is always a stop.
 
 **Done when:** the human approves G6.
 

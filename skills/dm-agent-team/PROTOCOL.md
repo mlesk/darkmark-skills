@@ -6,6 +6,8 @@ This file defines the shared contract for the Lead and every `dm-at-*` agent. Wh
 
 All team state lives in `.agent-team/` at the project root. Source code lives where `specs/02-architecture.md` puts it.
 
+**The workspace is git-ignored and addressed by absolute path.** `.agent-team/` is listed in `.gitignore` and never committed. Builders and slice reviewers work inside a git worktree, which has no copy of it. So every handoff gives the workspace's absolute path as `workspace:`, and every path written as `.agent-team/...` in this protocol and in the agent files means `<workspace>/...`, never a path relative to your working directory. Source code and tests go in the handoff's `workdir:`; reports, reviews, and logs go in the workspace.
+
 ```
 .agent-team/
 ├── state.md            # Lead-owned. The current truth: mode, phase, gates, slices, counters
@@ -24,7 +26,7 @@ All team state lives in `.agent-team/` at the project root. Source code lives wh
 ├── logs/               # Whoever ran the command. Full command output, never read whole
 ├── changes/            # Lead-owned. CR-###.md change requests
 ├── handoffs/           # Lead-owned. H-###.md; the agent appends only ## Return
-├── worktrees/          # Lead-owned. One git worktree per parallel slice; git-ignored
+├── worktrees/          # Lead-owned. One git worktree per slice being built
 └── retro.md            # Lead-owned. Written at the end
 ```
 
@@ -36,11 +38,13 @@ Project test, lint, and build tooling must ignore `.agent-team/`.
 # Agent Team State
 team-version: <skill git sha | unknown>
 project: <name>
+workspace: <absolute path to .agent-team/>
 mode: stepwise | checkpoint | yolo
 quality-bar: prototype | internal | production
 max-parallel: <1–4>
 phase: P0-kickoff | P1-requirements | P2-architecture | P3-ux | P4-plan | P5-build | P6-acceptance | done
 status: in-progress | awaiting-human | blocked
+halt: <kind: evidence, only while status is blocked | –>
 next-action: <one line a fresh session can execute>
 session-dispatches: <count since this session started>
 
@@ -53,10 +57,11 @@ session-dispatches: <count since this session started>
 current-milestone: –
 current-wave: –
 consecutive-escalations: 0
-| Slice | Milestone | Status | Workdir | Revise rounds | Last review |
-|---|---|---|---|---|---|
+| Slice | Milestone | Status | Workdir | Base | Revise rounds | Stale | Last review | Notes |
+|---|---|---|---|---|---|---|---|---|
 
 Slice status: pending | in-progress | in-review | done | stale | escalated | blocked
+Fix slices (`SLICE-F##`) also go in this table; Notes gives the finding IDs, the owning slice, and `touches:`.
 
 ## Open items (shown at the next human stop)
 - <CR / Q / escalation ids awaiting the human>
@@ -102,6 +107,8 @@ Every claim downstream of the brief cites an ID. If you cannot trace something, 
 
 IDs are never reused or renumbered. A removed item stays in the file as `~~REQ-007~~ removed per D-012`.
 
+**IDs in code.** Most languages don't allow `-` or `.` in identifiers, so a test for an acceptance criterion writes its ID with both replaced by `_`: `REQ-004.2` becomes `REQ_004_2` (for example `REQ_004_2_rejects_duplicate_email`). Anyone searching for a criterion's test searches for that form.
+
 Each `D-###` in `decisions.md` records `source: human | auto-checkpoint | auto-yolo`. An auto decision is binding until a human overrides it.
 
 ## Handoff
@@ -118,6 +125,7 @@ effort: low | medium | high
 round: <n>
 run-mode: stepwise | checkpoint | yolo
 quality-bar: prototype | internal | production
+workspace: <absolute path to .agent-team/>
 workdir: <absolute path: project root or worktree>
 base: <commit sha the work starts from | –>
 
@@ -210,9 +218,20 @@ In `checkpoint` mode, G4 presents G1–G4 as one stop with one block per spec. I
 
 Build, test, and verify output can be thousands of lines. Never read it whole.
 
-1. Redirect everything to a file: `<cmd> > .agent-team/logs/<id>-<what>.log 2>&1; echo "exit=$?"`.
+1. Redirect everything to a file in the workspace: `<cmd> > <workspace>/logs/<id>-<what>.log 2>&1; echo "exit=$?"`.
 2. Read only the exit code and the summary: the last 30 lines, plus the names and first assertion line of each failing test (use `grep` on the log).
 3. Quote at most 10 lines of output in any report or review.
+
+## Slice diff
+
+A builder never commits, so a slice's new files are untracked, and plain `git diff` does not show them. To see a slice's whole change, run this in its `workdir:`:
+
+```bash
+git add --all --intent-to-add && git diff <base>          # full diff, new files included
+git add --all --intent-to-add && git diff --stat <base>   # file list
+```
+
+`git status --porcelain --untracked-files=all` in the worktree lists the same files one by one (without the flag, a new folder shows as a single entry). The workspace is git-ignored, so reports and logs never appear.
 
 ## Run log
 

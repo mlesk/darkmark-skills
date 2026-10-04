@@ -47,7 +47,14 @@ Every mode still stops for new dependencies, anything outside the folder, deleti
 ~/.agents/skills/dm-agent-team/scripts/run.sh --host claude -- --permission-mode acceptEdits
 ```
 
-The driver stops when the run is done, when a human stop is reached (answer it with `/dm-agent-team`, then rerun the driver), or after two sessions without progress. Headless hosts need permission to edit files and run the build without prompting; grant it in the host's config rather than with a blanket bypass flag.
+The driver stops when the run is done, when a human stop is reached (answer it with `/dm-agent-team`, then rerun the driver), or after two sessions without progress.
+
+**Permissions for unattended runs.** A headless session can't answer permission prompts, so anything not pre-approved fails. The team edits files, runs `git` (worktree, merge, commit, branch), runs the verify command, and installs allowlisted packages. `acceptEdits` covers only file edits, so also pre-approve those commands in the project's host config, rather than using a blanket bypass flag:
+
+- **Claude Code:** in `.claude/settings.json`, add `permissions.allow` entries such as `"Bash(git:*)"`, `"Bash(<package manager>:*)"`, and one entry for the verify command from `02-architecture.md` §10. Check the rule syntax against the current Claude Code docs.
+- **OpenCode:** set `permission.bash` in `opencode.jsonc` to allow the same commands (this repo's own `opencode.jsonc` allows all bash and asks only for `rm -rf` and `git push`).
+
+Do this after G2, once the stack and verify command are known; before that, the team only writes files.
 
 **Parallel building.** The architect plans slices with exact `touches:` and lists shared "hotspot" files, and the walking skeleton creates those hotspots up front. The Lead then builds up to `max-parallel` independent slices at once, each in its own git worktree, reviews them in parallel, and merges each one only if verify is green on the merged tree. A conflict sends the slice back for a rebuild on the new base.
 

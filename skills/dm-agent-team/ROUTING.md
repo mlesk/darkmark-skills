@@ -60,6 +60,14 @@ Never de-escalate during a run. The retro proposes route changes from the metric
 
 At boot, write `.agent-team/models.md` from the skeleton below, choosing the first mechanism the host supports. Tell the human at G0 in one line, for example `Routing: named agents (deep → opus, standard → sonnet, light → haiku)`.
 
+**Detect the mechanism; don't guess.** Check in this order:
+
+1. **Your subagent tool's parameters.** If it accepts a model per call, use `dispatch-param`. In Claude Code the subagent (Agent/Task) tool takes `model` with the aliases `opus`, `sonnet`, and `haiku`: map deep → `opus`, standard → `sonnet`, light → `haiku`. If it also takes an effort or reasoning parameter, set `effort-by: dispatch-param`.
+2. **Named tier agents.** If the subagent tool lists agent types named `dm-agent-team-deep`, `dm-agent-team-standard`, and `dm-agent-team-light`, or they are defined in `.claude/agents/`, `~/.claude/agents/`, or the `agent` block of the project's `opencode.json` / `opencode.jsonc`, use `named-agents` and copy each one's model into the table.
+3. **Otherwise** use `prompt-hint` and write `session` in every Model cell.
+
+Only write a model ID you have seen in the tool's schema, the host's config, or the human's own words. If a tier has none, write `session` and say so at G0. The human can correct `models.md` at any stop.
+
 1. **`dispatch-param`:** the subagent tool takes a model, and possibly an effort, per call. Pass the mapped model and effort on each dispatch.
 2. **`named-agents`:** the host has agents preconfigured with a model each (for example `dm-agent-team-deep`, `dm-agent-team-standard`, `dm-agent-team-light`, plus optional effort variants such as `dm-agent-team-deep-high`). Dispatch to the agent that matches the route. See [GUIDE.md §6](./GUIDE.md#6-tools-and-stack) for host examples.
 3. **`prompt-hint`:** the host cannot choose models. Every dispatch uses the session model; tiers are recorded but have no effect. Effort still applies as a prompt line.

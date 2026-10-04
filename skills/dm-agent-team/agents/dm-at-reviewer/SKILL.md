@@ -50,19 +50,19 @@ Extra checks for specific specs:
 A fast mechanical gate that runs before `slice-review`, usually on a light model. Make no judgment calls about design or test quality; that is `slice-review`'s job. Work in the handoff's `workdir:` and write `reviews/SLICE-###-r<round>-precheck.md` using the skeleton below. The verdict is **PASS** or **REVISE** only.
 
 1. Run verify per [PROTOCOL.md §Command output](../../PROTOCOL.md#command-output), with output going to `.agent-team/logs/SLICE-###-r<round>-precheck.log`. Non-zero exit is a finding.
-2. Every file in `git status --porcelain` is inside the slice's `touches:`, a test file, or the slice report.
-3. Every acceptance criterion ID in the slice has a test whose name contains it.
-4. `git diff <base>` adds no skip or focus markers (`skip`, `only`, `xit`, `[Ignore]`, `@Disabled`, and the stack's equivalents), no `TODO` or `FIXME`, and no lowered coverage or lint thresholds.
+2. Every file in `git status --porcelain --untracked-files=all` (run in the workdir) is inside the slice's `touches:` or is a test file.
+3. Every acceptance criterion ID in the slice has a test whose name contains the ID in code form: `REQ-004.2` → `REQ_004_2` ([PROTOCOL.md §IDs and traceability](../../PROTOCOL.md#ids-and-traceability)).
+4. The slice diff ([PROTOCOL.md §Slice diff](../../PROTOCOL.md#slice-diff)) adds no skip or focus markers (`skip`, `only`, `xit`, `[Ignore]`, `@Disabled`, and the stack's equivalents), no `TODO` or `FIXME`, and no lowered coverage or lint thresholds.
 5. The dependency manifest has no entry outside the allowlist in `02-architecture.md` §11.
 
 ## Mode: slice-review
 
-Work in the handoff's `workdir:`. Scope the review with `git diff --stat <base>` and `git status`: read the changed files, their tests, the slice entry, and the spec sections it traces to. Do not read unrelated code; verify covers regressions there.
+Work in the handoff's `workdir:`. Scope the review with the slice diff ([PROTOCOL.md §Slice diff](../../PROTOCOL.md#slice-diff)): read the changed files, their tests, the slice entry, and the spec sections it traces to. Do not read unrelated code; verify covers regressions there.
 
 1. **Verify evidence.** If the handoff lists a precheck file with verdict PASS for this round, take its verify command, exit code, and summary as your evidence; the precheck ran in its own fresh context. Otherwise run verify yourself, per [PROTOCOL.md §Command output](../../PROTOCOL.md#command-output), with output going to `.agent-team/logs/SLICE-###-r<round>-review.log`. A red verify is a blocker, whatever the report says.
 2. Check that every acceptance criterion in the slice has a test. Read each test and confirm it would fail if the behaviour broke: it must not be tautological, over-mocked, or asserting on a constant.
 3. Check the code against `02-architecture.md` structure, contracts, and standards, and the UI against `03-ux.md` tokens and states.
-4. **Scope:** compare the changed files (`git status`/`git diff`) with the slice's `touches:`. Confirm there is no untraced behaviour.
+4. **Scope:** compare the changed files in the slice diff with the slice's `touches:`. Confirm there is no untraced behaviour.
 5. **Clean room:** check the dependency manifest against the allowlist, and look for network calls, hard-coded secrets, and copied external code. Check the *Sources consulted* list.
 6. **Faking:** look for skipped or disabled tests, lowered thresholds, hard-coded outputs, and TODO stubs.
 
@@ -75,7 +75,7 @@ Used in the `prototype` profile instead of per-slice review. Run every slice-rev
 Audit the whole system once all slices are done, and write `reviews/acceptance.md`:
 
 1. Run verify on a clean checkout state (no stale build artifacts).
-2. Build a **trace matrix**: each *Must* `REQ.n` maps to a test, the test passes, and it maps to a slice. Every gap is a blocker.
+2. Build a **trace matrix**: each *Must* `REQ.n` maps to a test (named with the ID in code form, `REQ_004_2`), the test passes, and it maps to a slice. Every gap is a blocker.
 3. For each `NFR`, measure it where you can locally, or record exactly why you can't and what is needed.
 4. **UX walkthrough:** for each `SCR`, confirm every state is reachable and implemented. If a local browser or automation tool is available, use it.
 5. **Clean-room audit:** list every installed dependency with its license and compare against the allowlist.
