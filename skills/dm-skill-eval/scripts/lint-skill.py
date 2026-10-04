@@ -3,11 +3,14 @@
 
 Usage:
   lint-skill.py <skill-dir> [<skill-dir> ...]
-  lint-skill.py --all <skills-root>      # every <skills-root>/*/SKILL.md
+  lint-skill.py --all <skills-root>      # every <skills-root>/*/SKILL.md, plus
+                                         # the README.md next to <skills-root>
 
 Errors (exit 1): missing frontmatter, name/directory mismatch, bad name,
 missing or over-long description, broken relative links.
 Warnings: long SKILL.md body, repo-local or absolute paths.
+With --all, README.md errors: a top-level skill that is not linked, or a
+relative link that does not resolve.
 """
 import re
 import sys
@@ -91,6 +94,23 @@ def lint(skill_dir):
     return errors, warnings
 
 
+def lint_readme(readme, skill_dirs):
+    errors = []
+    text = readme.read_text(encoding="utf-8")
+    links = LINK_RE.findall(text)
+    for target in links:
+        if re.match(r"^[a-z]+:", target) or target.startswith("#"):
+            continue
+        path = target.split("#", 1)[0]
+        if path and not (readme.parent / path).exists():
+            errors.append(f"broken link '{target}'")
+    linked = {(readme.parent / t.split("#", 1)[0]).resolve() for t in links}
+    for d in skill_dirs:
+        if (d / "SKILL.md").resolve() not in linked:
+            errors.append(f"skill '{d.name}' is not linked to its SKILL.md")
+    return errors
+
+
 def main(argv):
     if not argv or argv[0] in ("-h", "--help"):
         print(__doc__.strip())
@@ -112,6 +132,15 @@ def main(argv):
             print(f"      warn:  {w}")
         failed += bool(errors)
     print(f"\n{len(dirs) - failed}/{len(dirs)} skills passed")
+
+    if argv[0] == "--all":
+        readme = root.resolve().parent / "README.md"
+        if readme.is_file():
+            errors = lint_readme(readme, [d.resolve() for d in dirs])
+            print(f"{'FAIL' if errors else 'ok':4}  README.md")
+            for e in errors:
+                print(f"      error: {e}")
+            failed += bool(errors)
     return 1 if failed else 0
 
 
