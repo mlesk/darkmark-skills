@@ -25,7 +25,7 @@ Read the handoff, your slice entry in `04-build-plan.md`, and **only** the spec 
 
 Write code and tests only inside the handoff's `workdir:`. It is a git worktree branched from `base:`, without other builders' unfinished slices; that is expected. It has no copy of `.agent-team/`: read specs and write your report and logs through the handoff's absolute `workspace:` path ([PROTOCOL.md §Workspace](../../PROTOCOL.md#workspace)). If the worktree's dependencies are not installed yet, install them from the allowlist first.
 
-**Pre-flight. Return `blocked` with a proposed CR if any of these is true:**
+**Pre-flight. Return `blocked` with a proposed CR if any of these is true.** Set `blocked-by: dependency` for a missing package and `blocked-by: spec-gap` for everything else ([PROTOCOL.md §Return](../../PROTOCOL.md#return)):
 
 - an acceptance criterion is ambiguous enough that two reasonable tests would disagree
 - you need a package that is not on the allowlist
@@ -47,7 +47,7 @@ During red and green, run only this slice's tests with the test runner's filter.
 
 Then do the slice's non-test work: wiring, configuration, and the UI states from `03-ux.md` using token names. Every screen state the slice covers (loading, empty, error, and so on) is implemented, not stubbed.
 
-If a test will not go green after **3 genuine attempts**, stop. Return `blocked` with what you tried and what you observed.
+If a test will not go green after **3 genuine attempts**, stop. Return `blocked` with `blocked-by: test-red`, the test, and the log path, plus what you tried and what you observed. If the problem is the machine rather than the code (a missing tool or runtime, a permission error), use `blocked-by: env` instead.
 
 **Done when:** every acceptance criterion in the slice has a passing test that would fail if the behaviour broke.
 
