@@ -26,10 +26,10 @@ Read this only when `brief.md` lists **Existing specs**. It lets a project that 
 |---|---|---|
 | `spec-00` PRD | 01 | Capabilities become `REQ`s; acceptance criteria keep their Given/When/Then. |
 | `spec-01` glossary and exclusions | 01 | §3 Glossary and §8 Out of scope. |
-| `spec-01` modules, entities, relationships | 02 | §4 Components and §5 Data model. |
-| `spec-02`, `spec-02x` sidecars, `spec-03`, both decision logs | 02 | Style and stack in §2, conventions in §7, standards in §9, decisions as ADRs. |
-| `spec-05` app use cases | 02 | §6 Contracts. Use cases are app design, so they can't go in 01. |
-| `spec-04` user interface | 03 | Screens, states, and navigation. |
+| `spec-04` user interface | 02 | Screens, states, and navigation. The P2 alignment rounds still check it against 01. |
+| `spec-01` modules, entities, relationships | 03 | §4 Components and §5 Data model. |
+| `spec-02`, `spec-02x` sidecars, `spec-03`, both decision logs | 03 | Style and stack in §2, conventions in §7, standards in §9, decisions as ADRs. |
+| `spec-05` app use cases | 03 | §6 Contracts. Use cases are app design, so they can't go in 01. |
 | `spec-06` execution plan | none | Re-plan in P4. The old Phase plan cuts by layer; the team cuts vertical slices. |
 | `execution-state.md` | none | Finish the run with `dm-spec-execution`, or start this team fresh. |
 
@@ -39,4 +39,4 @@ Standards files the old specs cite live inside the old skill's folder, which the
 
 - The Lead adds every mapped path to the owning author's handoff **Inputs**, on every dispatch of that phase, and to the reviewer's inputs for that spec.
 - How authors and the reviewer treat existing specs (settled unless contradicted, cited as `from <path> §<section>`) is in [PROTOCOL.md §Clean room](../PROTOCOL.md#clean-room), rule 3, so every agent has it.
-- **Adopted architecture.** If an existing 02-type document already fixes the architecture style and the tech stack, the architect skips the style-and-stack question batch, writes `Chosen: <option> (adopted, D-###)` in §2.1 and §2.2, and does not score alternatives. The reviewer's 3–5 option check does not apply.
+- **Adopted architecture.** If an existing architecture document (mapped to 03) already fixes the architecture style and the tech stack, the architect skips the style-and-stack question batch, writes `Chosen: <option> (adopted, D-###)` in §2.1 and §2.2, and does not score alternatives. The reviewer's 3–5 option check does not apply.

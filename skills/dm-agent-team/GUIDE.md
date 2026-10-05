@@ -36,7 +36,7 @@ You pick the mode at G0, and you can switch at any stop.
 | Mode | You are asked | Use it when |
 |---|---|---|
 | **stepwise** (default) | every question batch and every gate G0–G6 | first runs, or a project you care about getting exactly right |
-| **checkpoint** | question batches; G0; G1–G4 together as one spec review; G6 | you want to own the specs but not babysit the build |
+| **checkpoint** | question batches; G0; G2 (requirements and UX reach your target state); G1–G4 together as one spec review; G6 | you want to own the specs but not babysit the build |
 | **yolo** | G0 and G6 only. Recommended answers are accepted for you and shown at the end | toys, spikes, and prototypes |
 
 Every mode still stops for new dependencies, anything outside the folder, deletions, push or deploy, secrets, scope-changing change requests, and the circuit breaker.
@@ -53,10 +53,10 @@ The driver stops when the run is done, when a human stop is reached (answer it w
 
 **Permissions for unattended runs.** A headless session can't answer permission prompts, so anything not pre-approved fails. The team edits files, runs `git` (worktree, merge, commit, branch), runs the verify command, and installs allowlisted packages. `acceptEdits` covers only file edits, so also pre-approve those commands in the project's host config, rather than using a blanket bypass flag:
 
-- **Claude Code:** in `.claude/settings.json`, add `permissions.allow` entries such as `"Bash(git:*)"`, `"Bash(<package manager>:*)"`, and one entry for the verify command from `02-architecture.md` §10. Check the rule syntax against the current Claude Code docs.
+- **Claude Code:** in `.claude/settings.json`, add `permissions.allow` entries such as `"Bash(git:*)"`, `"Bash(<package manager>:*)"`, and one entry for the verify command from `03-architecture.md` §10. Check the rule syntax against the current Claude Code docs.
 - **OpenCode:** set `permission.bash` in `opencode.jsonc` to allow the same commands (this repo's own `opencode.jsonc` allows all bash and asks only for `rm -rf` and `git push`).
 
-Do this after G2, once the stack and verify command are known; before that, the team only writes files.
+Do this after G3, once the stack and verify command are known; before that, the team only writes files.
 
 **Parallel building.** The architect plans slices with exact `touches:` and lists shared "hotspot" files, and the walking skeleton creates those hotspots up front. The Lead then builds up to `max-parallel` independent slices at once, each in its own git worktree, reviews them in parallel, and merges each one only if verify is green on the merged tree. A conflict sends the slice back for a rebuild on the new base.
 
@@ -73,7 +73,7 @@ Do this after G2, once the stack and verify command are known; before that, the 
 | **dm-at-builder** | Writes test-first code, one vertical slice at a time. | — |
 | **dm-at-reviewer** | Provides an independent quality gate with evidence. | Self-grading. Agents confidently pass their own mistakes. |
 
-**Why not fewer?** Merging analyst and architect is the most tempting cut. It saves one phase but lets solution bias into requirements; use it only for prototypes. The designer can be skipped at G2 for headless products.
+**Why not fewer?** Merging analyst and architect is the most tempting cut. It saves one phase but lets solution bias into requirements; use it only for prototypes. The designer can be skipped at G1 for headless products.
 
 **Why not more?** A separate planner, tester, or documenter would duplicate the architect's plan mode, the builder's TDD, and the reviewer's acceptance checks. Add a role only when the metrics show a repeated failure that no existing role can fix.
 
@@ -85,8 +85,8 @@ The full prompts are the `SKILL.md` files. This table is the summary.
 
 | | Analyst | Architect | Designer | Builder | Reviewer |
 |---|---|---|---|---|---|
-| **Inputs** | brief, decisions, reference material (dirty room) | brief, 01, repo standards; plus 03 in plan mode | brief, 01, 02 | one slice, the spec sections it traces to, existing code | target, upstream specs, verify command |
-| **Outputs** | `01-requirements.md` | `02-architecture.md`, `04-build-plan.md` | `03-ux.md`, HTML prototypes | code, tests, slice report | review file with a verdict |
+| **Inputs** | brief, decisions, reference material (dirty room); in alignment rounds, the designer's feedback in 02 | brief, 01, 02, repo standards; plus 03 in plan mode | brief, 01 (the designer works before the architecture exists) | one slice, the spec sections it traces to, existing code | target, upstream specs, verify command |
+| **Outputs** | `01-requirements.md` | `03-architecture.md`, `04-build-plan.md` | `02-ux.md`, HTML prototypes | code, tests, slice report | review file with a verdict |
 | **Tools** | read/write files, question batches via the Lead | read/write files, question batches via the Lead | read/write files, local browser preview | file edits, shell (build/test), package manager limited to the allowlist | shell (verify, git diff), file reads |
 | **Success** | every *Must* criterion is testable; zero blocking questions | 100% REQ/NFR coverage; runnable verify; minimal allowlist | every SCR has all states; tokens only; AA contrast | verify green; one test per criterion; no deviations | escaped defects in acceptance trend to 0 |
 | **Main failure mode** | invents features or writes vague criteria | over-engineering | scope creep through design | faking green or scope creep | rubber-stamping |
@@ -101,17 +101,21 @@ The full prompts are the `SKILL.md` files. This table is the summary.
 
 ```mermaid
 flowchart TD
-  H((Human)) -->|idea| P0[P0 Kickoff<br/>Lead interviews → brief.md]
+  H((Human)) -->|idea + target state| P0[P0 Kickoff<br/>Lead interviews → brief.md]
   P0 --> G0{G0 human}
   G0 -->|approve| P1[P1 dm-at-analyst<br/>01-requirements]
   P1 --> R1[dm-at-reviewer<br/>fresh context]
   R1 -->|REVISE ≤2| P1
-  R1 -->|PASS| G1{G1 human}
-  G1 --> P2[P2 dm-at-architect design<br/>02-architecture]
-  P2 --> R2[dm-at-reviewer] -->|PASS| G2{G2 human<br/>+ dependency allowlist}
+  R1 -->|PASS| G1{G1 human<br/>requirements baseline}
+  G1 --> P2[P2 dm-at-designer<br/>02-ux + prototypes]
+  P2 --> R2[dm-at-reviewer<br/>+ alignment checks]
   R2 -->|REVISE ≤2| P2
-  G2 --> P3[P3 dm-at-designer<br/>03-ux + prototypes]
-  P3 --> R3[dm-at-reviewer] -->|PASS| G3{G3 human}
+  R2 -->|open UX feedback| A[Alignment round<br/>dm-at-analyst updates 01 → review]
+  A -->|≤3 rounds| P2
+  R2 -->|aligned| G2{G2 human<br/>01 + 02 reach target state?}
+  G2 -->|request changes| A
+  G2 --> P3[P3 dm-at-architect design<br/>03-architecture: API, data, stack]
+  P3 --> R3[dm-at-reviewer] -->|PASS| G3{G3 human<br/>+ dependency allowlist}
   R3 -->|REVISE ≤2| P3
   G3 --> P4[P4 dm-at-architect plan<br/>04-build-plan]
   P4 --> R4[dm-at-reviewer] -->|PASS| G4{G4 human<br/>specs frozen}
@@ -203,11 +207,11 @@ The Lead uses the first mechanism your host supports and records it in `.agent-t
 | Day | Do | Done when |
 |---|---|---|
 | **1 — Install and dry run** | Run `./scripts/link-skills.sh`. Pick a **toy** project, such as a todo CLI. Run `/dm-agent-team` through G0 and G1. | `brief.md` and `01-requirements.md` exist, and you've seen one REVISE loop. |
-| **2 — Design phases** | Continue the toy through G2–G4. Read every review file. Note where you corrected the team. | A frozen spec set, with your corrections listed. |
+| **2 — Design phases** | Continue the toy through G2–G4, including at least one requirements ⇄ UX alignment round. Read every review file. Note where you corrected the team. | A frozen spec set, with your corrections listed. |
 | **3 — Build** | Let it build the toy's walking skeleton and first milestone. Check that commits are per slice and verify really runs. | G5 · MS-1 approved, with a green verify you ran yourself. |
 | **4 — Tune** | Make at most 3 prompt edits, aimed at the failures you saw. Typical ones: tighten a `Done when`, add a banned pattern, adjust slice size. Commit them as `dm-agent-team vN`. | Version bumped; the reason for each change is written down. |
-| **5 — Real project, specs** | Start your real greenfield project. Spend real attention at G0–G2, because these gates have the most leverage. | G2 approved, with an allowlist you actually read. |
-| **6 — Real project, UX and plan** | Run G3 and G4. Open the prototypes. Push back on the slice order if risk isn't first. | Specs frozen. |
+| **5 — Real project, specs** | Start your real greenfield project. Spend real attention at G0–G2, because these gates have the most leverage: G2 is where you confirm the requirements and UX together reach your target state. | G2 approved: the product you actually want, on paper. |
+| **6 — Real project, architecture and plan** | Run G3 and G4. Read the allowlist. Push back on the slice order if risk isn't first. | Specs frozen. |
 | **7 — Real build and retro** | Run the build to MS-1 or further. Read the metrics. Promote 1–2 lessons into the prompts. | `retro.md` exists and you've decided what v2 changes. |
 
 **Next steps (only when the metrics justify them):** add a cheap pre-review lint agent if the reviewer keeps finding trivia; raise `max-parallel` if stale rebuilds stay rare; move routine slice reviews to a cheaper tier only if escaped defects stay at zero.
@@ -216,7 +220,7 @@ The Lead uses the first mechanism your host supports and records it in `.agent-t
 
 ## 8. Common mistakes to avoid
 
-1. **Rubber-stamping gates.** G1 and G2 decide most of the outcome. A five-minute read there saves hours of rework later.
+1. **Rubber-stamping gates.** G1 and G2 decide most of the outcome: G2 is the last point where changing what you're building is cheap. A five-minute read there saves hours of rework later.
 2. **Letting the reviewer share context with the author.** That is self-review with extra steps, and it will pass its own bugs.
 3. **Slicing by layer** ("all the models, then all the APIs"). Nothing runs until the end. Keep slices vertical, with the walking skeleton first.
 4. **Raising the retry limits when things fail.** Repeated failure usually means the spec is wrong. Fix the spec through a CR; more retries won't help.
@@ -245,7 +249,7 @@ The Lead uses the first mechanism your host supports and records it in `.agent-t
 
 **Trade-offs you control:**
 
-- **Speed:** checkpoint or yolo mode, higher `max-parallel`, the `prototype` quality bar (one review per milestone, one revise round), skipping P3. You trade control and quality.
+- **Speed:** checkpoint or yolo mode, higher `max-parallel`, the `prototype` quality bar (one review per milestone, one revise round), skipping P2 (UX). You trade control and quality.
 - **Quality:** stepwise mode, a deep-tier builder, smaller slices, stricter `Done when`. You trade cost and time.
 - **Cost:** a standard-tier Lead and builder, the light precheck, the driver's session breaks, and minimal handoff inputs. Tune routes in `models.md` from retro evidence. You trade first-pass rate.
 
@@ -267,7 +271,7 @@ The Lead uses the first mechanism your host supports and records it in `.agent-t
 | Failure classes and halts (`SPEC-DEFECT`, `STANDARDS-DEFECT`) | `blocked-by:` with four kinds (spec-gap, test-red, env, dependency), and `status: blocked` with a `halt:` line |
 | Cross-spec consistency, fix at the lowest spec | CRs against approved specs; `reopened` and `recheck` gate rows; downstream re-checks from `impact:` |
 | Gate checklists | Reviewer checklists with an evidence column; never re-run a red check unchanged; a logged human override |
-| spec-03 implementation guidance and the spec-02x sidecars | `02-architecture.md` §7 cross-cutting conventions, §6 atomicity and concurrency, §10 test seams |
+| spec-03 implementation guidance and the spec-02x sidecars | `03-architecture.md` §7 cross-cutting conventions, §6 atomicity and concurrency, §10 test seams |
 | spec-00 posture questions and the decision logs | Analyst probes; one `D-###` form with `affects:` the reviewer checks |
 | `ADOPTION-PROTOCOL.md` | [references/ADOPTION.md](./references/ADOPTION.md) |
 

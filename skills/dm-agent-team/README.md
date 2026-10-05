@@ -9,7 +9,7 @@
 
 ## 1. What it is
 
-A Lead skill plus five sub-agents — **analyst, architect, designer, builder, reviewer** — that take one greenfield idea in one folder from requirements → architecture → UX → build plan → clean-room, test-driven implementation → acceptance.
+A Lead skill plus five sub-agents — **analyst, architect, designer, builder, reviewer** — that take one greenfield idea in one folder through **requirements ⇄ UX → architecture → build plan → clean-room, test-driven implementation → acceptance**. Requirements and UX are iterated together until they agree and reach the target state you describe; only then is the architecture (API, data model, stack) designed to deliver them.
 
 **Goal:** a working, tested, well-designed application while you make only the decisions that matter.
 
@@ -35,14 +35,28 @@ The Lead drives within a session; a driver script drives across sessions. That t
 
 - **Phase P0–P6**, each ending at a **gate G0–G6**. A gate is where a human would normally decide; the run mode says whether it stops or auto-approves.
 - **`.agent-team/state.md`** is the single source of truth: mode, phase, status, gates, slices, and a one-line `next-action` any fresh session can execute. It is the handoff between sessions.
-- **`.agent-team/`** holds all team state and is git-ignored. Source code lives where `specs/02-architecture.md` puts it.
+- **`.agent-team/`** holds all team state and is git-ignored. Source code lives where `specs/03-architecture.md` puts it.
 - **A "stop"** means: update `state.md`, present the stop, end the turn. The Lead never asks "shall I continue?" between stops — it just runs to the next one.
+
+### The phases
+
+| Phase | Who | Produces | Gate |
+|---|---|---|---|
+| P0 Kickoff | Lead | `brief.md`, including your **target state**: what you can see and do when v1 is done | G0 |
+| P1 Requirements | analyst | `01-requirements.md` | G1: the baseline for UX |
+| P2 UX ⇄ requirements | designer, then analyst and designer in alignment rounds | `02-ux.md`, prototypes, and an updated 01 | G2: both agree and reach the target state |
+| P3 Architecture | architect | `03-architecture.md`: stack, API, data model, conventions | G3 |
+| P4 Build plan | architect | `04-build-plan.md`: vertical slices and milestones | G4: specs freeze |
+| P5 Build | builders, in parallel worktrees | code, tests, one commit per slice | G5 per milestone |
+| P6 Acceptance | reviewer | `reviews/acceptance.md` | G6 |
+
+Every author turn is followed by an independent review. In P2, the designer logs every requirements problem it finds while designing (a missing failure path, an ambiguous rule, a journey that can't be finished) as feedback in 02 §12. The analyst answers each item in 01 §12, the designer updates the screens, and both are re-reviewed. The loop repeats until nothing is open and the alignment checks pass; then G2 asks you whether the result is what you want to reach.
 
 ## 4. Pick an execution path
 
 | | **Directed** | **YOLO** |
 |---|---|---|
-| You are asked at | every question batch and gate (stepwise), or question batches + G0 + G1–G4 together + G6 (checkpoint) | G0 and G6 only |
+| You are asked at | every question batch and gate (stepwise), or question batches + G0 + G2 + G1–G4 together + G6 (checkpoint) | G0 and G6 only |
 | Best for | first runs, projects you must get exactly right | toys, spikes, prototypes |
 | How you drive it | stay in one interactive session and answer each stop | answer G0, then hand off to `scripts/run.sh` |
 | Continuity | one session (the Lead takes session breaks; you resume) | the driver starts a fresh session per phase/milestone |
@@ -53,7 +67,10 @@ The three run modes are `stepwise` (default), `checkpoint`, and `yolo`. "Directe
 |---|---|---|---|
 | G0 brief and run mode | **stop** | **stop** | **stop** |
 | Agent questions | **stop**, ask the batch | **stop**, ask the batch | recommended answers adopted, logged as `auto-yolo` |
-| G1 requirements, G2 architecture, G3 UX | **stop** at each | auto on reviewer PASS | auto on reviewer PASS |
+| G1 requirements baseline, G3 architecture | **stop** at each | auto on reviewer PASS | auto on reviewer PASS |
+| G2 requirements + UX aligned (target state) | **stop** | **stop** | auto on reviewer PASS |
+| Requirements ⇄ UX alignment rounds | run without stopping | run without stopping | run without stopping |
+| Not aligned after 3 rounds | **stop** | **stop** | **stop** |
 | G4 build plan (spec freeze) | **stop** | **stop**: G1–G4 presented together | auto on reviewer PASS |
 | G5 milestone demo | **stop** at each | auto | auto |
 | Slice escalation | **stop** | park slice, continue others | park slice, continue others |
@@ -116,9 +133,9 @@ Quality bar: prototype. Mode: yolo, max-parallel 3.
 
 **4. Answer G0 and approve.** The Lead writes `brief.md`, presents **G0**, and records `mode: yolo`. This is the first of the two stops YOLO keeps. Approving G0 also creates `.agent-team/state.md`, which the driver requires.
 
-**5. Pre-approve permissions for the unattended session.** A headless session cannot answer prompts, so anything not pre-approved fails. Do this once the stack and verify command are known (after G2), before handing off to the driver. The team needs to edit files and run `git`, the package manager, and the verify command. Pre-approve those in the project's host config rather than using a blanket bypass flag:
+**5. Pre-approve permissions for the unattended session.** A headless session cannot answer prompts, so anything not pre-approved fails. Do this once the stack and verify command are known (after G3), before handing off to the driver. The team needs to edit files and run `git`, the package manager, and the verify command. Pre-approve those in the project's host config rather than using a blanket bypass flag:
 
-- **Claude Code:** `.claude/settings.json` → `permissions.allow`, e.g. `"Bash(git:*)"`, `"Bash(<pkg-manager>:*)"`, and one entry for the verify command from `02-architecture.md` §10.
+- **Claude Code:** `.claude/settings.json` → `permissions.allow`, e.g. `"Bash(git:*)"`, `"Bash(<pkg-manager>:*)"`, and one entry for the verify command from `03-architecture.md` §10.
 - **OpenCode:** `permission.bash` in your project's `opencode.jsonc` for the same commands.
 
 **6. Hand off to the driver:**
@@ -173,6 +190,7 @@ It **never answers a stop for you** — that is why some autopilot runs still ha
 ```text
 /dm-agent-team <one-paragraph idea>
 
+Target state: <what you should be able to see and do when v1 is done>
 Quality bar: prototype | internal | production
 Constraints: <platform, required/forbidden tech, standards files>
 Reference material (dirty room, analyst-only): <paths>
@@ -201,7 +219,7 @@ For an unattended run, choose the Lead's model with `run.sh --lead-model <model>
 ├── brief.md                 # G0 artifact
 ├── decisions.md             # append-only D-### log
 ├── log.md                   # append-only run log, one row per dispatch
-├── specs/                   # 01-requirements, 02-architecture, 03-ux, 04-build-plan
+├── specs/                   # 01-requirements, 02-ux, 03-architecture, 04-build-plan
 ├── ux/prototypes/           # self-contained HTML
 ├── build/                   # SLICE-###-report.md per slice
 ├── reviews/                 # one file per review round
@@ -230,7 +248,7 @@ At a stop, read `state.md` first; it names the gate, the artifact, and what you 
 
 Avoid these (see [GUIDE.md §8](./GUIDE.md#8-common-mistakes-to-avoid) for the full list):
 
-1. **Rubber-stamping G1 and G2** — they decide most of the outcome.
+1. **Rubber-stamping G1 and G2** — they decide most of the outcome. G2 is the last cheap point to change *what* you're building.
 2. **Letting the reviewer share context with the author** — that is self-review.
 3. **Slicing by layer** instead of vertical, runnable slices.
 4. **Raising retry limits when things fail** — a repeated failure usually means the spec is wrong; fix it via a change request.

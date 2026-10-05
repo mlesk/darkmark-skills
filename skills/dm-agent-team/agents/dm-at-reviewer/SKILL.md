@@ -35,15 +35,16 @@ Check the target spec against its own *Done when*, its *Self-check* (if it has o
 1. **Trace:** every item traces upstream (to the brief, a `D-###`, an upstream spec, or an existing spec listed in the handoff), and every upstream item is covered (use the spec's coverage table, then spot-check at least 5 rows against the source). No cited ID is struck through (removed).
 2. **Testability:** every acceptance criterion, contract, and state is concrete enough to write a failing test or a check from.
 3. **Consistency:** glossary terms, IDs, names, and values match across all approved specs. No contradictions.
-4. **Scope fence:** the spec contains no content that belongs to another phase. Look for technology in 01, layout in 02, implementation in 03, and code in 04.
+4. **Scope fence:** the spec contains no content that belongs to another phase. Look for technology or layout in 01, technology (APIs, endpoints, storage, frameworks) in 02, screen layout in 03, and code in 04.
 5. **Hallucination check:** look for any fact, number, or rule that has no source in the brief, a `D-###`, an upstream spec, or an existing spec listed in the handoff. If you find one, it must become an `ASM` or a `Q`.
 6. **Open items:** no `Q` is still open in a spec put forward for approval, and every `ASM` has a default, a risk, and a *Confirm by*.
 7. **Decisions landed:** every current `D-###` (not superseded) whose `affects:` names this spec is reflected in it. Read `decisions.md` for this; the handoff lists it as an input.
 
 Extra checks for specific specs:
 
-- **02:** unless §2.1 and §2.2 record `Chosen: … (adopted, D-###)` from an existing spec, each evaluates 3–5 viable options (or names what the constraints ruled out), scores every option against every driver, states one recommendation with a driver-based reason, and records the chosen option with its `D-###` or `auto-yolo`; no option violates the brief's required or forbidden technologies; every allowlist entry has a license and an ADR; the verify command is runnable and hermetic (no fixed ports or shared state outside the working directory); hotspot files are listed; every §7 subsection is filled with checkable lines or `n/a — reason`, cites an ADR or NFR, and names where it is enforced; multi-entity writes state atomicity; job-written `DATA` states its `writes:` rule; every non-screen trigger in §6.1 maps to an `API`.
-- **03:** every screen has all its states; tokens are used and never raw values.
+- **01 in an alignment round:** every `UXF` row the handoff's 02 lists as open has an entry in 01 §12, accepted changes are made where §12 says, declined items give a reason that cites a source, and nothing outside those changes moved.
+- **02:** every screen has all its states; tokens are used and never raw values; each `SCR` lists what it shows and takes in glossary terms with a `REQ`, and names no API or storage. **Alignment checks:** every *Must* `REQ` with user-visible behaviour reaches a `SCR` state; every `FLOW`, `SCR`, and state traces to a `REQ` or `J` (no behaviour 01 doesn't ask for); every failure in a 01 criterion has a designed state; the brief's *Target state* is reached by the `FLOW`s 02 names; every requirements problem you find is either an open `UXF` row in §12 or a finding. An open `UXF` row is not a finding against 02: it is how the designer hands the problem to the analyst.
+- **03:** every `SCR`'s shown information, inputs, and actions map to `API` inputs, outputs, or operations; every `FLOW` has an `API` sequence in §6.2; every failure state in 02 maps to a §7.1 error kind and an `API` error; nothing in 02 was redesigned (a needed change is a CR). Then: unless §2.1 and §2.2 record `Chosen: … (adopted, D-###)` from an existing spec, each evaluates 3–5 viable options (or names what the constraints ruled out), scores every option against every driver, states one recommendation with a driver-based reason, and records the chosen option with its `D-###` or `auto-yolo`; no option violates the brief's required or forbidden technologies; every allowlist entry has a license and an ADR; the verify command is runnable and hermetic (no fixed ports or shared state outside the working directory); hotspot files are listed; every §7 subsection is filled with checkable lines or `n/a — reason`, cites an ADR or NFR, and names where it is enforced; multi-entity writes state atomicity; job-written `DATA` states its `writes:` rule; every non-screen trigger in §6.1 maps to an `API`.
 - **04:** the walking skeleton comes first and creates the hotspot files; slices are vertical; no slice depends on a later one; `touches:` are exact; slices in the same wave have disjoint `touches:`; coverage is complete.
 
 ## Mode: precheck
@@ -54,7 +55,7 @@ A fast mechanical gate that runs before `slice-review`, usually on a light model
 2. Every file in `git status --porcelain --untracked-files=all` (run in the workdir) is inside the slice's `touches:` or is a test file.
 3. Every acceptance criterion ID in the slice has a test whose name contains the ID in code form: `REQ-004.2` → `REQ_004_2` ([PROTOCOL.md §IDs and traceability](../../PROTOCOL.md#ids-and-traceability)).
 4. The slice diff ([PROTOCOL.md §Slice diff](../../PROTOCOL.md#slice-diff)) adds no skip or focus markers (`skip`, `only`, `xit`, `[Ignore]`, `@Disabled`, and the stack's equivalents), no `TODO` or `FIXME`, and no lowered coverage or lint thresholds.
-5. The dependency manifest has no entry outside the allowlist in `02-architecture.md` §11.
+5. The dependency manifest has no entry outside the allowlist in `03-architecture.md` §11.
 
 ## Mode: slice-review
 
@@ -62,7 +63,7 @@ Work in the handoff's `workdir:`. Scope the review with the slice diff ([PROTOCO
 
 1. **Verify evidence.** If the handoff lists a precheck file with verdict PASS for this round, take its verify command, exit code, and summary as your evidence; the precheck ran in its own fresh context. Otherwise run verify yourself, per [PROTOCOL.md §Command output](../../PROTOCOL.md#command-output), with output going to `.agent-team/logs/SLICE-###-r<round>-review.log`. A red verify is a blocker, whatever the report says.
 2. Check that every acceptance criterion in the slice has a test. Read each test and confirm it would fail if the behaviour broke: it must not be tautological, over-mocked, or asserting on a constant.
-3. Check the code against `02-architecture.md`: structure (§8), contracts (§6), the cross-cutting conventions (§7), and standards (§9). A breach of §7 or §9 is a cited rule violation, not a matter of taste. Check the UI against `03-ux.md` tokens and states.
+3. Check the code against `03-architecture.md`: structure (§8), contracts (§6), the cross-cutting conventions (§7), and standards (§9). A breach of §7 or §9 is a cited rule violation, not a matter of taste. Check the UI against `02-ux.md` tokens and states.
 4. **Scope:** compare the changed files in the slice diff with the slice's `touches:`. Confirm there is no untraced behaviour.
 5. **Clean room:** check the dependency manifest against the allowlist, and look for network calls, hard-coded secrets, and copied external code. Check the *Sources consulted* list.
 6. **Faking:** look for skipped or disabled tests, lowered thresholds, hard-coded outputs, and TODO stubs.

@@ -1,6 +1,6 @@
 ---
 name: dm-agent-team
-description: Run a five-agent greenfield development team (analyst, architect, designer, builder, reviewer) that takes a product idea from requirements through architecture, app design, and UX design to a clean-room, test-driven implementation, using only local files in the current project folder. Supports three run modes (stepwise, checkpoint, yolo), parallel slice building in git worktrees, and unattended continuation through a driver script.
+description: Run a five-agent greenfield development team (analyst, architect, designer, builder, reviewer) that takes a product idea through requirements and UX design, iterated until they agree and reach the target state the human wants, then architecture and app design, to a clean-room, test-driven implementation, using only local files in the current project folder. Supports three run modes (stepwise, checkpoint, yolo), parallel slice building in git worktrees, and unattended continuation through a driver script.
 disable-model-invocation: true
 ---
 
@@ -18,7 +18,10 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 |---|---|---|---|
 | G0 brief and run mode | **stop** | **stop** | **stop** |
 | Agent questions (`needs-human`) | **stop**, ask the batch | **stop**, ask the batch | agents adopt their recommended answers; log each `auto-decisions:` entry as `D-###` with `source: auto-yolo` |
-| G1 requirements, G2 architecture, G3 UX | **stop** at each | auto on reviewer PASS | auto on reviewer PASS |
+| G1 requirements baseline, G3 architecture | **stop** at each | auto on reviewer PASS | auto on reviewer PASS |
+| G2 requirements + UX aligned (target state) | **stop** | **stop** | auto on reviewer PASS |
+| Alignment rounds (requirements ↔ UX) | run without stopping | run without stopping | run without stopping |
+| Alignment not reached after 3 rounds | **stop** | **stop** | **stop** |
 | G4 build plan (specs freeze) | **stop** | **stop**: present G1–G4 together | auto on reviewer PASS |
 | G5 milestone demo | **stop** at each | auto, one-line log | auto, one-line log |
 | Slice escalation (one non-PASS more than the profile allows, `test-red` after the deep retry, or a second stale rebuild) | **stop** | park the slice, continue independent slices | park the slice, continue independent slices |
@@ -62,8 +65,8 @@ Every agent runs as a **subagent** in a fresh context. You never load an agent's
 | Agent | File | Owns (writes) |
 |---|---|---|
 | `dm-at-analyst` | [agents/dm-at-analyst/SKILL.md](./agents/dm-at-analyst/SKILL.md) | `specs/01-requirements.md` |
-| `dm-at-architect` | [agents/dm-at-architect/SKILL.md](./agents/dm-at-architect/SKILL.md) | `specs/02-architecture.md`, `specs/04-build-plan.md` |
-| `dm-at-designer` | [agents/dm-at-designer/SKILL.md](./agents/dm-at-designer/SKILL.md) | `specs/03-ux.md`, `ux/` |
+| `dm-at-architect` | [agents/dm-at-architect/SKILL.md](./agents/dm-at-architect/SKILL.md) | `specs/03-architecture.md`, `specs/04-build-plan.md` |
+| `dm-at-designer` | [agents/dm-at-designer/SKILL.md](./agents/dm-at-designer/SKILL.md) | `specs/02-ux.md`, `ux/` |
 | `dm-at-builder` | [agents/dm-at-builder/SKILL.md](./agents/dm-at-builder/SKILL.md) | source code, tests, `build/` |
 | `dm-at-reviewer` | [agents/dm-at-reviewer/SKILL.md](./agents/dm-at-reviewer/SKILL.md) | `reviews/` |
 
@@ -94,7 +97,7 @@ Your context is the scarcest resource in the run. Every token you hold is re-rea
 |---|---|---|---|
 | REVISE rounds before escalation | 1 | 2 | 2 |
 | Build review | `precheck` per slice, one `milestone-review` per milestone | `precheck` and `slice-review` per slice | `precheck` and `slice-review` per slice |
-| HTML prototypes in P3 | only if the human asks | key screen | key screen |
+| HTML prototypes in P2 | only if the human asks | key screen | key screen |
 | NFR measurement at acceptance | list only | measure where local | measure all; anything unmeasurable is a finding |
 
 ## Steps
@@ -118,6 +121,7 @@ If no state exists (never overwrite files already in `.agent-team/`; if the fold
 Draft as much of `brief.md` as the human's invocation already answers. Then ask **one batch** of at most 9 questions covering only the gaps, each with a recommended answer the human can accept as-is:
 
 - problem, target users, and the single outcome that matters most
+- **target state**: what the human should be able to see and do when v1 is done, in their words (the Requirements ⇄ UX loop aims at this)
 - success measures (at most three)
 - in scope for v1, and at least three things explicitly out of scope
 - platform and constraints: target runtime, required or forbidden technologies, standards files in the repo
@@ -133,34 +137,54 @@ Ask at most one follow-up batch. Write `brief.md` using [PROTOCOL.md §Brief](./
 
 ### 3. Spec phases — P1 to P4
 
+The flow is **Requirements ⇄ UX → Architecture → Build plan**. Requirements and UX are designed together and iterated until they agree with each other and reach the brief's *Target state*. Only then does the architect design the APIs, data model, and structure that deliver that experience.
+
 | Phase | Author | Mode | Artifact | Gate |
 |---|---|---|---|---|
-| P1 Requirements | dm-at-analyst | `requirements` | `specs/01-requirements.md` | G1 |
-| P2 Architecture and app design | dm-at-architect | `design` | `specs/02-architecture.md` | G2 |
-| P3 UX design | dm-at-designer | `ux` | `specs/03-ux.md`, `ux/prototypes/` | G3 |
+| P1 Requirements | dm-at-analyst | `requirements` | `specs/01-requirements.md` | G1 (baseline) |
+| P2 UX design, aligned with requirements | dm-at-designer, with dm-at-analyst in alignment rounds | `ux` (designer), `requirements` (analyst) | `specs/02-ux.md`, `ux/prototypes/`; updates to `01-requirements.md` | G2 (01 + 02 aligned) |
+| P3 Architecture and app design | dm-at-architect | `design` | `specs/03-architecture.md` | G3 |
 | P4 Build plan | dm-at-architect | `plan` | `specs/04-build-plan.md` | G4 |
 
-**Overlap.** When P2 starts, also dispatch `dm-at-designer` in `ux-language` mode in parallel: it needs only the brief and 01 to ask its design-language questions. Merge both agents' question batches into one stop. For a headless product (library or service), P3 designs the developer experience. Skip P3 only if the human approves skipping it at G2.
+**Overlap.** The analyst writes a full draft of 01 before it asks its first question batch. When that first P1 Return is `needs-human`, also dispatch `dm-at-designer` in `ux-language` mode with the brief and the draft 01, and merge both agents' question batches into one stop. For a headless product (library or service), P2 designs the developer experience: commands, output formats, and error messages. Skip P2 only if the human approves skipping it at G1.
 
-Run each phase as this loop:
+Run each phase's authoring as this loop (P2 adds the alignment rounds in §Requirements ⇄ UX alignment):
 
 1. **Write the author handoff** ([PROTOCOL.md §Handoff](./PROTOCOL.md#handoff)). Inputs: the brief, `decisions.md`, every approved upstream spec, and any existing specs the brief maps to this phase ([references/ADOPTION.md](./references/ADOPTION.md)).
-2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per phase; after that, the author records the rest as `ASM` with its recommended answer. In P2, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `02-architecture.md` §2.1–§2.2. Skip that batch when an adopted existing spec already fixes both.
+2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per phase; after that, the author records the rest as `ASM` with its recommended answer. In P3, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `03-architecture.md` §2.1–§2.2. Skip that batch when an adopted existing spec already fixes both.
 3. **Dispatch `dm-at-reviewer`** in `spec-review` mode. Its inputs are the spec, every approved upstream spec, and `decisions.md`.
 4. **Route the verdict:**
    - **PASS:** go to the gate.
    - **REVISE:** re-dispatch the author with the review file as input, escalated per [ROUTING.md §Escalation ladder](./ROUTING.md#escalation-ladder). Allow the profile's REVISE rounds; one more non-PASS escalates to the human.
    - **BLOCK:** open a change request ([PROTOCOL.md §Change requests](./PROTOCOL.md#change-requests)) against the spec where the defect starts, which may be an already-approved one, and handle it per the mode table.
-5. **Gate:** stop or auto-approve per the mode table. Requested changes to this spec go back to the author as a new round. Requested changes to an earlier, approved spec (common at checkpoint mode's combined G1–G4 stop) become a change request.
+5. **Gate:** stop or auto-approve per the mode table. Requested changes to this spec go back to the author as a new round. Requested changes to an earlier, approved spec (common at checkpoint mode's combined G1–G4 stop) become a change request. The exception is G2: changes to 01 or 02 there start another alignment round.
 
 **Done when:** G4 is approved and no gate row is `reopened` or `recheck`. The specs are now frozen; only an approved change request may edit them.
+
+#### Requirements ⇄ UX alignment (P2)
+
+G1 approves 01 as the **baseline** for UX, not as final. Designing screens always finds holes in requirements (a missing failure path, an ambiguous rule, a journey that can't be completed), so P2 iterates between the designer and the analyst until the two specs agree.
+
+1. **Design round.** Dispatch the designer in `ux` mode with 01, then the reviewer in `spec-review` on 02, routed as in the loop above. The designer records every requirements problem it finds in 02 §12 *Requirements feedback*, instead of designing around it.
+2. **Aligned?** After a PASS on 02, the specs are aligned when 02 §12 has no open items and the reviewer's alignment checks pass (PASS means they did). If so, go to G2.
+3. **Alignment round.** Otherwise, set G1's row to `aligning`, add 1 to `alignment-round` in `state.md`, and dispatch:
+   1. the analyst in `requirements` mode, with 02 (its §12 is the work list) and its own last review as inputs. It answers every open item in 01 §12 *UX alignment*: accepted, with the `REQ`/`BR`/`NFR` it changed, or declined, with the reason. An item that adds scope becomes a `Q` for the human.
+   2. the reviewer in `spec-review` on 01;
+   3. the designer in `ux` mode with the updated 01, to close each answered item and update the affected screens;
+   4. the reviewer in `spec-review` on 02. Then go back to step 2.
+
+   Within an alignment round, the analyst and designer may edit their specs without a change request: neither is frozen until G2. Throughout P2, 01 counts as an approved upstream spec for handoffs and reviews, even while its row reads `aligning`.
+4. **Stuck.** If `alignment-round` would exceed 3, stop in every mode with the open items. The human decides each one, logged as a `D-###`, and the loop continues.
+5. **G2 — target state.** Present 01 and 02 together: what changed in 01 since G1, the main flows and screens, open assumptions, and the brief's *Target state* with the `FLOW`s that reach it. Ask whether this is the product the human wants to reach. Approving G2 approves both specs; re-record G1's hash and copy along with G2's. **Request changes** starts another alignment round (it does not count toward the cap of 3).
+
+The reviewer's spec-review of 02 includes the alignment checks, so every round is reviewed exactly as the other phases are.
 
 #### Spec integrity
 
 Approved artifacts must not change behind the team's back: a hand edit after approval makes `state.md` lie, and slices built from the old text never get rebuilt.
 
-- **Record.** When a gate is approved, write `git hash-object <artifact>` into its Hash column and copy the artifact to `approved/<file>` (overwriting any earlier copy): `brief.md` for G0, the spec file for G1–G4. G3 covers `03-ux.md` only; prototypes are throwaway.
-- **Check** at boot, before each wave, and before presenting each gate: re-hash every artifact with a recorded hash. Skip any artifact whose gate row is `reopened` or `recheck`: a CR is being applied to it.
+- **Record.** When a gate is approved, write `git hash-object <artifact>` into its Hash column and copy the artifact to `approved/<file>` (overwriting any earlier copy): `brief.md` for G0, the spec file for G1–G4. G3 covers `02-ux.md` only; prototypes are throwaway.
+- **Check** at boot, before each wave, and before presenting each gate: re-hash every artifact with a recorded hash. Skip any artifact whose gate row is `reopened`, `recheck`, or `aligning`: it is being edited on purpose.
 - **Drift** (a hash differs): a `blocked` stop in every mode, with `halt: drift: <file> changed since G<n>`. Show the human what changed with `git diff --no-index <workspace>/approved/<file> <workspace>/<artifact path>` (written to a log; quote at most the changed hunks' headers and 10 lines). The human either **adopts** the edit, which the Lead then runs as a CR (so the reviewer re-checks it and the affected slices go stale), or **reverts** it.
 - **Re-record** the hash and the copy only when a gate is approved again: after a CR, after a re-check, or after the human adopts an edit through a CR. Never re-record just to clear a drift stop.
 
@@ -175,7 +199,7 @@ Each slice in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build i
 **Run a wave:**
 
 1. **Isolate.** Every slice gets its own worktree, even in a wave of one, so the project root only ever changes by integration: `git worktree add .agent-team/worktrees/SLICE-### -b at/SLICE-###` from the current `HEAD`. Record that `HEAD` as the handoff's `base:`, and name the worktree as its `workdir:`. Mark the slice `in-progress`.
-2. **Build.** Write one builder handoff per slice. Its inputs are the slice entry, the spec sections it traces to, `02-architecture.md` §7–§11, and the `03-ux.md` tokens and states of every `SCR` it touches; it also names the base commit. Dispatch all builders in the wave **in parallel** (one message with several subagent calls).
+2. **Build.** Write one builder handoff per slice. Its inputs are the slice entry, the spec sections it traces to, `03-architecture.md` §7–§11, and the `02-ux.md` tokens and states of every `SCR` it touches; it also names the base commit. Dispatch all builders in the wave **in parallel** (one message with several subagent calls).
 3. **Check, then review.** As each builder returns `done`, mark the slice `in-review` and dispatch `dm-at-reviewer` in `precheck` mode (light tier) in the same working directory. A precheck FAIL goes straight back to the builder as a REVISE, without a deep review. On a precheck PASS, dispatch `dm-at-reviewer` in `slice-review` mode with the precheck file as an input; it reuses the precheck's verify evidence. Prechecks and reviews run in parallel across the wave. In the `prototype` profile, a precheck PASS is enough until the milestone review.
 4. **Route each verdict:**
    - **PASS:** commit in the slice's working directory as `SLICE-###: <title>` (never push).

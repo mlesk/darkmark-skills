@@ -4,7 +4,7 @@ This file defines the shared contract for the Lead and every `dm-at-*` agent. Wh
 
 ## Workspace
 
-All team state lives in `.agent-team/` at the project root. Source code lives where `specs/02-architecture.md` puts it.
+All team state lives in `.agent-team/` at the project root. Source code lives where `specs/03-architecture.md` puts it.
 
 **The workspace is git-ignored and addressed by absolute path.** `.agent-team/` is listed in `.gitignore` and never committed. Builders and slice reviewers work inside a git worktree, which has no copy of it. So every handoff gives the workspace's absolute path as `workspace:`, and every path written as `.agent-team/...` in this protocol and in the agent files means `<workspace>/...`, never a path relative to your working directory. Source code and tests go in the handoff's `workdir:`; reports, reviews, and logs go in the workspace.
 
@@ -17,8 +17,8 @@ All team state lives in `.agent-team/` at the project root. Source code lives wh
 ├── log.md              # Lead-owned. Append-only run log, one row per dispatch
 ├── specs/
 │   ├── 01-requirements.md   # dm-at-analyst
-│   ├── 02-architecture.md   # dm-at-architect (design)
-│   ├── 03-ux.md             # dm-at-designer
+│   ├── 02-ux.md             # dm-at-designer
+│   ├── 03-architecture.md   # dm-at-architect (design)
 │   └── 04-build-plan.md     # dm-at-architect (plan)
 ├── ux/prototypes/      # dm-at-designer. Self-contained HTML, no external URLs
 ├── build/              # dm-at-builder. SLICE-###-report.md per slice
@@ -43,7 +43,8 @@ workspace: <absolute path to .agent-team/>
 mode: stepwise | checkpoint | yolo
 quality-bar: prototype | internal | production
 max-parallel: <1–4>
-phase: P0-kickoff | P1-requirements | P2-architecture | P3-ux | P4-plan | P5-build | P6-acceptance | done
+phase: P0-kickoff | P1-requirements | P2-ux | P3-architecture | P4-plan | P5-build | P6-acceptance | done
+alignment-round: <0 until P2 needs one; counts requirements ⇄ UX rounds>
 status: in-progress | awaiting-human | blocked
 halt: <kind: evidence, only while status is blocked | –>
 next-action: <one line a fresh session can execute>
@@ -55,7 +56,8 @@ session-dispatches: <count since this session started>
 | G0 | brief.md | pending | – | – | – | 0 | |
 
 Hash is `git hash-object <artifact>` recorded at approval (see SKILL.md §Spec integrity). It works on untracked files.
-Gate status: pending | in-review | approved | approved (auto-<mode>) | approved (override) | reopened (CR-###) | recheck (CR-###)
+Gate status: pending | in-review | approved | approved (auto-<mode>) | approved (override) | aligning | reopened (CR-###) | recheck (CR-###)
+`aligning` is used only on G1, while P2's alignment rounds edit 01; G2's approval returns it to approved.
 
 ## Build
 current-milestone: –
@@ -80,6 +82,7 @@ Fix slices (`SLICE-F##`) also go in this table; Notes gives the finding IDs, the
 ## Problem
 ## Users
 ## Outcome that matters most
+## Target state (what you can see and do when v1 is done)
 ## Success measures (max 3, measurable)
 ## In scope (v1)
 ## Out of scope (min 3)
@@ -103,9 +106,10 @@ Every claim downstream of the brief cites an ID. If you cannot trace something, 
 | `NFR-###` | Measurable non-functional requirement | 01 |
 | `ASM-###` | Assumption: an unconfirmed fact that someone decided to rely on | any spec |
 | `Q-###` | Open question for the human | any spec |
-| `ADR-###` | Architecture decision record | 02 |
-| `COMP-###` / `DATA-###` / `API-###` | Component / entity / contract | 02 |
-| `FLOW-###` / `SCR-###` | User flow / screen (or CLI command, for developer-facing products) | 03 |
+| `FLOW-###` / `SCR-###` | User flow / screen (or CLI command, for developer-facing products) | 02 |
+| `UXF-#` | Requirements feedback item raised by the designer | 02 §12 |
+| `ADR-###` | Architecture decision record | 03 |
+| `COMP-###` / `DATA-###` / `API-###` | Component / entity / contract | 03 |
 | `MS-#` / `SLICE-###` | Milestone / build slice (`SLICE-F##` for fix slices) | 04 |
 | `D-###` | Decision (human, or `auto-<mode>`) | decisions.md |
 | `CR-###` | Change request | changes/ |
@@ -305,7 +309,7 @@ Compute these from `log.md` and `state.md` for `retro.md`:
 ## Clean room
 
 1. **Local only.** Read and write only inside the project root and this skill's folder. No web search, no URL fetching, no MCP or remote tools, no issue trackers. Use the local filesystem, local git, and local build and test commands.
-2. **One network exception.** The package manager may install dependencies that appear in the **dependency allowlist** in `specs/02-architecture.md`. Anything else needs a CR.
+2. **One network exception.** The package manager may install dependencies that appear in the **dependency allowlist** in `specs/03-architecture.md`. Anything else needs a CR.
 3. **Dirty room.** Only `dm-at-analyst` may read the paths listed under *Reference material* in `brief.md`. *Existing specs* are different: they are the human's own documents for this project, and the agents the brief maps them to may read them. An author treats an existing spec in its handoff inputs as settled unless it contradicts the brief, a `D-###`, or another existing spec; each contradiction or gap becomes a `Q` with the existing text as the recommended answer. Anything taken from one cites it as its source (`from <path> §<section>`), and the reviewer accepts that citation like a `D-###`. The analyst describes behaviour in requirements and never copies code or exact text. Every other agent must not open those paths.
 4. **Spec-derived code.** `dm-at-builder` writes code only from approved specs. It does not reproduce code from memory of a specific named project. If a spec is too thin to implement without inventing behaviour, the builder returns `blocked` and proposes a CR.
 5. **Provenance.** Every slice report lists the sources consulted, which must be spec IDs and project files only. `dm-at-reviewer` audits this, and also checks dependencies against the allowlist and its recorded licenses.
