@@ -2,6 +2,8 @@
 
 This guide is for the human. Agents never load it. The runtime is [SKILL.md](./SKILL.md) (the Lead), [PROTOCOL.md](./PROTOCOL.md), [ROUTING.md](./ROUTING.md) (read by the Lead only), and the five `agents/dm-at-*/SKILL.md` files.
 
+> **New here?** Start with [README.md](./README.md) — the step-by-step usage guide for directed and YOLO runs. This document is the deeper reference: rationale, host setup, rollout plan, and troubleshooting.
+
 ---
 
 ## 1. Executive summary
