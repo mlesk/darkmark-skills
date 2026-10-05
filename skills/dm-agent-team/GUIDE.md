@@ -177,7 +177,7 @@ All the prompts are ready to copy and paste, and they are already packaged as sk
 | Standard tier | a cheaper strong coding model | the Lead, routine phases, simple question batches |
 | Light tier | a fast, cheap model (for example your `explore` agent's model) | the mechanical precheck; never verdicts |
 | State | Markdown in `.agent-team/` and local git | readable, diffable, and survives across sessions |
-| Verification | the project's own build, lint, and test toolchain, chosen in 03 | the single verify command is the source of truth |
+| Verification | the project's own build, test, and code-quality toolchain, chosen in 03 | the single verify command is the source of truth: it runs the §10.1 quality gate (formatter in check mode, linter preset, type checking, plus audits the quality bar calls for) and then the tests, at every phase exit, merge, and acceptance |
 | UI checks | a local browser preview; Playwright if it is on the allowlist | for prototypes and acceptance walkthroughs |
 | No-code or APIs | none in v1, deliberately | local-only is the clean-room boundary |
 

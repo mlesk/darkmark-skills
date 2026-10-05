@@ -43,6 +43,8 @@ For each item under the phase's `acceptance tests:`, in order:
 2. **Green:** write the minimum code that passes it.
 3. **Refactor:** align the code with the architecture's structure and standards, then re-run.
 
+Before verifying, run the §10.1 formatter in write mode and fix every linter and type-checker finding at its cause. Never suppress a finding, loosen a rule, or edit a quality config file unless the phase's `touches:` names that file and §10.1 already allows the change.
+
 During red and green, run only this phase's tests with the test runner's filter. Save the full suite for step 3. Follow [PROTOCOL.md §Command output](../../PROTOCOL.md#command-output) for every command.
 
 Then do the phase's non-test work: wiring, configuration, and the UI states from `02-ux.md` using token names. Every screen state the phase covers (loading, empty, error, and so on) is implemented, not stubbed.
@@ -53,7 +55,7 @@ If a test will not go green after **3 genuine attempts**, stop. Return `blocked`
 
 ### 3. Verify
 
-Run the exact **verify command** from the build plan, with output going to `.agent-team/logs/PHASE-###-r<round>-verify.log`. All of it must pass, including tests from earlier phases. Re-run it after any further change.
+Run the exact **verify command** from the build plan (it runs the §10.1 quality gate and then the tests), with output going to `.agent-team/logs/PHASE-###-r<round>-verify.log`. All of it must pass, including tests from earlier phases. Re-run it after any further change.
 
 **Done when:** verify exits 0 and you have captured the summary lines of its output.
 

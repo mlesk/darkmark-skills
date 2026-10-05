@@ -56,8 +56,9 @@ For each decision below, pick 2–3 options with trade-offs (speed of delivery, 
 3. Auth and authorisation, if any `REQ` needs them
 4. Cross-cutting conventions: errors, validation, logging, configuration and environments, timeouts and retries, and static analysis (one ADR covering all of them is fine)
 5. Test strategy: test levels, tools, and the single **verify command**
-6. Dependency allowlist
-7. Runtime topology: which processes run, how they start and stop, and how health is checked (for a CLI or library, one line)
+6. **Quality gate:** the formatter, linter and rule set, type checking, and other automatic code-quality checks (see step 4)
+7. Dependency allowlist
+8. Runtime topology: which processes run, how they start and stop, and how health is checked (for a CLI or library, one line)
 
 Record the style, the stack, and each decision here as an `ADR` (context, options, decision, consequences). Each ADR cites the `D-###` that settled it, or `auto-yolo` for a decision you adopted in yolo mode.
 
@@ -73,6 +74,13 @@ Write `03-architecture.md` using the skeleton below. Rules:
 - **Deep modules.** Give components small interfaces that hide complex internals. Each contract is precise enough to write a test against: types, required and optional fields, error cases, and status or exit codes.
 - **Allowlist:** for each entry, give the package, the pinned version or range, the license, the purpose, and the `ADR`. Keep it minimal. Prefer the standard library.
 - **Project structure:** the folder layout and naming conventions the builder will follow. Design for **extension by addition**: a new feature adds files and registers itself by convention (per-feature modules, route or command discovery) rather than editing a central file. List the shared files that every feature must still edit as **hotspots**. Test, lint, and build tooling must ignore `.agent-team/`.
+- **Quality gate (§10.1).** Choose the automatic code-quality checks from the established practice of the chosen stack, not from taste, and make them part of verify, so every build gate enforces them. At minimum:
+  - **Formatting:** the stack's standard formatter, run in check mode (no rewrite) inside verify. Builders run it in write mode before verifying.
+  - **Linting:** the stack's standard linter with a recognised preset (the tool's recommended or strict set). List only your deviations from the preset, each with a reason.
+  - **Type checking:** the strictest practical setting for a typed language, or a type checker where the language supports one.
+  - **Warnings as errors** wherever the toolchain supports it.
+
+  Add further checks only where the quality bar or an `NFR` calls for them: dependency vulnerability and licence audit, secret scanning, complexity or file-size limits, dead-code detection, coverage thresholds (`internal` and `production` usually want a dependency audit and a coverage floor; `prototype` can stop at the minimum). For each check give the tool and pinned version (each tool is also on the allowlist), its config file, its exact command, and what fails it. Every check must be hermetic and fast, like verify. The foundation phase installs and configures all of them and gets them green on the empty project, so no later phase inherits a backlog.
 - **Hermetic verify:** the verify command must run green from any git worktree, concurrently with other copies: no fixed ports, no shared files or databases outside the working directory, no network beyond the allowlisted install. Keep it fast; state its expected duration.
 - **Standards:** if the repo already has standards files, reference them and list only the deviations. Otherwise write at most one page of concrete rules in §9, each as `rule → where it is enforced` (verify, precheck, or phase review).
 - **Abstractions and patterns (§9.1).** Identify the few abstractions and patterns that will materially simplify this design and its implementation, and record them where builders will read them. Done well, an abstraction removes whole classes of code and bugs. Done badly, it couples things that should move independently and makes every later change harder. So weigh each one:
@@ -89,7 +97,7 @@ Write `03-architecture.md` using the skeleton below. Rules:
 - **Non-screen triggers:** list in §6.1 everything that starts behaviour without a user at a screen (schedules, file drops, inbound calls, CLI invocations by other programs), each mapped to the `API` it calls.
 - **Test seams (§10):** name the test double for each thing a test can't control: the clock (only if the design reads time), network services, and files outside the working directory.
 
-**Done when:** every `REQ`, `NFR`, and `SCR` appears in the coverage table mapped to at least one `COMP`/`API`/`ADR`, every `FLOW` in 02 has its `API` sequence, and the verify command is written out exactly.
+**Done when:** every `REQ`, `NFR`, and `SCR` appears in the coverage table mapped to at least one `COMP`/`API`/`ADR`, every `FLOW` in 02 has its `API` sequence, §10.1 defines the quality gate, and the verify command (quality gate plus tests) is written out exactly.
 
 ### Skeleton — `03-architecture.md`
 
@@ -123,14 +131,16 @@ Recommended: <option> — <reason citing drivers> · Chosen: <option> (D-### | a
 ### 7.6 Persistence: keys, migrations, transactions
 ### 7.7 Timeouts, retries, and cancellation
 ### 7.8 Security and concurrency defaults: authorisation model, conflicting writes
-### 7.9 Static analysis: type-check strictness, lint, warnings as errors
+### 7.9 Static analysis: summary of the §10.1 quality gate (formatter, linter preset, type-check strictness, warnings as errors)
 ### 7.10 Runtime topology and performance budgets
 ## 8. Project structure (tree), conventions, and hotspot files
 ## 9. Coding standards (or the repo standards file plus deviations)
 ### 9.1 Abstractions and patterns
 | Abstraction or pattern | Concrete cases now (IDs) | What it simplifies | Costs | Inline it again if | ADR |
 Deliberate duplication: <what looks alike but stays separate, and why>
-## 10. Test strategy: levels · tools · fixtures · verify command: `<exact command>`
+## 10. Test strategy: levels · tools · fixtures · verify command: `<exact command>` (runs the quality gate, then the tests)
+### 10.1 Quality gate
+| Check | Tool and version | Preset and deviations (with reasons) | Config file | Command | Fails on |
 ## 11. Dependency allowlist
 | Package | Version | License | Purpose | ADR |
 ## 12. Risks and mitigations
@@ -154,7 +164,7 @@ Build **inside out**: lay the horizontal layers first, each complete and tested,
 
 | Order | Layer | What its phases deliver | How they are tested |
 |---|---|---|---|
-| 1 | `foundation` | `PHASE-001` only: pinned toolchain, project structure, the verify command running green with a smoke test, every hotspot file with its registration points, the shared §7 plumbing (error types, configuration loading, logging setup), and a README with install, run, and test commands. No business behaviour. | verify green |
+| 1 | `foundation` | `PHASE-001` only: pinned toolchain, project structure, every §10.1 quality check installed and configured, the verify command (quality gate plus a smoke test) running green, every hotspot file with its registration points, the shared §7 plumbing (error types, configuration loading, logging setup), and a README with install, run, and test commands. No business behaviour. | verify green |
 | 2 | `domain` | Entities with their invariants and lifecycles (§5), business rules (`BR`), and calculations, as pure code with no I/O | unit tests |
 | 3 | `persistence` | Storage for every `DATA` entity, migrations, keys, concurrency control, and `writes:` rules (§5, §7.6) | tests against the real storage the test strategy names |
 | 4 | `application` | Every `API` operation (§6): validation, error kinds (§7.1), authorisation, atomicity, and the §6.1 non-screen triggers | tests at the API boundary |
