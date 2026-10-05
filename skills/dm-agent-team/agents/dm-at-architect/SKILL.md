@@ -1,6 +1,6 @@
 ---
 name: dm-at-architect
-description: Agent-team architect. In design mode, turns the aligned requirements and UX into the architecture and application design (stack, components, the API and data model the screens need, structure, standards, test strategy, dependency allowlist). In plan mode, turns all approved specs into an ordered inside-out build plan (horizontal layers first, UI phases last). Dispatched by dm-agent-team in S3 and S4; can be invoked directly.
+description: Agent-team architect. In design mode, turns the aligned requirements and UX into the architecture and application design (stack, components, the API and data model the screens need, structure, the abstractions and patterns worth their cost, standards, test strategy, dependency allowlist). In plan mode, turns all approved specs into an ordered inside-out build plan (horizontal layers first, UI phases last). Dispatched by dm-agent-team in S3 and S4; can be invoked directly.
 disable-model-invocation: true
 ---
 
@@ -75,6 +75,15 @@ Write `03-architecture.md` using the skeleton below. Rules:
 - **Project structure:** the folder layout and naming conventions the builder will follow. Design for **extension by addition**: a new feature adds files and registers itself by convention (per-feature modules, route or command discovery) rather than editing a central file. List the shared files that every feature must still edit as **hotspots**. Test, lint, and build tooling must ignore `.agent-team/`.
 - **Hermetic verify:** the verify command must run green from any git worktree, concurrently with other copies: no fixed ports, no shared files or databases outside the working directory, no network beyond the allowlisted install. Keep it fast; state its expected duration.
 - **Standards:** if the repo already has standards files, reference them and list only the deviations. Otherwise write at most one page of concrete rules in §9, each as `rule → where it is enforced` (verify, precheck, or phase review).
+- **Abstractions and patterns (§9.1).** Identify the few abstractions and patterns that will materially simplify this design and its implementation, and record them where builders will read them. Done well, an abstraction removes whole classes of code and bugs. Done badly, it couples things that should move independently and makes every later change harder. So weigh each one:
+  - **Same concept, not same shape.** Abstract only things that are the same concept and change for the same reason. Code that merely looks alike today is a coincidence, not an opportunity: two validators with similar lines but different business owners stay separate.
+  - **Real cases, now.** Name the concrete cases in 01–02 it serves today. Two or more real cases, or one deep module that hides genuine complexity behind a small interface, can justify it; an imagined future case can't.
+  - **Benefit against cost.** State what it simplifies (code removed, a rule made impossible to break, a test made easy) and what it costs (indirection, coupling between its users, harder change if the cases diverge, one more thing to learn). Keep it only if the benefit clearly wins.
+  - **Exit.** Say when to inline it again (for example, "if the cases need different validation").
+  - **Principles are not reasons.** SOLID, DRY, and named design patterns are vocabulary, not rules. Never adopt an abstraction because a principle seems to call for it; cite the concrete benefit. Never split, wrap, or inject only to satisfy a principle.
+  - **Deliberate duplication.** Also list in §9.1 the places that look alike but must stay separate, and why, so no one later "fixes" them.
+
+  Record a significant abstraction as an ADR, too. Prefer the simplest form that delivers the benefit: a function before a class, a module before a framework.
 - **Cross-cutting conventions (§7) are the contract parallel builders share.** Builders read only §7–§11 plus their phase, and up to four run at once, so anything §7 leaves open gets invented differently by each of them. Write every §7 subsection as 1–3 checkable lines, or `n/a — <reason>`. Each cites its ADR or NFR and says where it is enforced. Keep §7 to about a page.
 - **Contracts:** an `API` that writes more than one `DATA` entity states its atomicity; one that changes a shared record states its concurrency rule (or cites §7.8). A `DATA` entity written by an import, sync, or scheduled job states `writes: replace | update | append` and its matching key, so re-runs are predictable.
 - **Non-screen triggers:** list in §6.1 everything that starts behaviour without a user at a screen (schedules, file drops, inbound calls, CLI invocations by other programs), each mapped to the `API` it calls.
@@ -118,6 +127,9 @@ Recommended: <option> — <reason citing drivers> · Chosen: <option> (D-### | a
 ### 7.10 Runtime topology and performance budgets
 ## 8. Project structure (tree), conventions, and hotspot files
 ## 9. Coding standards (or the repo standards file plus deviations)
+### 9.1 Abstractions and patterns
+| Abstraction or pattern | Concrete cases now (IDs) | What it simplifies | Costs | Inline it again if | ADR |
+Deliberate duplication: <what looks alike but stays separate, and why>
 ## 10. Test strategy: levels · tools · fixtures · verify command: `<exact command>`
 ## 11. Dependency allowlist
 | Package | Version | License | Purpose | ADR |
@@ -157,6 +169,7 @@ Rules:
 - **Size.** A phase must be finishable in one builder session: as a rough guide, at most 10 files and 5 new acceptance tests. Split any phase that is bigger. Merge phases that are trivially small; each dispatch has a fixed cost.
 - **Plan for parallel builders.** `depends-on:` lists only real dependencies. `touches:` lists exact files or narrow folders, never `src/`. Two phases with overlapping `touches:` can't run at the same time, so shape phases to keep them disjoint. A phase that must edit a hotspot names it in `touches:`.
 - **Milestones** group phases so each one ends with something a human can run and judge. Usually that's a layer or two: the domain's rules passing their tests, then the API callable, then usable flows. The last `application` phase writes worked examples of calling the API (in the README, or as a script) so that milestone has something to show.
+- Place each §9.1 abstraction in the earliest phase that needs it, and name it in that phase's `goal:`.
 - Tag a phase `tier: deep` if it involves concurrency, security, tricky algorithms, or data migration.
 
 ### 3. Draft and check coverage

@@ -92,5 +92,6 @@ Then append your Return to the handoff.
 - **No scope creep.** Write no feature, option, endpoint, or UI element that does not trace to this phase. Note good ideas under *Notes for the reviewer*. Do not build them.
 - **No faking green.** Never skip, disable, weaken, or delete a test or lint rule. No hard-coded results to satisfy assertions. Never mark a TODO stub as done.
 - **No new dependencies** beyond the allowlist. No network calls during the build except installing allowlisted packages.
+- **Abstractions come from §9.1.** Use the abstractions and patterns `03-architecture.md` §9.1 lists, and keep its deliberate duplication separate. Don't introduce a new abstraction that other phases would share, and don't merge code just because it looks similar to code elsewhere. Small helpers private to this phase are fine. If you see an abstraction that would clearly pay off, describe it under *Notes for the reviewer*.
 - **Stay in your lane.** Change only the files this phase needs. Never touch anything outside the project root. Never delete files you did not create in this phase.
 - **Secrets:** never write real credentials. Use the configuration mechanism in `03-architecture.md` with placeholder values.
