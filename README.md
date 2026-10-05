@@ -57,7 +57,7 @@ Each skill is symlinked into that directory, so pulling the repo updates the ski
 
 ### Building
 
-- [`dm-agent-team`](skills/dm-agent-team/SKILL.md) - A Lead plus five sub-agents (analyst, architect, designer, builder, reviewer) that take a product idea through requirements and UX design (iterated until they agree and reach your target state), then architecture and a build plan, to a clean-room, test-driven implementation in local files. Three run modes (stepwise, checkpoint, yolo), parallel slices in git worktrees, an independent reviewer after every author turn, and a driver script for unattended runs. The successor to `dm-spec-creation` + `dm-spec-execution`. Its agent-only sub-agents are dispatched by the Lead and are not linked as skills:
+- [`dm-agent-team`](skills/dm-agent-team/SKILL.md) - A Lead plus five sub-agents (analyst, architect, designer, builder, reviewer) that take a product idea through requirements and UX design (iterated until they agree and reach your target state), then architecture and a build plan, to a clean-room, test-driven implementation in local files. Three run modes (stepwise, checkpoint, yolo), build phases planned inside out (horizontal layers first, UI phases last) and built in parallel git worktrees, an independent reviewer after every author turn, and a driver script for unattended runs. The successor to `dm-spec-creation` + `dm-spec-execution`. Its agent-only sub-agents are dispatched by the Lead and are not linked as skills:
   - [`dm-at-analyst`](skills/dm-agent-team/agents/dm-at-analyst/SKILL.md) (agent-only)
   - [`dm-at-architect`](skills/dm-agent-team/agents/dm-at-architect/SKILL.md) (agent-only)
   - [`dm-at-designer`](skills/dm-agent-team/agents/dm-at-designer/SKILL.md) (agent-only)

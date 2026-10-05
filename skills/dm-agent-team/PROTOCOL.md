@@ -6,11 +6,11 @@ This file defines the shared contract for the Lead and every `dm-at-*` agent. Wh
 
 All team state lives in `.agent-team/` at the project root. Source code lives where `specs/03-architecture.md` puts it.
 
-**The workspace is git-ignored and addressed by absolute path.** `.agent-team/` is listed in `.gitignore` and never committed. Builders and slice reviewers work inside a git worktree, which has no copy of it. So every handoff gives the workspace's absolute path as `workspace:`, and every path written as `.agent-team/...` in this protocol and in the agent files means `<workspace>/...`, never a path relative to your working directory. Source code and tests go in the handoff's `workdir:`; reports, reviews, and logs go in the workspace.
+**The workspace is git-ignored and addressed by absolute path.** `.agent-team/` is listed in `.gitignore` and never committed. Builders and phase reviewers work inside a git worktree, which has no copy of it. So every handoff gives the workspace's absolute path as `workspace:`, and every path written as `.agent-team/...` in this protocol and in the agent files means `<workspace>/...`, never a path relative to your working directory. Source code and tests go in the handoff's `workdir:`; reports, reviews, and logs go in the workspace.
 
 ```
 .agent-team/
-├── state.md            # Lead-owned. The current truth: mode, phase, gates, slices, counters
+├── state.md            # Lead-owned. The current truth: mode, stage, gates, phases, counters
 ├── models.md           # Lead-owned; human may edit overrides. Tier → model mapping for this host
 ├── brief.md            # Lead-owned. G0 artifact
 ├── decisions.md        # Lead-owned. Append-only D-### log of decisions
@@ -21,13 +21,13 @@ All team state lives in `.agent-team/` at the project root. Source code lives wh
 │   ├── 03-architecture.md   # dm-at-architect (design)
 │   └── 04-build-plan.md     # dm-at-architect (plan)
 ├── ux/prototypes/      # dm-at-designer. Self-contained HTML, no external URLs
-├── build/              # dm-at-builder. SLICE-###-report.md per slice
+├── build/              # dm-at-builder. PHASE-###-report.md per phase
 ├── reviews/            # dm-at-reviewer. One file per review round
 ├── logs/               # Whoever ran the command. Full command output, never read whole
 ├── approved/           # Lead-owned. Copy of each artifact as approved at its gate, for drift diffs
 ├── changes/            # Lead-owned. CR-###.md change requests
 ├── handoffs/           # Lead-owned. H-###.md; the agent appends only ## Return
-├── worktrees/          # Lead-owned. One git worktree per slice being built
+├── worktrees/          # Lead-owned. One git worktree per phase being built
 └── retro.md            # Lead-owned. Written at the end
 ```
 
@@ -43,8 +43,8 @@ workspace: <absolute path to .agent-team/>
 mode: stepwise | checkpoint | yolo
 quality-bar: prototype | internal | production
 max-parallel: <1–4>
-phase: P0-kickoff | P1-requirements | P2-ux | P3-architecture | P4-plan | P5-build | P6-acceptance | done
-alignment-round: <0 until P2 needs one; counts requirements ⇄ UX rounds>
+stage: S0-kickoff | S1-requirements | S2-ux | S3-architecture | S4-plan | S5-build | S6-acceptance | done
+alignment-round: <0 until S2 needs one; counts requirements ⇄ UX rounds>
 status: in-progress | awaiting-human | blocked
 halt: <kind: evidence, only while status is blocked | –>
 next-action: <one line a fresh session can execute>
@@ -57,17 +57,17 @@ session-dispatches: <count since this session started>
 
 Hash is `git hash-object <artifact>` recorded at approval (see SKILL.md §Spec integrity). It works on untracked files.
 Gate status: pending | in-review | approved | approved (auto-<mode>) | approved (override) | aligning | reopened (CR-###) | recheck (CR-###)
-`aligning` is used only on G1, while P2's alignment rounds edit 01; G2's approval sets it to G2's own approval status.
+`aligning` is used only on G1, while S2's alignment rounds edit 01; G2's approval sets it to G2's own approval status.
 
 ## Build
 current-milestone: –
 current-wave: –
 consecutive-escalations: 0
-| Slice | Milestone | Status | Workdir | Base | Revise rounds | Stale | Last review | Notes |
+| Phase | Milestone | Status | Workdir | Base | Revise rounds | Stale | Last review | Notes |
 |---|---|---|---|---|---|---|---|---|
 
-Slice status: pending | in-progress | in-review | done | stale | escalated | blocked
-Fix slices (`SLICE-F##`) also go in this table; Notes gives the finding IDs, the owning slice, and `touches:`.
+Phase status: pending | in-progress | in-review | done | stale | escalated | blocked
+Fix phases (`PHASE-F##`) also go in this table; Notes gives the finding IDs, the owning phase, and `touches:`.
 
 ## Open items (shown at the next human stop)
 - <CR / Q / escalation ids awaiting the human>
@@ -100,6 +100,8 @@ Fix slices (`SLICE-F##`) also go in this table; Notes gives the finding IDs, the
 
 Every claim downstream of the brief cites an ID. If you cannot trace something, it is not in scope.
 
+**Stages and phases.** A **stage** (`S0`–`S6`) is a step of the team's process: kickoff, requirements, UX, architecture, plan, build, acceptance. A **phase** (`PHASE-###`) is one unit of build work in `04-build-plan.md`, built by one builder in one worktree. Phases are planned inside out: horizontal layers first, UI phases last.
+
 | Prefix | Meaning | Defined in |
 |---|---|---|
 | `REQ-###` / `REQ-###.n` | Functional requirement / its acceptance criterion | 01 |
@@ -110,7 +112,7 @@ Every claim downstream of the brief cites an ID. If you cannot trace something, 
 | `UXF-#` | Requirements feedback item raised by the designer | 02 §12 |
 | `ADR-###` | Architecture decision record | 03 |
 | `COMP-###` / `DATA-###` / `API-###` | Component / entity / contract | 03 |
-| `MS-#` / `SLICE-###` | Milestone / build slice (`SLICE-F##` for fix slices) | 04 |
+| `MS-#` / `PHASE-###` | Milestone / build phase (`PHASE-F##` for fix phases) | 04 |
 | `D-###` | Decision (human, or `auto-<mode>`) | decisions.md |
 | `CR-###` | Change request | changes/ |
 | `H-###` | Handoff | handoffs/ |
@@ -140,7 +142,7 @@ The Lead writes `handoffs/H-###.md` before every dispatch:
 # H-###: <agent> — <mode> — <target>
 from: lead
 to: at-<agent>
-mode: requirements | design | ux-language | ux | plan | slice | precheck | spec-review | slice-review | milestone-review | acceptance
+mode: requirements | design | ux-language | ux | plan | phase | precheck | spec-review | phase-review | milestone-review | acceptance
 tier: deep | standard | light
 effort: low | medium | high
 round: <n>
@@ -149,7 +151,7 @@ quality-bar: prototype | internal | production
 workspace: <absolute path to .agent-team/>
 workdir: <absolute path: project root or worktree>
 base: <commit sha the work starts from | –>
-alignment-round: <n, only in a P2 alignment round | –>
+alignment-round: <n, only in an S2 alignment round | –>
 work-list: <UXF IDs and D-### to apply in this alignment round | –>
 
 ## Task
@@ -216,7 +218,7 @@ Ask only what changes the artifact. Never ask what the brief, `decisions.md`, or
 
 ## Change requests
 
-A change request (CR) is opened when an agent finds a defect in an approved or frozen spec, or needs something outside its ownership. Fix a defect in the spec where it starts, not in the spec where it was noticed. **Exception:** before G2, a problem with 01 found during P2 goes to 02 §12 as a `UXF` row and is settled in an alignment round (SKILL.md §Requirements ⇄ UX alignment), not through a CR. Agents only *propose* CR text in their Return. The Lead writes `changes/CR-###.md`:
+A change request (CR) is opened when an agent finds a defect in an approved or frozen spec, or needs something outside its ownership. Fix a defect in the spec where it starts, not in the spec where it was noticed. **Exception:** before G2, a problem with 01 found during S2 goes to 02 §12 as a `UXF` row and is settled in an alignment round (SKILL.md §Requirements ⇄ UX alignment), not through a CR. Agents only *propose* CR text in their Return. The Lead writes `changes/CR-###.md`:
 
 ```markdown
 # CR-###: <title>
@@ -225,7 +227,7 @@ class: clarification | scope | dependency | contract
 affects: <spec paths + IDs>
 problem: <what is wrong or missing>
 proposal: <the smallest change that fixes it>
-impact: <downstream specs, slices, and code that must change>
+impact: <downstream specs, phases, and code that must change>
 status: proposed | approved | rejected
 decision: D-###
 ```
@@ -238,7 +240,7 @@ Once a CR is approved, the Lead applies it in this order:
 2. Dispatch the reviewer in `spec-review` mode on the edited spec.
 3. For every downstream spec named in the CR's `impact:` whose gate is **already approved**, set the row to `recheck (CR-###)`, then dispatch its owner to bring it in line, followed by a `spec-review`, in spec order (01 → 04). An owner that finds nothing to change says so in its Return's `summary:`, and a clean review returns the row to the status it had before, without a stop. A downstream spec that is not approved yet simply gets the CR file as an input on its next author round.
 4. A spec whose content changed is approved again per the mode table (its gate stops or auto-approves as it did originally), and its hash and copy are re-recorded.
-5. Mark every slice listed in `impact:`, or tracing to a changed ID, as `stale`. Those slices are rebuilt.
+5. Mark every phase listed in `impact:`, or tracing to a changed ID, as `stale`. Those phases are rebuilt.
 
 Each of these author dispatches uses the author's usual mode, lists `changes/CR-###.md` as an input, and has the task "apply CR-### only". **A CR round changes only what the CR names**, the same way a revision round fixes only the review findings.
 
@@ -270,9 +272,9 @@ Build, test, and verify output can be thousands of lines. Never read it whole.
 3. Quote at most 10 lines of output in any report or review.
 4. Never re-run a failed command unchanged in the hope that it passes. Re-run only after a change, and say what changed. If the same command gives different results on the same tree, that is a flaky test: report it, don't retry it away.
 
-## Slice diff
+## Phase diff
 
-A builder never commits, so a slice's new files are untracked, and plain `git diff` does not show them. To see a slice's whole change, run this in its `workdir:`:
+A builder never commits, so a phase's new files are untracked, and plain `git diff` does not show them. To see a phase's whole change, run this in its `workdir:`:
 
 ```bash
 git add --all --intent-to-add && git diff <base>          # full diff, new files included
@@ -286,7 +288,7 @@ git add --all --intent-to-add && git diff --stat <base>   # file list
 `log.md` is append-only. Write exactly one row per dispatch, when its Return or verdict arrives, with `When` taken from `date -u +%FT%TZ` (never estimated):
 
 ```markdown
-| When | Phase | Wave | H-### | Agent | Mode | Tier | Effort | Round | Result | Tokens | Notes |
+| When | Stage | Wave | H-### | Agent | Mode | Tier | Effort | Round | Result | Tokens | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 ```
 
@@ -297,13 +299,13 @@ git add --all --intent-to-add && git diff --stat <base>   # file list
 Compute these from `log.md` and `state.md` for `retro.md`:
 
 - **First-pass PASS rate** for each author: reviews that passed in round 1, divided by all first-round reviews.
-- **Average REVISE rounds** for each phase and for slices.
+- **Average REVISE rounds** for each stage and for phases.
 - **Escalations to the human**, and the reason for each.
 - **Human stops**, and how many were gates versus question batches.
 - **Gate edits:** the number of gates where the human requested changes.
 - **Auto decisions** that a human later overrode.
-- **Escaped defects:** findings in acceptance that a slice review should have caught.
-- **Slice cycle:** dispatches per slice.
+- **Escaped defects:** findings in acceptance that a phase review should have caught.
+- **Phase cycle:** dispatches per phase.
 - **Parallelism:** average wave size, and the number of stale rebuilds caused by merge conflicts.
 - **Routing:** dispatches and tokens per tier; first-pass PASS rate per route; ladder escalations per rule; precheck FAILs that saved a deep review.
 - **Sessions:** the number of sessions, and dispatches per session.
@@ -315,7 +317,7 @@ Compute these from `log.md` and `state.md` for `retro.md`:
 2. **One network exception.** The package manager may install dependencies that appear in the **dependency allowlist** in `specs/03-architecture.md`. Anything else needs a CR.
 3. **Dirty room.** Only `dm-at-analyst` may read the paths listed under *Reference material* in `brief.md`. *Existing specs* are different: they are the human's own documents for this project, and the agents the brief maps them to may read them. An author treats an existing spec in its handoff inputs as settled unless it contradicts the brief, a `D-###`, or another existing spec; each contradiction or gap becomes a `Q` with the existing text as the recommended answer. Anything taken from one cites it as its source (`from <path> §<section>`), and the reviewer accepts that citation like a `D-###`. The analyst describes behaviour in requirements and never copies code or exact text. Every other agent must not open those paths.
 4. **Spec-derived code.** `dm-at-builder` writes code only from approved specs. It does not reproduce code from memory of a specific named project. If a spec is too thin to implement without inventing behaviour, the builder returns `blocked` and proposes a CR.
-5. **Provenance.** Every slice report lists the sources consulted, which must be spec IDs and project files only. `dm-at-reviewer` audits this, and also checks dependencies against the allowlist and its recorded licenses.
+5. **Provenance.** Every phase report lists the sources consulted, which must be spec IDs and project files only. `dm-at-reviewer` audits this, and also checks dependencies against the allowlist and its recorded licenses.
 
 ## Direct invocation
 

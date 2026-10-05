@@ -1,6 +1,6 @@
 ---
 name: dm-agent-team
-description: Run a five-agent greenfield development team (analyst, architect, designer, builder, reviewer) that takes a product idea through requirements and UX design, iterated until they agree and reach the target state the human wants, then architecture and app design, to a clean-room, test-driven implementation, using only local files in the current project folder. Supports three run modes (stepwise, checkpoint, yolo), parallel slice building in git worktrees, and unattended continuation through a driver script.
+description: Run a five-agent greenfield development team (analyst, architect, designer, builder, reviewer) that takes a product idea through requirements and UX design, iterated until they agree and reach the target state the human wants, then architecture and app design, to a clean-room, test-driven implementation, using only local files in the current project folder. Supports three run modes (stepwise, checkpoint, yolo), parallel phase building in git worktrees, and unattended continuation through a driver script.
 disable-model-invocation: true
 ---
 
@@ -24,7 +24,7 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 | Alignment not reached after 3 rounds | **stop** | **stop** | **stop** |
 | G4 build plan (specs freeze) | **stop** | **stop**: present G1–G4 together | auto on reviewer PASS |
 | G5 milestone demo | **stop** at each | auto, one-line log | auto, one-line log |
-| Slice escalation (one non-PASS more than the profile allows, `test-red` after the deep retry, or a second stale rebuild) | **stop** | park the slice, continue independent slices | park the slice, continue independent slices |
+| Phase escalation (one non-PASS more than the profile allows, `test-red` after the deep retry, or a second stale rebuild) | **stop** | park the phase, continue independent phases | park the phase, continue independent phases |
 | Change request | **stop** | **stop** | auto-approve if `class: clarification`, otherwise **stop** |
 | Spec drift (an approved artifact changed outside a CR) | **stop** | **stop** | **stop** |
 | Third reopen of the same spec | **stop** | **stop** | **stop** |
@@ -32,7 +32,7 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 
 **Hard stops in every mode:** adding a dependency that is not on the allowlist; touching anything outside the project root; deleting files the team did not create; `git push`, publish, or deploy; anything involving secrets or credentials.
 
-**Human override.** At an escalation stop, the human may accept the work despite REVISE findings. They must give a reason in words. Log a `D-###` with `kind: override`, the reason, and the finding IDs it waives; write a gate as `approved (override)`. For a slice, route the override as a PASS (commit, then integrate), mark it `done`, and write `override D-###` in its Notes. An override is never automatic, and never applies to a BLOCK, a builder `blocked`, a hard stop, or a red verify. The acceptance review lists every override.
+**Human override.** At an escalation stop, the human may accept the work despite REVISE findings. They must give a reason in words. Log a `D-###` with `kind: override`, the reason, and the finding IDs it waives; write a gate as `approved (override)`. For a phase, route the override as a PASS (commit, then integrate), mark it `done`, and write `override D-###` in its Notes. An override is never automatic, and never applies to a BLOCK, a builder `blocked`, a hard stop, or a red verify. The acceptance review lists every override.
 
 **Auto-approval** writes the gate row as `approved (auto-<mode>)` and logs a `D-###`. Collect every auto-approved gate, auto-answered question, and open `ASM` into `state.md` §Open items so the next human stop shows them.
 
@@ -47,11 +47,11 @@ Set the status by the kind of stop:
 
 ### The drive rule
 
-Between stops, **keep going**. After each dispatch or verdict, update state and execute `next-action` at once. Do not summarise and wait. Do not ask "shall I continue?". Report progress as at most one line per dispatch. A turn ends only at a stop, at `phase: done`, or at a session break.
+Between stops, **keep going**. After each dispatch or verdict, update state and execute `next-action` at once. Do not summarise and wait. Do not ask "shall I continue?". Report progress as at most one line per dispatch. A turn ends only at a stop, at `stage: done`, or at a session break.
 
 **Session breaks.** Long runs degrade as your context grows. End the session cleanly (state current, `status: in-progress`, a precise `next-action`) when any of these happens:
 
-- you were started with `driver: true` and you just finished a phase or a milestone
+- you were started with `driver: true` and you just finished a stage or a milestone
 - you have dispatched 25 agents in this session (`session-dispatches` in `state.md`), or the host warns that context is running low
 
 Check `session-dispatches` before **every** dispatch, and add 1 after it. At 25, take the break instead of dispatching. This applies in interactive sessions too: a human answering a stop does not start a new session, so the count carries on until the break.
@@ -96,27 +96,27 @@ Your context is the scarcest resource in the run. Every token you hold is re-rea
 | | prototype | internal | production |
 |---|---|---|---|
 | REVISE rounds before escalation | 1 | 2 | 2 |
-| Build review | `precheck` per slice, one `milestone-review` per milestone | `precheck` and `slice-review` per slice | `precheck` and `slice-review` per slice |
-| HTML prototypes in P2 | only if the human asks | key screen | key screen |
+| Build review | `precheck` per phase, one `milestone-review` per milestone | `precheck` and `phase-review` per phase | `precheck` and `phase-review` per phase |
+| HTML prototypes in S2 | only if the human asks | key screen | key screen |
 | NFR measurement at acceptance | list only | measure where local | measure all; anything unmeasurable is a finding |
 
 ## Steps
 
 ### 1. Boot
 
-Find the project root (the git root, or the current directory if there is no git repo). If `.agent-team/state.md` exists, read it and `decisions.md`, set `session-dispatches: 0`, then resume at `next-action`. Print a short **resume report**: phase, status, the last approved gate, slice counts by status, and `next-action`. Then run the integrity check (§Spec integrity). If a stop is still pending (`status: awaiting-human` or `blocked`), re-present it and end the turn. If any slice is `in-progress` or `in-review`, or the project root has an unfinished merge, run step 4 §Recover first.
+Find the project root (the git root, or the current directory if there is no git repo). If `.agent-team/state.md` exists, read it and `decisions.md`, set `session-dispatches: 0`, then resume at `next-action`. Print a short **resume report**: stage, status, the last approved gate, phase counts by status, and `next-action`. Then run the integrity check (§Spec integrity). If a stop is still pending (`status: awaiting-human` or `blocked`), re-present it and end the turn. If any phase is `in-progress` or `in-review`, or the project root has an unfinished merge, run step 4 §Recover first.
 
 If no state exists (never overwrite files already in `.agent-team/`; if the folder exists without `state.md`, ask the human what it is first):
 
-1. **Git.** The build phase needs git (worktrees, per-slice commits, scope checks). If the folder is not a git repo, ask the human whether to run `git init`. If they decline, the run can still produce the specs up to G4, but P5 is a `blocked` stop.
-2. **Ignore the workspace.** Add `.agent-team/` (the whole folder) to `.gitignore`. Team state is never committed: worktrees would otherwise get stale copies of it, and it would show up in every slice's `git status`.
+1. **Git.** The build stage needs git (worktrees, per-phase commits, scope checks). If the folder is not a git repo, ask the human whether to run `git init`. If they decline, the run can still produce the specs up to G4, but S5 is a `blocked` stop.
+2. **Ignore the workspace.** Add `.agent-team/` (the whole folder) to `.gitignore`. Team state is never committed: worktrees would otherwise get stale copies of it, and it would show up in every phase's `git status`.
 3. **First commit.** If the repo has no commits yet, commit `.gitignore` as `chore: agent-team workspace`. `git worktree add` needs a commit to branch from.
 4. **Workspace.** Create the workspace in [PROTOCOL.md §Workspace](./PROTOCOL.md#workspace) and record its absolute path as `workspace:` in `state.md`, with the skill version (`git -C <this skill dir> rev-parse --short HEAD`, or `unknown`).
 5. **Routing.** Write `.agent-team/models.md` per [ROUTING.md §Applying a route](./ROUTING.md#applying-a-route).
 
-**Done when:** `.gitignore` lists `.agent-team/`, `state.md` and `models.md` exist, and `state.md` names the workspace, mode, phase, and next action.
+**Done when:** `.gitignore` lists `.agent-team/`, `state.md` and `models.md` exist, and `state.md` names the workspace, mode, stage, and next action.
 
-### 2. Kickoff — P0, gate G0
+### 2. Kickoff — S0, gate G0
 
 Draft as much of `brief.md` as the human's invocation already answers. Then ask **one batch** of at most 9 questions covering only the gaps, each with a recommended answer the human can accept as-is:
 
@@ -135,23 +135,23 @@ Ask at most one follow-up batch. Write `brief.md` using [PROTOCOL.md §Brief](./
 
 **Done when:** the human approves G0 and `state.md` records the mode and max-parallel.
 
-### 3. Spec phases — P1 to P4
+### 3. Spec stages — S1 to S4
 
 The flow is **Requirements ⇄ UX → Architecture → Build plan**. Requirements and UX are designed together and iterated until they agree with each other and reach the brief's *Target state*. Only then does the architect design the APIs, data model, and structure that deliver that experience.
 
-| Phase | Author | Mode | Artifact | Gate |
+| Stage | Author | Mode | Artifact | Gate |
 |---|---|---|---|---|
-| P1 Requirements | dm-at-analyst | `requirements` | `specs/01-requirements.md` | G1 (baseline) |
-| P2 UX design, aligned with requirements | dm-at-designer, with dm-at-analyst in alignment rounds | `ux` (designer), `requirements` (analyst) | `specs/02-ux.md`, `ux/prototypes/`; updates to `01-requirements.md` | G2 (01 + 02 aligned) |
-| P3 Architecture and app design | dm-at-architect | `design` | `specs/03-architecture.md` | G3 |
-| P4 Build plan | dm-at-architect | `plan` | `specs/04-build-plan.md` | G4 |
+| S1 Requirements | dm-at-analyst | `requirements` | `specs/01-requirements.md` | G1 (baseline) |
+| S2 UX design, aligned with requirements | dm-at-designer, with dm-at-analyst in alignment rounds | `ux` (designer), `requirements` (analyst) | `specs/02-ux.md`, `ux/prototypes/`; updates to `01-requirements.md` | G2 (01 + 02 aligned) |
+| S3 Architecture and app design | dm-at-architect | `design` | `specs/03-architecture.md` | G3 |
+| S4 Build plan | dm-at-architect | `plan` | `specs/04-build-plan.md` | G4 |
 
-**Overlap.** The analyst writes a full draft of 01 before it asks its first question batch. When that first P1 Return is `needs-human`, also dispatch `dm-at-designer` in `ux-language` mode with the brief and the draft 01, and merge both agents' question batches into one stop. For a headless product (library or service), P2 designs the developer experience: commands, output formats, and error messages. Skip P2 only if the human approves skipping it at G1.
+**Overlap.** The analyst writes a full draft of 01 before it asks its first question batch. When that first S1 Return is `needs-human`, also dispatch `dm-at-designer` in `ux-language` mode with the brief and the draft 01, and merge both agents' question batches into one stop. For a headless product (library or service), S2 designs the developer experience: commands, output formats, and error messages. Skip S2 only if the human approves skipping it at G1.
 
-Run each phase's authoring as this loop (P2 adds the alignment rounds in §Requirements ⇄ UX alignment):
+Run each stage's authoring as this loop (S2 adds the alignment rounds in §Requirements ⇄ UX alignment):
 
-1. **Write the author handoff** ([PROTOCOL.md §Handoff](./PROTOCOL.md#handoff)). Inputs: the brief, `decisions.md`, every approved upstream spec, and any existing specs the brief maps to this phase ([references/ADOPTION.md](./references/ADOPTION.md)).
-2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per phase; after that, the author records the rest as `ASM` with its recommended answer. In P3, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `03-architecture.md` §2.1–§2.2. Skip that batch when an adopted existing spec already fixes both.
+1. **Write the author handoff** ([PROTOCOL.md §Handoff](./PROTOCOL.md#handoff)). Inputs: the brief, `decisions.md`, every approved upstream spec, and any existing specs the brief maps to this stage ([references/ADOPTION.md](./references/ADOPTION.md)).
+2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per stage; after that, the author records the rest as `ASM` with its recommended answer. In S3, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `03-architecture.md` §2.1–§2.2. Skip that batch when an adopted existing spec already fixes both.
 3. **Dispatch `dm-at-reviewer`** in `spec-review` mode. Its inputs are the brief, the spec, every approved upstream spec, and `decisions.md`.
 4. **Route the verdict:**
    - **PASS:** go to the gate.
@@ -161,9 +161,9 @@ Run each phase's authoring as this loop (P2 adds the alignment rounds in §Requi
 
 **Done when:** G4 is approved and no gate row is `reopened` or `recheck`. The specs are now frozen; only an approved change request may edit them.
 
-#### Requirements ⇄ UX alignment (P2)
+#### Requirements ⇄ UX alignment (S2)
 
-G1 approves 01 as the **baseline** for UX, not as final. Designing screens always finds holes in requirements (a missing failure path, an ambiguous rule, a journey that can't be completed), so P2 iterates between the designer and the analyst until the two specs agree.
+G1 approves 01 as the **baseline** for UX, not as final. Designing screens always finds holes in requirements (a missing failure path, an ambiguous rule, a journey that can't be completed), so S2 iterates between the designer and the analyst until the two specs agree.
 
 1. **Design round.** Dispatch the designer in `ux` mode with 01, then the reviewer in `spec-review` on 02, routed as in the loop above. The designer records every requirements problem it finds as a `UXF` row in 02 §12 *Requirements feedback*, instead of designing around it, and lists the open rows in its Return's `ux-feedback:` line.
 2. **Aligned?** After a PASS on 02, the specs are aligned when the designer's latest Return says `ux-feedback: none` (PASS also means the reviewer's alignment checks passed). If so, go to G2. Otherwise the open `UXF` IDs are the work list for an alignment round.
@@ -173,64 +173,64 @@ G1 approves 01 as the **baseline** for UX, not as final. Designing screens alway
    3. the designer in `ux` mode with the updated 01, to close each answered `UXF` row, apply any `D-###` on the list that affects 02, and update the affected screens;
    4. the reviewer in `spec-review` on 02. Then go back to step 2.
 
-   **Rules for P2.** The analyst and designer edit their specs without a change request: neither is frozen until G2. A requirements problem found during P2 goes to 02 §12 as a `UXF` row, never into a CR; if the reviewer finds one the designer missed, it is a REVISE finding against 02. Throughout P2, 01 counts as an approved upstream spec for handoffs and reviews, even while its row reads `aligning`. `round:` keeps counting up across P2 (so review files are never overwritten), but only REVISE verdicts count toward the profile's limit and the escalation ladder, and that count starts again at each step of each alignment round.
+   **Rules for S2.** The analyst and designer edit their specs without a change request: neither is frozen until G2. A requirements problem found during S2 goes to 02 §12 as a `UXF` row, never into a CR; if the reviewer finds one the designer missed, it is a REVISE finding against 02. Throughout S2, 01 counts as an approved upstream spec for handoffs and reviews, even while its row reads `aligning`. `round:` keeps counting up across S2 (so review files are never overwritten), but only REVISE verdicts count toward the profile's limit and the escalation ladder, and that count starts again at each step of each alignment round.
 4. **Stuck.** If a new `UXF`-driven round would make `alignment-round` exceed 3, stop in every mode and present the open rows. Log the human's answer to each as a `D-###` with `affects:` naming the 01 or 02 IDs, reset `alignment-round` to 0, and run one more round with those decisions as the work list.
 5. **G2 — target state.** Present 01 and 02 together: what changed in 01 since G1, the main flows and screens, open assumptions, and the brief's *Target state* with the `FLOW`s that reach it. Ask whether this is the product the human wants to reach. Approving G2 approves both specs: record G2's hash and copy of 02, re-record G1's hash and copy of 01, and set G1's row to G2's approval status (for example `approved (auto-yolo)`). **Request changes:** log each change as a `D-###` with `affects:` naming the 01 or 02 IDs, reset `alignment-round` to 0, and run an alignment round with those decisions as the work list.
 
-The reviewer's spec-review of 02 includes the alignment checks, so every round is reviewed exactly as the other phases are.
+The reviewer's spec-review of 02 includes the alignment checks, so every round is reviewed exactly as the other stages are.
 
-**Skipping P2.** If the human skips UX at G1 (for example for a library whose interface is fully specified in 01), G2 is `n/a`. G1's presentation then also asks the target-state question, and the architect designs the interface from 01's journeys and acceptance criteria.
+**Skipping S2.** If the human skips UX at G1 (for example for a library whose interface is fully specified in 01), G2 is `n/a`. G1's presentation then also asks the target-state question, and the architect designs the interface from 01's journeys and acceptance criteria.
 
 #### Spec integrity
 
-Approved artifacts must not change behind the team's back: a hand edit after approval makes `state.md` lie, and slices built from the old text never get rebuilt.
+Approved artifacts must not change behind the team's back: a hand edit after approval makes `state.md` lie, and phases built from the old text never get rebuilt.
 
 - **Record.** When a gate is approved, write `git hash-object <artifact>` into its Hash column and copy the artifact to `approved/<file>` (overwriting any earlier copy): `brief.md` for G0, the spec file for G1–G4. G2 covers `02-ux.md` (prototypes are throwaway) and also re-records `01-requirements.md` on G1's row; G3 covers `03-architecture.md`.
 - **Check** at boot, before each wave, and before presenting each gate: re-hash every artifact with a recorded hash. Skip any artifact whose gate row is `reopened`, `recheck`, or `aligning`: it is being edited on purpose.
-- **Drift** (a hash differs): a `blocked` stop in every mode, with `halt: drift: <file> changed since G<n>`. Show the human what changed with `git diff --no-index <workspace>/approved/<file> <workspace>/<artifact path>` (written to a log; quote at most the changed hunks' headers and 10 lines). The human either **adopts** the edit, which the Lead then runs as a CR (so the reviewer re-checks it and the affected slices go stale), or **reverts** it.
+- **Drift** (a hash differs): a `blocked` stop in every mode, with `halt: drift: <file> changed since G<n>`. Show the human what changed with `git diff --no-index <workspace>/approved/<file> <workspace>/<artifact path>` (written to a log; quote at most the changed hunks' headers and 10 lines). The human either **adopts** the edit, which the Lead then runs as a CR (so the reviewer re-checks it and the affected phases go stale), or **reverts** it.
 - **Re-record** the hash and the copy only when a gate is approved again: after a CR, after a re-check, or after the human adopts an edit through a CR. Never re-record just to clear a drift stop.
 
-### 4. Build — P5
+### 4. Build — S5
 
-Each slice in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build in **waves**.
+Each phase in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build in **waves**.
 
-**Plan a wave.** A slice is *ready* when its status is `pending` or `stale` and every slice in `depends-on` is `done`. Pick up to `max-parallel` ready slices in plan order whose `touches:` sets do not overlap each other or any slice listed as a hotspot owner in the plan. A wave of one is normal.
+**Plan a wave.** A phase is *ready* when its status is `pending` or `stale` and every phase in `depends-on` is `done`. Pick up to `max-parallel` ready phases in plan order whose `touches:` sets do not overlap each other or any phase listed as a hotspot owner in the plan. A wave of one is normal.
 
-**Stalled build.** If no slice is ready but some are still `pending` or `stale`, every remaining slice is waiting on an `escalated` or `blocked` one. This is a `blocked` stop in every mode (`halt: stalled`): present the escalated slices and the slices waiting on each.
+**Stalled build.** If no phase is ready but some are still `pending` or `stale`, every remaining phase is waiting on an `escalated` or `blocked` one. This is a `blocked` stop in every mode (`halt: stalled`): present the escalated phases and the phases waiting on each.
 
 **Run a wave:**
 
-1. **Isolate.** Every slice gets its own worktree, even in a wave of one, so the project root only ever changes by integration: `git worktree add .agent-team/worktrees/SLICE-### -b at/SLICE-###` from the current `HEAD`. Record that `HEAD` as the handoff's `base:`, and name the worktree as its `workdir:`. Mark the slice `in-progress`.
-2. **Build.** Write one builder handoff per slice. Its inputs are the slice entry, the spec sections it traces to, `03-architecture.md` §7–§11, and the `02-ux.md` tokens and states of every `SCR` it touches; it also names the base commit. Dispatch all builders in the wave **in parallel** (one message with several subagent calls).
-3. **Check, then review.** As each builder returns `done`, mark the slice `in-review` and dispatch `dm-at-reviewer` in `precheck` mode (light tier) in the same working directory. A precheck FAIL goes straight back to the builder as a REVISE, without a deep review. On a precheck PASS, dispatch `dm-at-reviewer` in `slice-review` mode with the precheck file as an input; it reuses the precheck's verify evidence. Prechecks and reviews run in parallel across the wave. In the `prototype` profile, a precheck PASS is enough until the milestone review.
+1. **Isolate.** Every phase gets its own worktree, even in a wave of one, so the project root only ever changes by integration: `git worktree add .agent-team/worktrees/PHASE-### -b at/PHASE-###` from the current `HEAD`. Record that `HEAD` as the handoff's `base:`, and name the worktree as its `workdir:`. Mark the phase `in-progress`.
+2. **Build.** Write one builder handoff per phase. Its inputs are the phase entry, the spec sections it traces to, `03-architecture.md` §7–§11, and the `02-ux.md` tokens and states of every `SCR` it touches; it also names the base commit. Dispatch all builders in the wave **in parallel** (one message with several subagent calls).
+3. **Check, then review.** As each builder returns `done`, mark the phase `in-review` and dispatch `dm-at-reviewer` in `precheck` mode (light tier) in the same working directory. A precheck FAIL goes straight back to the builder as a REVISE, without a deep review. On a precheck PASS, dispatch `dm-at-reviewer` in `phase-review` mode with the precheck file as an input; it reuses the precheck's verify evidence. Prechecks and reviews run in parallel across the wave. In the `prototype` profile, a precheck PASS is enough until the milestone review.
 4. **Route each verdict:**
-   - **PASS:** commit in the slice's working directory as `SLICE-###: <title>` (never push).
+   - **PASS:** commit in the phase's working directory as `PHASE-###: <title>` (never push).
    - **REVISE:** re-dispatch the builder with the review as input, escalated per [ROUTING.md §Escalation ladder](./ROUTING.md#escalation-ladder). One more non-PASS than the profile allows is an escalation.
    - **BLOCK:** open a change request.
    - **Builder `blocked`:** route on `blocked-by:` ([PROTOCOL.md §Return](./PROTOCOL.md#return)): `spec-gap` and `dependency` open a change request, `test-red` gets the ladder's deep retry before it counts as an escalation, and `env` is a `blocked` stop.
-   - **Escalation:** per the mode table. A parked slice is `escalated`; every slice that depends on it waits.
-5. **Integrate** passed slices one at a time in plan order, in the project root: `git merge --no-ff --no-commit at/SLICE-###`, run verify on the merged tree ([PROTOCOL.md §Command output](./PROTOCOL.md#command-output)), and commit only if it is green. Then `git worktree remove .agent-team/worktrees/SLICE-###` and `git branch -d at/SLICE-###`.
-   On a merge conflict or a red verify: `git merge --abort`, then `git worktree remove --force .agent-team/worktrees/SLICE-###` and `git branch -D at/SLICE-###`, mark the slice `stale` with the reason, and add 1 to its `Stale` count. It is rebuilt in a later wave from the new `HEAD`. A stale rebuild does not count as a REVISE round, but a slice going stale a **second** time is an escalation: two slices keep colliding, so the plan's `touches:` are probably wrong.
-6. **Record.** Mark merged slices `done`, reset `consecutive-escalations` on any PASS, and append one `log.md` row per dispatch.
+   - **Escalation:** per the mode table. A parked phase is `escalated`; every phase that depends on it waits.
+5. **Integrate** passed phases one at a time in plan order, in the project root: `git merge --no-ff --no-commit at/PHASE-###`, run verify on the merged tree ([PROTOCOL.md §Command output](./PROTOCOL.md#command-output)), and commit only if it is green. Then `git worktree remove .agent-team/worktrees/PHASE-###` and `git branch -d at/PHASE-###`.
+   On a merge conflict or a red verify: `git merge --abort`, then `git worktree remove --force .agent-team/worktrees/PHASE-###` and `git branch -D at/PHASE-###`, mark the phase `stale` with the reason, and add 1 to its `Stale` count. It is rebuilt in a later wave from the new `HEAD`. A stale rebuild does not count as a REVISE round, but a phase going stale a **second** time is an escalation: two phases keep colliding, so the plan's `touches:` are probably wrong.
+6. **Record.** Mark merged phases `done`, reset `consecutive-escalations` on any PASS, and append one `log.md` row per dispatch.
 
-**Milestone end.** In the `prototype` profile, dispatch `dm-at-reviewer` in `milestone-review` mode over the milestone's diff and route findings as fix slices. Then handle **G5 · MS-n** per the mode table. A G5 presentation includes what now works, the exact run commands, the verify summary, and open assumptions.
+**Milestone end.** In the `prototype` profile, dispatch `dm-at-reviewer` in `milestone-review` mode over the milestone's diff and route findings as fix phases. Then handle **G5 · MS-n** per the mode table. A G5 presentation includes what now works, the exact run commands, the verify summary, and open assumptions.
 
-**Circuit breaker:** 3 escalations in a row stop the build in every mode. The plan is probably wrong; recommend sending P4 back to the architect.
+**Circuit breaker:** 3 escalations in a row stop the build in every mode. The plan is probably wrong; recommend sending S4 back to the architect.
 
-**Blocked slices.** When the cause of a builder's `blocked` is resolved (the human fixed the environment, or the slice's CR was decided), remove its worktree and branch (`git worktree remove --force`, `git branch -D`) and mark the slice `stale`, so it is rebuilt from the new `HEAD`. If the CR was rejected and the slice cannot be built as specified, mark it `escalated`.
+**Blocked phases.** When the cause of a builder's `blocked` is resolved (the human fixed the environment, or the phase's CR was decided), remove its worktree and branch (`git worktree remove --force`, `git branch -D`) and mark the phase `stale`, so it is rebuilt from the new `HEAD`. If the CR was rejected and the phase cannot be built as specified, mark it `escalated`.
 
-**Fix slices.** The plan is frozen, so a fix slice (`SLICE-F##`) lives only in `state.md` and its handoff. Add a Build row for it with the finding IDs it fixes, the owning slice, `touches:` (the owning slice's `touches:` plus any file the finding names), and no dependencies. Its handoff lists the review file, the owning slice's plan entry, the spec sections that slice traces to, and the same `02` and `03` sections as any builder handoff. It then runs through the same wave loop as any slice.
+**Fix phases.** The plan is frozen, so a fix phase (`PHASE-F##`) lives only in `state.md` and its handoff. Add a Build row for it with the finding IDs it fixes, the owning phase, `touches:` (the owning phase's `touches:` plus any file the finding names), and no dependencies. Its handoff lists the review file, the owning phase's plan entry, the spec sections that phase traces to, and the same `02` and `03` sections as any builder handoff. It then runs through the same wave loop as any phase.
 
 **Recover.** On resume, before planning a wave:
 
-1. If the project root has an unfinished merge (`git rev-parse -q --verify MERGE_HEAD`), run `git merge --abort`, then run step 5 (Integrate) for that slice again; it already passed review.
-2. For each slice that is `in-progress` or `in-review`: if the latest handoff for it has a Return, route that Return or verdict as normal. Otherwise re-dispatch the same handoff: a builder rebuilds from `base:` in a fresh worktree (`git worktree remove --force`, `git branch -D`, then step 1), and an interrupted precheck or review is simply re-run.
+1. If the project root has an unfinished merge (`git rev-parse -q --verify MERGE_HEAD`), run `git merge --abort`, then run step 5 (Integrate) for that phase again; it already passed review.
+2. For each phase that is `in-progress` or `in-review`: if the latest handoff for it has a Return, route that Return or verdict as normal. Otherwise re-dispatch the same handoff: a builder rebuilds from `base:` in a fresh worktree (`git worktree remove --force`, `git branch -D`, then step 1), and an interrupted precheck or review is simply re-run.
 
-**Done when:** every slice is `done`, or `escalated` and presented to the human together with the slices waiting on it, and every milestone gate is approved.
+**Done when:** every phase is `done`, or `escalated` and presented to the human together with the phases waiting on it, and every milestone gate is approved.
 
-### 5. Acceptance — P6, gate G6
+### 5. Acceptance — S6, gate G6
 
-Dispatch `dm-at-reviewer` in `acceptance` mode. Route findings to the builder as fix slices (`SLICE-F##`, see step 4) through the step 4 loop, then dispatch acceptance again as the next round. Present **G6** only after an acceptance PASS, with `reviews/acceptance.md` and every auto-approved decision of the run. G6 is always a stop.
+Dispatch `dm-at-reviewer` in `acceptance` mode. Route findings to the builder as fix phases (`PHASE-F##`, see step 4) through the step 4 loop, then dispatch acceptance again as the next round. Present **G6** only after an acceptance PASS, with `reviews/acceptance.md` and every auto-approved decision of the run. G6 is always a stop.
 
 **Done when:** the human approves G6.
 
@@ -238,7 +238,7 @@ Dispatch `dm-at-reviewer` in `acceptance` mode. Route findings to the builder as
 
 Write `.agent-team/retro.md` with the metrics in [PROTOCOL.md §Metrics](./PROTOCOL.md#metrics), the three costliest failures, and proposed prompt changes, each naming the agent file and the exact line to change. Propose route changes too: a work type whose first-pass PASS rate is high at its tier is a candidate for a cheaper route, and one that kept escalating needs a stronger one. Do **not** edit the skill files. The human decides which lessons to promote.
 
-**Done when:** `retro.md` exists and `state.md` says `phase: done`.
+**Done when:** `retro.md` exists and `state.md` says `stage: done`.
 
 ## Lead rules
 

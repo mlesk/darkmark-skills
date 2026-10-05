@@ -16,41 +16,41 @@ A Lead skill plus five sub-agents — **analyst, architect, designer, builder, r
 What makes it dependable rather than hype:
 
 - **One owner per file.** Agents cannot overwrite each other.
-- **Trace IDs everywhere** (`REQ → SCR → API/ADR → SLICE → test`). An invented feature has no ID, so the reviewer sees it.
+- **Trace IDs everywhere** (`REQ → SCR → API/ADR → PHASE → test`). An invented feature has no ID, so the reviewer sees it.
 - **Independent review in a fresh context.** The author never grades its own work.
 - **A clean room.** Code derives only from approved specs and local files; dependencies only from an allowlist you approve.
 - **Seven human gates (G0–G6)** plus a stop on anything irreversible. The run mode decides which gates stop for you.
 - **Hard retry limits** (2 revise rounds, 3 test attempts, a breaker after 3 escalations in a row). Failures stop and ask; they don't spiral.
-- **Cheap by design.** Fresh subagent per agent, the Lead reads Returns not artifacts, questions arrive in batches with recommended answers, parallel slices build in git worktrees.
+- **Cheap by design.** Fresh subagent per agent, the Lead reads Returns not artifacts, questions arrive in batches with recommended answers, parallel phases build in git worktrees.
 
 The Lead drives within a session; a driver script drives across sessions. That two-layer split is the whole trick — see §7.
 
 ## 2. Prerequisites
 
-- **A git repository** at the project root. The build phase needs worktrees, per-slice commits, and scope checks. (Without git you still get specs up to G4; P5 becomes a `blocked` stop.)
+- **A git repository** at the project root. The build stage needs worktrees, per-phase commits, and scope checks. (Without git you still get specs up to G4; S5 becomes a `blocked` stop.)
 - **An agent host that starts subagents** — OpenCode, Claude Code, or Copilot CLI — and ideally runs them in parallel.
 - **The skill linked** into `~/.agents/skills/` (see step 1 below).
 
 ## 3. Mental model (60 seconds)
 
-- **Phase P0–P6**, each ending at a **gate G0–G6**. A gate is where a human would normally decide; the run mode says whether it stops or auto-approves.
-- **`.agent-team/state.md`** is the single source of truth: mode, phase, status, gates, slices, and a one-line `next-action` any fresh session can execute. It is the handoff between sessions.
+- **Stage S0–S6**, each ending at a **gate G0–G6**. A gate is where a human would normally decide; the run mode says whether it stops or auto-approves.
+- **`.agent-team/state.md`** is the single source of truth: mode, stage, status, gates, phases, and a one-line `next-action` any fresh session can execute. It is the handoff between sessions.
 - **`.agent-team/`** holds all team state and is git-ignored. Source code lives where `specs/03-architecture.md` puts it.
 - **A "stop"** means: update `state.md`, present the stop, end the turn. The Lead never asks "shall I continue?" between stops — it just runs to the next one.
 
-### The phases
+### The stages
 
-| Phase | Who | Produces | Gate |
+| Stage | Who | Produces | Gate |
 |---|---|---|---|
-| P0 Kickoff | Lead | `brief.md`, including your **target state**: what you can see and do when v1 is done | G0 |
-| P1 Requirements | analyst | `01-requirements.md` | G1: the baseline for UX |
-| P2 UX ⇄ requirements | designer, then analyst and designer in alignment rounds | `02-ux.md`, prototypes, and an updated 01 | G2: both agree and reach the target state |
-| P3 Architecture | architect | `03-architecture.md`: stack, API, data model, conventions | G3 |
-| P4 Build plan | architect | `04-build-plan.md`: vertical slices and milestones | G4: specs freeze |
-| P5 Build | builders, in parallel worktrees | code, tests, one commit per slice | G5 per milestone |
-| P6 Acceptance | reviewer | `reviews/acceptance.md` | G6 |
+| S0 Kickoff | Lead | `brief.md`, including your **target state**: what you can see and do when v1 is done | G0 |
+| S1 Requirements | analyst | `01-requirements.md` | G1: the baseline for UX |
+| S2 UX ⇄ requirements | designer, then analyst and designer in alignment rounds | `02-ux.md`, prototypes, and an updated 01 | G2: both agree and reach the target state |
+| S3 Architecture | architect | `03-architecture.md`: stack, API, data model, conventions | G3 |
+| S4 Build plan | architect | `04-build-plan.md`: build phases layered inside out (foundation → domain → persistence → API), then UI phases, grouped into milestones | G4: specs freeze |
+| S5 Build | builders, in parallel worktrees | code, tests, one commit per phase | G5 per milestone |
+| S6 Acceptance | reviewer | `reviews/acceptance.md` | G6 |
 
-Every author turn is followed by an independent review. In P2, the designer logs every requirements problem it finds while designing (a missing failure path, an ambiguous rule, a journey that can't be finished) as feedback in 02 §12. The analyst answers each item in 01 §12, the designer updates the screens, and both are re-reviewed. The loop repeats until nothing is open and the alignment checks pass; then G2 asks you whether the result is what you want to reach.
+Every author turn is followed by an independent review. In S2, the designer logs every requirements problem it finds while designing (a missing failure path, an ambiguous rule, a journey that can't be finished) as feedback in 02 §12. The analyst answers each item in 01 §12, the designer updates the screens, and both are re-reviewed. The loop repeats until nothing is open and the alignment checks pass; then G2 asks you whether the result is what you want to reach.
 
 ## 4. Pick an execution path
 
@@ -59,7 +59,7 @@ Every author turn is followed by an independent review. In P2, the designer logs
 | You are asked at | every question batch and gate (stepwise), or question batches + G0 + G2 + G1–G4 together + G6 (checkpoint) | G0 and G6 only |
 | Best for | first runs, projects you must get exactly right | toys, spikes, prototypes |
 | How you drive it | stay in one interactive session and answer each stop | answer G0, then hand off to `scripts/run.sh` |
-| Continuity | one session (the Lead takes session breaks; you resume) | the driver starts a fresh session per phase/milestone |
+| Continuity | one session (the Lead takes session breaks; you resume) | the driver starts a fresh session per stage/milestone |
 
 The three run modes are `stepwise` (default), `checkpoint`, and `yolo`. "Directed" covers stepwise + checkpoint — you are in the loop at the gates. You can **change mode at any stop**.
 
@@ -73,7 +73,7 @@ The three run modes are `stepwise` (default), `checkpoint`, and `yolo`. "Directe
 | Not aligned after 3 rounds | **stop** | **stop** | **stop** |
 | G4 build plan (spec freeze) | **stop** | **stop**: G1–G4 presented together | auto on reviewer PASS |
 | G5 milestone demo | **stop** at each | auto | auto |
-| Slice escalation | **stop** | park slice, continue others | park slice, continue others |
+| Phase escalation | **stop** | park phase, continue others | park phase, continue others |
 | Change request | **stop** | **stop** | auto if `class: clarification`, else **stop** |
 | Spec drift, third reopen, circuit breaker, stalled build, G6, hard stops | **stop** | **stop** | **stop** |
 
@@ -113,7 +113,7 @@ Mode: stepwise, max-parallel 3.
 
 ### Keeping a directed run moving
 
-- **Inside a session, never a babysitter.** The Lead runs to the next stop. It takes a **session break** after each phase/milestone, after ~25 dispatches (`session-dispatches`), or when the host warns about context — printing `PAUSED — resume with /dm-agent-team or scripts/run.sh`.
+- **Inside a session, never a babysitter.** The Lead runs to the next stop. It takes a **session break** after each stage/milestone, after ~25 dispatches (`session-dispatches`), or when the host warns about context — printing `PAUSED — resume with /dm-agent-team or scripts/run.sh`.
 - **To automate the gaps between your gates**, point the driver at a directed run too — it will simply stop (exit `2`) at each gate for you. In `stepwise` it warns that it stops at every gate; `checkpoint` gives longer stretches.
 
 ---
@@ -141,7 +141,7 @@ Quality bar: prototype. Mode: yolo, max-parallel 3.
 **6. Hand off to the driver:**
 
 ```bash
-# from inside the project folder — one fresh session per phase/milestone
+# from inside the project folder — one fresh session per stage/milestone
 ~/.agents/skills/dm-agent-team/scripts/run.sh --host opencode
 
 # target another directory / use a stronger Lead model
@@ -158,10 +158,10 @@ Driver flags: `--host opencode|claude|copilot|codex`, `--project DIR`, `--lead-m
 | `3` | No progress in 2 sessions (`state.md` unchanged) | Inspect the logged session; fix the cause |
 | `4` | Host failed twice in a row | Fix the host/permission problem; rerun |
 | `5` | Hit `--max-sessions` | Rerun to continue |
-| `0` | `phase: done` | Finished — read `.agent-team/retro.md` |
+| `0` | `stage: done` | Finished — read `.agent-team/retro.md` |
 | `1` | Usage error, or no `state.md` (G0 not done yet) | Approve G0 interactively first |
 
-**8. Approve G6.** Acceptance passes, then **G6 is always a stop**. Review `reviews/acceptance.md` and every auto-approved decision, approve, and the Lead writes `retro.md`, sets `phase: done`, and the driver exits `0`.
+**8. Approve G6.** Acceptance passes, then **G6 is always a stop**. Review `reviews/acceptance.md` and every auto-approved decision, approve, and the Lead writes `retro.md`, sets `stage: done`, and the driver exits `0`.
 
 > **Caution:** YOLO accepts every recommended answer. Keep it for toys, spikes, and prototypes, and prefer `checkpoint` until the team's first-pass PASS rate is high on your projects.
 
@@ -171,12 +171,12 @@ Driver flags: `--host opencode|claude|copilot|codex`, `--project DIR`, `--lead-m
 
 Two layers keep a run going without a babysitter:
 
-1. **Inside a session — the drive rule.** The Lead never pauses to ask "shall I continue?" It updates state and executes `next-action` immediately. A turn ends only at a stop, at `phase: done`, or at a session break.
-2. **Across sessions — session breaks + `scripts/run.sh`.** One session cannot run forever: context grows and cost per turn grows with it. So on a driver run the Lead ends the session cleanly after each phase or milestone (or ~25 dispatches), leaving `state.md` current. The driver then launches the **next fresh host session**, which resumes at `next-action` with zero accumulated context.
+1. **Inside a session — the drive rule.** The Lead never pauses to ask "shall I continue?" It updates state and executes `next-action` immediately. A turn ends only at a stop, at `stage: done`, or at a session break.
+2. **Across sessions — session breaks + `scripts/run.sh`.** One session cannot run forever: context grows and cost per turn grows with it. So on a driver run the Lead ends the session cleanly after each stage or milestone (or ~25 dispatches), leaving `state.md` current. The driver then launches the **next fresh host session**, which resumes at `next-action` with zero accumulated context.
 
 `run.sh` is a loop that:
 
-- reads `phase`/`status` from `state.md` before each launch — `done` → exit `0`; `awaiting-human`/`blocked` → print the stop and exit `2`;
+- reads `stage`/`status` from `state.md` before each launch — `done` → exit `0`; `awaiting-human`/`blocked` → print the stop and exit `2`;
 - hashes `state.md` (ignoring the per-session `session-dispatches:` counter) and exits `3` if two sessions make no progress;
 - exits `4` after two consecutive host failures; and
 - logs every session to `.agent-team/logs/driver-<timestamp>-sN.log`.
@@ -204,7 +204,7 @@ Anything you leave out, the Lead asks for at G0 — with a recommended answer yo
 
 ## 9. Model routing
 
-Every dispatch gets a **tier** (which model) and an **effort** (how much thinking), resolved from [ROUTING.md](./ROUTING.md) and recorded in `.agent-team/models.md` (you may edit overrides there). Defaults: the **deep** tier for approach evaluation, plans, specs, review verdicts, and hard slices; the **standard** tier for the Lead and routine slices; the **light** tier only for the mechanical precheck — never verdicts.
+Every dispatch gets a **tier** (which model) and an **effort** (how much thinking), resolved from [ROUTING.md](./ROUTING.md) and recorded in `.agent-team/models.md` (you may edit overrides there). Defaults: the **deep** tier for approach evaluation, plans, specs, review verdicts, and hard phases; the **standard** tier for the Lead and routine phases; the **light** tier only for the mechanical precheck — never verdicts.
 
 For an unattended run, choose the Lead's model with `run.sh --lead-model <model>`.
 
@@ -214,20 +214,20 @@ For an unattended run, choose the Lead's model with `run.sh --lead-model <model>
 
 ```
 .agent-team/                 # git-ignored; addressed by absolute path
-├── state.md                 # the current truth: mode, phase, gates, slices, counters
+├── state.md                 # the current truth: mode, stage, gates, phases, counters
 ├── models.md                # tier → model mapping (you may edit overrides)
 ├── brief.md                 # G0 artifact
 ├── decisions.md             # append-only D-### log
 ├── log.md                   # append-only run log, one row per dispatch
 ├── specs/                   # 01-requirements, 02-ux, 03-architecture, 04-build-plan
 ├── ux/prototypes/           # self-contained HTML
-├── build/                   # SLICE-###-report.md per slice
+├── build/                   # PHASE-###-report.md per phase
 ├── reviews/                 # one file per review round
 ├── logs/                    # full command output, never read whole
 ├── approved/                # copy of each artifact as approved (drift diffs)
 ├── changes/                 # CR-###.md change requests
 ├── handoffs/                # H-###.md; the agent appends only ## Return
-├── worktrees/               # one git worktree per slice being built
+├── worktrees/               # one git worktree per phase being built
 └── retro.md                 # written at the end
 ```
 
@@ -239,8 +239,8 @@ At a stop, read `state.md` first; it names the gate, the artifact, and what you 
 
 - **Resume any run:** run `/dm-agent-team` in the project folder, or rerun `scripts/run.sh`. The Lead reads `state.md`, prints a resume report, re-checks artifact integrity, and continues at `next-action`.
 - **Answer a stop:** do it in an interactive session, then rerun the driver.
-- **Interrupted mid-build:** the Lead detects `in-progress`/`in-review` slices and an unfinished merge, and recovers — re-dispatching the same handoff in a fresh worktree, or re-running the interrupted precheck/review.
-- **Spec drift** (an approved artifact changed by hand): a `blocked` stop in every mode, showing you the diff. You either adopt the edit (the Lead runs it as a change request, so the reviewer re-checks and affected slices go stale) or revert it.
+- **Interrupted mid-build:** the Lead detects `in-progress`/`in-review` phases and an unfinished merge, and recovers — re-dispatching the same handoff in a fresh worktree, or re-running the interrupted precheck/review.
+- **Spec drift** (an approved artifact changed by hand): a `blocked` stop in every mode, showing you the diff. You either adopt the edit (the Lead runs it as a change request, so the reviewer re-checks and affected phases go stale) or revert it.
 
 ---
 
@@ -250,7 +250,7 @@ Avoid these (see [GUIDE.md §8](./GUIDE.md#8-common-mistakes-to-avoid) for the f
 
 1. **Rubber-stamping G1 and G2** — they decide most of the outcome. G2 is the last cheap point to change *what* you're building.
 2. **Letting the reviewer share context with the author** — that is self-review.
-3. **Slicing by layer** instead of vertical, runnable slices.
+3. **Building UI before the layers under it** — build inside out (foundation, domain, persistence, API), then the UI phases.
 4. **Raising retry limits when things fail** — a repeated failure usually means the spec is wrong; fix it via a change request.
 5. **Editing frozen specs by hand mid-build** — the state then lies.
 6. **Running one giant session** — let the Lead take session breaks and let the driver resume.
@@ -263,7 +263,7 @@ Avoid these (see [GUIDE.md §8](./GUIDE.md#8-common-mistakes-to-avoid) for the f
 | Topic | File |
 |---|---|
 | Design rationale, rollout plan, host setup | [GUIDE.md](./GUIDE.md) |
-| Lead runtime, phases, gates, run modes | [SKILL.md](./SKILL.md) |
+| Lead runtime, stages, gates, run modes | [SKILL.md](./SKILL.md) |
 | Workspace, state contract, handoffs, IDs, change requests | [PROTOCOL.md](./PROTOCOL.md) |
 | Tiers, effort, escalation ladder | [ROUTING.md](./ROUTING.md) |
 | Sub-agents (dispatched by the Lead, not linked as skills) | [`agents/dm-at-*/SKILL.md`](./agents) |

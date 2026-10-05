@@ -1,6 +1,6 @@
 ---
 name: dm-at-analyst
-description: Agent-team requirements analyst. Interviews the human and turns an approved brief into testable, traceable requirements with acceptance criteria. Iterates with the designer until requirements and UX agree. Dispatched by dm-agent-team in P1 and in P2 alignment rounds; can be invoked directly to draft or revise requirements.
+description: Agent-team requirements analyst. Interviews the human and turns an approved brief into testable, traceable requirements with acceptance criteria. Iterates with the designer until requirements and UX agree. Dispatched by dm-agent-team in S1 and in S2 alignment rounds; can be invoked directly to draft or revise requirements.
 disable-model-invocation: true
 ---
 
@@ -24,7 +24,7 @@ Read the handoff inputs: the brief, `decisions.md`, any reference material, and 
 
 **Done when:** you can state the system's purpose, primary actor, most important outcome, and target state in four sentences that match the brief.
 
-**Alignment round?** If the handoff's `alignment-round:` is a number, you are in a P2 alignment round: skip step 2, apply step 3's drafting rules to every change you make, and run *Alignment round* below.
+**Alignment round?** If the handoff's `alignment-round:` is a number, you are in a S2 alignment round: skip step 2, apply step 3's drafting rules to every change you make, and run *Alignment round* below.
 
 ### 2. Draft first, then ask
 
@@ -59,12 +59,12 @@ Every draft of `01-requirements.md` uses the skeleton below and follows these ru
 - Each `REQ` is one capability, written from the user's side, with a MoSCoW priority.
 - Each acceptance criterion is **Given / When / Then**, with concrete values, and is checkable by an automated test. Test this by asking whether the builder could write a failing test from the criterion alone. If not, rewrite it.
 - Each `NFR` has a metric, a threshold, and a measurement method.
-- No technology, frameworks, file paths, UI layout, or colours. Those belong to later phases.
+- No technology, frameworks, file paths, UI layout, or colours. Those belong to later stages.
 - Glossary terms are used identically everywhere. One concept has one word.
 
 **Done when:** every *Must* `REQ` has at least one happy-path and one failure-path criterion, no blocking `Q` is unresolved, and the coverage check below passes.
 
-### Alignment round (P2)
+### Alignment round (S2)
 
 Your work list is the handoff's `work-list:`: `UXF` rows from 02 §12 (problems the designer found while designing screens) and any `D-###` the human decided that affects 01. Apply each `D-###` as written and log it in §12. For each `UXF` row:
 

@@ -1,6 +1,6 @@
 ---
 name: dm-at-designer
-description: Agent-team UX designer. Turns the requirements baseline into flows, screens, all interaction states, a design-token system, accessibility rules, and local HTML prototypes, and feeds requirement gaps back to the analyst until requirements and UX agree. For non-UI products, it designs the developer experience instead. Dispatched by dm-agent-team in P2, before architecture; can be invoked directly.
+description: Agent-team UX designer. Turns the requirements baseline into flows, screens, all interaction states, a design-token system, accessibility rules, and local HTML prototypes, and feeds requirement gaps back to the analyst until requirements and UX agree. For non-UI products, it designs the developer experience instead. Dispatched by dm-agent-team in S2, before architecture; can be invoked directly.
 disable-model-invocation: true
 ---
 

@@ -57,7 +57,7 @@ state_hash() { grep -v '^session-dispatches:' "$STATE" | cksum; }
 PROMPT="Read $SKILL_DIR/SKILL.md and act as the dm-agent-team Lead it defines. driver: true. \
 Project root: $PROJECT. Resume from .agent-team/state.md at next-action. \
 Do not ask the human anything in this session: at a stop, set status: awaiting-human, \
-write next-action, and end. End the session after finishing the current phase or milestone."
+write next-action, and end. End the session after finishing the current stage or milestone."
 
 run_host() {
   case "$HOST" in
@@ -78,12 +78,12 @@ fi
 stalls=0
 failures=0
 for ((i = 1; i <= MAX_SESSIONS; i++)); do
-  phase="$(field phase)"; st="$(field status)"
-  if [[ "$phase" == "done" ]]; then
+  stage="$(field stage)"; st="$(field status)"
+  if [[ "$stage" == "done" ]]; then
     echo "DONE — see .agent-team/retro.md"; exit 0
   fi
   if [[ "$st" == "awaiting-human" || "$st" == "blocked" ]]; then
-    echo "STOP ($st) at $phase — $(field next-action)"
+    echo "STOP ($st) at $stage — $(field next-action)"
     if [[ "$st" == "blocked" ]]; then echo "  halt: $(field halt)"; fi
     echo "Answer it in an interactive /dm-agent-team session, then rerun this script."
     exit 2
@@ -91,7 +91,7 @@ for ((i = 1; i <= MAX_SESSIONS; i++)); do
 
   before="$(state_hash)"
   log="$LOGS/driver-$(date +%Y%m%d-%H%M%S)-s$i.log"
-  echo "[session $i/$MAX_SESSIONS] $phase — $(field next-action)"
+  echo "[session $i/$MAX_SESSIONS] $stage — $(field next-action)"
   if run_host > "$log" 2>&1; then
     failures=0
   else
