@@ -16,7 +16,7 @@ A Lead skill plus five sub-agents — **analyst, architect, designer, builder, r
 What makes it dependable rather than hype:
 
 - **One owner per file.** Agents cannot overwrite each other.
-- **Trace IDs everywhere** (`REQ → ADR/API → SCR → SLICE → test`). An invented feature has no ID, so the reviewer sees it.
+- **Trace IDs everywhere** (`REQ → SCR → API/ADR → SLICE → test`). An invented feature has no ID, so the reviewer sees it.
 - **Independent review in a fresh context.** The author never grades its own work.
 - **A clean room.** Code derives only from approved specs and local files; dependencies only from an allowlist you approve.
 - **Seven human gates (G0–G6)** plus a stop on anything irreversible. The run mode decides which gates stop for you.

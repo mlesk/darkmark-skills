@@ -15,7 +15,7 @@ This guide is for the human. Agents never load it. The runtime is [SKILL.md](./S
 **What makes it reliable rather than hype:**
 
 - **One owner per file.** Agents cannot overwrite each other.
-- **Trace IDs everywhere** (`REQ → ADR/API → SCR → SLICE → test`). An invented feature has no ID, so the reviewer can see it.
+- **Trace IDs everywhere** (`REQ → SCR → API/ADR → SLICE → test`). An invented feature has no ID, so the reviewer can see it.
 - **Independent review in a fresh context.** The author never grades its own work.
 - **A clean room.** Code comes only from approved specs and local files. Dependencies come only from an allowlist you approved.
 - **Seven human gates** (G0–G6), plus a stop on anything irreversible. The **run mode** decides which gates stop for you (see §1a).
@@ -177,7 +177,7 @@ All the prompts are ready to copy and paste, and they are already packaged as sk
 | Standard tier | a cheaper strong coding model | the Lead, routine slices, simple question batches |
 | Light tier | a fast, cheap model (for example your `explore` agent's model) | the mechanical precheck; never verdicts |
 | State | Markdown in `.agent-team/` and local git | readable, diffable, and survives across sessions |
-| Verification | the project's own build, lint, and test toolchain, chosen in 02 | the single verify command is the source of truth |
+| Verification | the project's own build, lint, and test toolchain, chosen in 03 | the single verify command is the source of truth |
 | UI checks | a local browser preview; Playwright if it is on the allowlist | for prototypes and acceptance walkthroughs |
 | No-code or APIs | none in v1, deliberately | local-only is the clean-room boundary |
 

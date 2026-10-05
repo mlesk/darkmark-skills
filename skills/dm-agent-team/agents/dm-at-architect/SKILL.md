@@ -21,7 +21,7 @@ The handoff's `mode:` tells you which branch to run.
 
 ## Design mode (P3)
 
-You design after requirements and UX have been aligned and approved at G2. The UX is your brief for the interface: every screen's information, actions, and failure states must be served by what you design.
+You design after requirements and UX have been aligned and approved at G2. The UX is your brief for the interface: every screen's information, actions, and failure states must be served by what you design. If the human skipped UX (G2 is `n/a` in the handoff's context), design the interface from 01's journeys and acceptance criteria instead, and map `J`s where the rules below say `SCR`/`FLOW`.
 
 ### 1. Absorb
 

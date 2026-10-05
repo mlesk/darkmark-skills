@@ -24,7 +24,7 @@ Read the handoff inputs: the brief, `decisions.md`, any reference material, and 
 
 **Done when:** you can state the system's purpose, primary actor, most important outcome, and target state in four sentences that match the brief.
 
-**Alignment round?** If the handoff lists `02-ux.md`, you are in a P2 alignment round: skip steps 2–3 and run *Alignment round* below instead.
+**Alignment round?** If the handoff's `alignment-round:` is a number, you are in a P2 alignment round: skip step 2, apply step 3's drafting rules to every change you make, and run *Alignment round* below.
 
 ### 2. Draft first, then ask
 
@@ -66,7 +66,7 @@ Every draft of `01-requirements.md` uses the skeleton below and follows these ru
 
 ### Alignment round (P2)
 
-The designer has found problems with 01 while designing screens. They are the open `UXF` rows in 02 §12. For each one:
+Your work list is the handoff's `work-list:`: `UXF` rows from 02 §12 (problems the designer found while designing screens) and any `D-###` the human decided that affects 01. Apply each `D-###` as written and log it in §12. For each `UXF` row:
 
 - **Accept:** change 01 (add or sharpen a `REQ`, criterion, `BR`, or `NFR`), and log it in §12 *UX alignment* with the IDs you changed.
 - **Decline:** say why in §12 (for example, the brief rules it out, or the design is reading the requirement wrongly), and point to the text that settles it.

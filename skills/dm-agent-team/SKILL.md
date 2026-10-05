@@ -152,7 +152,7 @@ Run each phase's authoring as this loop (P2 adds the alignment rounds in §Requi
 
 1. **Write the author handoff** ([PROTOCOL.md §Handoff](./PROTOCOL.md#handoff)). Inputs: the brief, `decisions.md`, every approved upstream spec, and any existing specs the brief maps to this phase ([references/ADOPTION.md](./references/ADOPTION.md)).
 2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per phase; after that, the author records the rest as `ASM` with its recommended answer. In P3, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `03-architecture.md` §2.1–§2.2. Skip that batch when an adopted existing spec already fixes both.
-3. **Dispatch `dm-at-reviewer`** in `spec-review` mode. Its inputs are the spec, every approved upstream spec, and `decisions.md`.
+3. **Dispatch `dm-at-reviewer`** in `spec-review` mode. Its inputs are the brief, the spec, every approved upstream spec, and `decisions.md`.
 4. **Route the verdict:**
    - **PASS:** go to the gate.
    - **REVISE:** re-dispatch the author with the review file as input, escalated per [ROUTING.md §Escalation ladder](./ROUTING.md#escalation-ladder). Allow the profile's REVISE rounds; one more non-PASS escalates to the human.
@@ -165,25 +165,27 @@ Run each phase's authoring as this loop (P2 adds the alignment rounds in §Requi
 
 G1 approves 01 as the **baseline** for UX, not as final. Designing screens always finds holes in requirements (a missing failure path, an ambiguous rule, a journey that can't be completed), so P2 iterates between the designer and the analyst until the two specs agree.
 
-1. **Design round.** Dispatch the designer in `ux` mode with 01, then the reviewer in `spec-review` on 02, routed as in the loop above. The designer records every requirements problem it finds in 02 §12 *Requirements feedback*, instead of designing around it.
-2. **Aligned?** After a PASS on 02, the specs are aligned when 02 §12 has no open items and the reviewer's alignment checks pass (PASS means they did). If so, go to G2.
-3. **Alignment round.** Otherwise, set G1's row to `aligning`, add 1 to `alignment-round` in `state.md`, and dispatch:
-   1. the analyst in `requirements` mode, with 02 (its §12 is the work list) and its own last review as inputs. It answers every open item in 01 §12 *UX alignment*: accepted, with the `REQ`/`BR`/`NFR` it changed, or declined, with the reason. An item that adds scope becomes a `Q` for the human.
-   2. the reviewer in `spec-review` on 01;
-   3. the designer in `ux` mode with the updated 01, to close each answered item and update the affected screens;
+1. **Design round.** Dispatch the designer in `ux` mode with 01, then the reviewer in `spec-review` on 02, routed as in the loop above. The designer records every requirements problem it finds as a `UXF` row in 02 §12 *Requirements feedback*, instead of designing around it, and lists the open rows in its Return's `ux-feedback:` line.
+2. **Aligned?** After a PASS on 02, the specs are aligned when the designer's latest Return says `ux-feedback: none` (PASS also means the reviewer's alignment checks passed). If so, go to G2. Otherwise the open `UXF` IDs are the work list for an alignment round.
+3. **Alignment round.** Set G1's row to `aligning`. If the round was started by open `UXF` rows, add 1 to `alignment-round` in `state.md`. Every handoff in the round carries `alignment-round: <n>` and `work-list:` (the `UXF` IDs and any `D-###` it must apply). Dispatch, in order:
+   1. the analyst in `requirements` mode, with 02 as an extra input. It answers every work-list item in 01 §12 *UX alignment*: accepted, with the `REQ`/`BR`/`NFR` it changed, or declined, with the reason. An item that adds scope becomes a `Q` for the human. Skip this step when the work list touches only 02.
+   2. the reviewer in `spec-review` on 01, with 02 and `approved/01-requirements.md` as extra inputs, so it can check every work-list item was answered and nothing else moved;
+   3. the designer in `ux` mode with the updated 01, to close each answered `UXF` row, apply any `D-###` on the list that affects 02, and update the affected screens;
    4. the reviewer in `spec-review` on 02. Then go back to step 2.
 
-   Within an alignment round, the analyst and designer may edit their specs without a change request: neither is frozen until G2. Throughout P2, 01 counts as an approved upstream spec for handoffs and reviews, even while its row reads `aligning`.
-4. **Stuck.** If `alignment-round` would exceed 3, stop in every mode with the open items. The human decides each one, logged as a `D-###`, and the loop continues.
-5. **G2 — target state.** Present 01 and 02 together: what changed in 01 since G1, the main flows and screens, open assumptions, and the brief's *Target state* with the `FLOW`s that reach it. Ask whether this is the product the human wants to reach. Approving G2 approves both specs; re-record G1's hash and copy along with G2's. **Request changes** starts another alignment round (it does not count toward the cap of 3).
+   **Rules for P2.** The analyst and designer edit their specs without a change request: neither is frozen until G2. A requirements problem found during P2 goes to 02 §12 as a `UXF` row, never into a CR; if the reviewer finds one the designer missed, it is a REVISE finding against 02. Throughout P2, 01 counts as an approved upstream spec for handoffs and reviews, even while its row reads `aligning`. `round:` keeps counting up across P2 (so review files are never overwritten), but only REVISE verdicts count toward the profile's limit and the escalation ladder, and that count starts again at each step of each alignment round.
+4. **Stuck.** If a new `UXF`-driven round would make `alignment-round` exceed 3, stop in every mode and present the open rows. Log the human's answer to each as a `D-###` with `affects:` naming the 01 or 02 IDs, reset `alignment-round` to 0, and run one more round with those decisions as the work list.
+5. **G2 — target state.** Present 01 and 02 together: what changed in 01 since G1, the main flows and screens, open assumptions, and the brief's *Target state* with the `FLOW`s that reach it. Ask whether this is the product the human wants to reach. Approving G2 approves both specs: record G2's hash and copy of 02, re-record G1's hash and copy of 01, and set G1's row to G2's approval status (for example `approved (auto-yolo)`). **Request changes:** log each change as a `D-###` with `affects:` naming the 01 or 02 IDs, reset `alignment-round` to 0, and run an alignment round with those decisions as the work list.
 
 The reviewer's spec-review of 02 includes the alignment checks, so every round is reviewed exactly as the other phases are.
+
+**Skipping P2.** If the human skips UX at G1 (for example for a library whose interface is fully specified in 01), G2 is `n/a`. G1's presentation then also asks the target-state question, and the architect designs the interface from 01's journeys and acceptance criteria.
 
 #### Spec integrity
 
 Approved artifacts must not change behind the team's back: a hand edit after approval makes `state.md` lie, and slices built from the old text never get rebuilt.
 
-- **Record.** When a gate is approved, write `git hash-object <artifact>` into its Hash column and copy the artifact to `approved/<file>` (overwriting any earlier copy): `brief.md` for G0, the spec file for G1–G4. G3 covers `02-ux.md` only; prototypes are throwaway.
+- **Record.** When a gate is approved, write `git hash-object <artifact>` into its Hash column and copy the artifact to `approved/<file>` (overwriting any earlier copy): `brief.md` for G0, the spec file for G1–G4. G2 covers `02-ux.md` (prototypes are throwaway) and also re-records `01-requirements.md` on G1's row; G3 covers `03-architecture.md`.
 - **Check** at boot, before each wave, and before presenting each gate: re-hash every artifact with a recorded hash. Skip any artifact whose gate row is `reopened`, `recheck`, or `aligning`: it is being edited on purpose.
 - **Drift** (a hash differs): a `blocked` stop in every mode, with `halt: drift: <file> changed since G<n>`. Show the human what changed with `git diff --no-index <workspace>/approved/<file> <workspace>/<artifact path>` (written to a log; quote at most the changed hunks' headers and 10 lines). The human either **adopts** the edit, which the Lead then runs as a CR (so the reviewer re-checks it and the affected slices go stale), or **reverts** it.
 - **Re-record** the hash and the copy only when a gate is approved again: after a CR, after a re-check, or after the human adopts an edit through a CR. Never re-record just to clear a drift stop.

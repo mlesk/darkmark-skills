@@ -57,7 +57,7 @@ session-dispatches: <count since this session started>
 
 Hash is `git hash-object <artifact>` recorded at approval (see SKILL.md §Spec integrity). It works on untracked files.
 Gate status: pending | in-review | approved | approved (auto-<mode>) | approved (override) | aligning | reopened (CR-###) | recheck (CR-###)
-`aligning` is used only on G1, while P2's alignment rounds edit 01; G2's approval returns it to approved.
+`aligning` is used only on G1, while P2's alignment rounds edit 01; G2's approval sets it to G2's own approval status.
 
 ## Build
 current-milestone: –
@@ -149,6 +149,8 @@ quality-bar: prototype | internal | production
 workspace: <absolute path to .agent-team/>
 workdir: <absolute path: project root or worktree>
 base: <commit sha the work starts from | –>
+alignment-round: <n, only in a P2 alignment round | –>
+work-list: <UXF IDs and D-### to apply in this alignment round | –>
 
 ## Task
 <one or two sentences>
@@ -180,6 +182,7 @@ questions: <question batch per §Questions | none>
 auto-decisions: <yolo only: each as Q-### · answer adopted · affects: <spec IDs> | none>
 change-requests: <proposed CR text with class | none>
 blocked-by: <only when status is blocked: spec-gap | test-red | env | dependency — evidence (spec ID, or test · command · exit · log path)>
+ux-feedback: <designer only: open UXF IDs in 02 §12 | none>
 verify: <command · exit · one-line summary | n/a>
 ```
 
@@ -213,7 +216,7 @@ Ask only what changes the artifact. Never ask what the brief, `decisions.md`, or
 
 ## Change requests
 
-A change request (CR) is opened when an agent finds a defect in an approved or frozen spec, or needs something outside its ownership. Fix a defect in the spec where it starts, not in the spec where it was noticed. Agents only *propose* CR text in their Return. The Lead writes `changes/CR-###.md`:
+A change request (CR) is opened when an agent finds a defect in an approved or frozen spec, or needs something outside its ownership. Fix a defect in the spec where it starts, not in the spec where it was noticed. **Exception:** before G2, a problem with 01 found during P2 goes to 02 §12 as a `UXF` row and is settled in an alignment round (SKILL.md §Requirements ⇄ UX alignment), not through a CR. Agents only *propose* CR text in their Return. The Lead writes `changes/CR-###.md`:
 
 ```markdown
 # CR-###: <title>

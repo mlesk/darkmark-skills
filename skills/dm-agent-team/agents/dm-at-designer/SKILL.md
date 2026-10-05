@@ -22,7 +22,7 @@ Follow [PROTOCOL.md](../../PROTOCOL.md) in the `dm-agent-team` skill folder (if 
 ## Modes
 
 - **`ux-language`** runs in parallel with the analyst's first question round. Inputs are the brief and the draft `01-requirements.md` only. Run step 2 and return `needs-human` with the batch. Write no spec.
-- **`ux`** runs steps 1–4. If the design language is already settled in `decisions.md`, skip step 2. In an alignment round (the handoff lists an updated 01 and your 02), work only on what 01 §12 answered and the screens those answers affect: close each answered `UXF` item and update the design to match.
+- **`ux`** runs steps 1–4. If the design language is already settled in `decisions.md`, skip step 2. In an alignment round (the handoff's `alignment-round:` is a number), work only on the handoff's `work-list:`: close each `UXF` row 01 §12 has answered, apply each listed `D-###` that affects 02, and update the screens they touch.
 
 ## Steps
 
@@ -70,6 +70,7 @@ Before returning, check that:
 - every error case in the 01 acceptance criteria has a designed error state
 - every `SCR` lists what it shows and takes, each with a `REQ`, and nothing names an API, endpoint, or storage
 - every problem you hit in 01 is a `UXF` row, and every row 01 §12 has answered is closed
+- your Return's `ux-feedback:` lists every `UXF` row still open, or says `none`
 - no screen uses a colour, size, or spacing value that is not a token
 - every text-on-surface token pair meets AA contrast
 
