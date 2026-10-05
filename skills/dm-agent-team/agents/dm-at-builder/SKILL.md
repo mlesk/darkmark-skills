@@ -39,7 +39,7 @@ Write code and tests only inside the handoff's `workdir:`. It is a git worktree 
 
 For each item under the phase's `acceptance tests:`, in order:
 
-1. **Red:** write one test named after the criterion ID in code form ([PROTOCOL.md §IDs and traceability](../../PROTOCOL.md#ids-and-traceability): `REQ-004.2` → `REQ_004_2_rejects_duplicate_email`). Run it and watch it fail for the right reason.
+1. **Red:** write one test named after the item's ID in code form ([PROTOCOL.md §IDs and traceability](../../PROTOCOL.md#ids-and-traceability): `REQ-004.2` → `REQ_004_2_rejects_duplicate_email`, `DATA-003` → `DATA_003_rejects_negative_total`). Run it and watch it fail for the right reason.
 2. **Green:** write the minimum code that passes it.
 3. **Refactor:** align the code with the architecture's structure and standards, then re-run.
 
@@ -62,7 +62,7 @@ Run the exact **verify command** from the build plan, with output going to `.age
 The reviewer will check these. Fix any failure now, because a REVISE round costs far more than a fix:
 
 - `git status --untracked-files=all` in the workdir shows only files inside this phase's `touches:`, plus its tests. (The workspace is git-ignored, so your report and logs don't appear.)
-- every acceptance criterion has a test that would fail if the behaviour broke: not tautological, not asserting a constant, not mocking the unit under test.
+- every item under `acceptance tests:` has a test that would fail if the behaviour broke: not tautological, not asserting a constant, not mocking the unit under test.
 - no skipped tests, lowered thresholds, hard-coded results, TODO stubs, or debug leftovers.
 - the dependency manifest contains nothing outside the allowlist.
 - every UI state the phase covers uses token names.
@@ -74,8 +74,8 @@ Write `build/PHASE-###-report.md`:
 ```markdown
 # PHASE-### report — round <n>
 ## Result: done | blocked
-## Acceptance criteria → tests
-| Criterion | Test (file::name) | Status |
+## Acceptance tests → tests
+| Item (criterion or contract ID) | Test (file::name) | Status |
 ## Files changed (created / modified, with a one-line purpose each)
 ## Verify
 command: `<cmd>` · exit: 0 · summary: <tests passed/failed, duration>

@@ -119,7 +119,7 @@ Every claim downstream of the brief cites an ID. If you cannot trace something, 
 
 IDs are never reused or renumbered. A removed item stays in the file as `~~REQ-007~~ removed per D-012`.
 
-**IDs in code.** Most languages don't allow `-` or `.` in identifiers, so a test for an acceptance criterion writes its ID with both replaced by `_`: `REQ-004.2` becomes `REQ_004_2` (for example `REQ_004_2_rejects_duplicate_email`). Anyone searching for a criterion's test searches for that form.
+**IDs in code.** Most languages don't allow `-` or `.` in identifiers, so a test for any item under a phase's `acceptance tests:` writes its ID with both replaced by `_`: `REQ-004.2` becomes `REQ_004_2` (for example `REQ_004_2_rejects_duplicate_email`), and `DATA-003` becomes `DATA_003`. Anyone searching for an item's test searches for that form.
 
 Each `D-###` in `decisions.md` is an entry in this form. An auto decision is binding until a human overrides it. A decision that replaces an earlier one names it in `supersedes:`; the earlier entry is never edited.
 

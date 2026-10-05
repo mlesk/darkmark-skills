@@ -78,7 +78,8 @@ fi
 stalls=0
 failures=0
 for ((i = 1; i <= MAX_SESSIONS; i++)); do
-  stage="$(field stage)"; st="$(field status)"
+  # Runs started before stages were renamed still have a phase: field.
+  stage="$(field stage)"; [[ -n "$stage" ]] || stage="$(field phase)"; st="$(field status)"
   if [[ "$stage" == "done" ]]; then
     echo "DONE — see .agent-team/retro.md"; exit 0
   fi

@@ -53,7 +53,7 @@ A fast mechanical gate that runs before `phase-review`, usually on a light model
 
 1. Run verify per [PROTOCOL.md §Command output](../../PROTOCOL.md#command-output), with output going to `.agent-team/logs/PHASE-###-r<round>-precheck.log`. Non-zero exit is a finding.
 2. Every file in `git status --porcelain --untracked-files=all` (run in the workdir) is inside the phase's `touches:` or is a test file.
-3. Every ID under the phase's `acceptance tests:` (criteria, or `DATA`/`API` items for a layer phase) has a test whose name contains the ID in code form: `REQ-004.2` → `REQ_004_2`, `DATA-003` → `DATA_003` ([PROTOCOL.md §IDs and traceability](../../PROTOCOL.md#ids-and-traceability)).
+3. Every ID under the phase's `acceptance tests:` (criteria, or `DATA`/`API`/`SCR` contract items) has a test whose name contains the ID in code form: `REQ-004.2` → `REQ_004_2`, `DATA-003` → `DATA_003`, `SCR-004` → `SCR_004` ([PROTOCOL.md §IDs and traceability](../../PROTOCOL.md#ids-and-traceability)).
 4. The phase diff ([PROTOCOL.md §Phase diff](../../PROTOCOL.md#phase-diff)) adds no skip or focus markers (`skip`, `only`, `xit`, `[Ignore]`, `@Disabled`, and the stack's equivalents), no `TODO` or `FIXME`, and no lowered coverage or lint thresholds.
 5. The dependency manifest has no entry outside the allowlist in `03-architecture.md` §11.
 
@@ -62,7 +62,7 @@ A fast mechanical gate that runs before `phase-review`, usually on a light model
 Work in the handoff's `workdir:`. Scope the review with the phase diff ([PROTOCOL.md §Phase diff](../../PROTOCOL.md#phase-diff)): read the changed files, their tests, the phase entry, and the spec sections it traces to. Do not read unrelated code; verify covers regressions there.
 
 1. **Verify evidence.** If the handoff lists a precheck file with verdict PASS for this round, take its verify command, exit code, and summary as your evidence; the precheck ran in its own fresh context. Otherwise run verify yourself, per [PROTOCOL.md §Command output](../../PROTOCOL.md#command-output), with output going to `.agent-team/logs/PHASE-###-r<round>-review.log`. A red verify is a blocker, whatever the report says.
-2. Check that every acceptance criterion in the phase has a test. Read each test and confirm it would fail if the behaviour broke: it must not be tautological, over-mocked, or asserting on a constant.
+2. Check that every item under the phase's `acceptance tests:` (criteria, or `DATA`/`API`/`SCR` contract items) has a test. Read each test and confirm it would fail if the behaviour broke: it must not be tautological, over-mocked, or asserting on a constant.
 3. Check the code against `03-architecture.md`: structure (§8), contracts (§6), the cross-cutting conventions (§7), and standards (§9). A breach of §7 or §9 is a cited rule violation, not a matter of taste. Check the UI against `02-ux.md` tokens and states.
 4. **Scope:** compare the changed files in the phase diff with the phase's `touches:`. Confirm there is no untraced behaviour.
 5. **Clean room:** check the dependency manifest against the allowlist, and look for network calls, hard-coded secrets, and copied external code. Check the *Sources consulted* list.

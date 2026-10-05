@@ -121,11 +121,11 @@ flowchart TD
   S4 --> R4[dm-at-reviewer] -->|PASS| G4{G4 human<br/>specs frozen}
   R4 -->|REVISE ≤2| S4
   G4 --> B[S5 next PHASE in layer order<br/>foundation → domain → persistence → API → UI<br/>dm-at-builder TDD]
-  B --> RS[dm-at-reviewer phase<br/>runs verify]
+  B --> RS[dm-at-reviewer<br/>precheck + phase-review<br/>runs verify]
   RS -->|REVISE ≤2, escalated per ROUTING.md| B
   RS -->|PASS → local commit| M{milestone end?}
   M -->|no| B
-  M -->|yes| G5{G5 human demo}
+  M -->|yes| G5{G5 human milestone review}
   G5 -->|more milestones| B
   G5 -->|all done| S6[S6 dm-at-reviewer acceptance]
   S6 -->|fix phases| B
@@ -211,7 +211,7 @@ The Lead uses the first mechanism your host supports and records it in `.agent-t
 | **3 — Build** | Let it build the toy's foundation phase and first milestone. Check that commits are per phase and verify really runs. | G5 · MS-1 approved, with a green verify you ran yourself. |
 | **4 — Tune** | Make at most 3 prompt edits, aimed at the failures you saw. Typical ones: tighten a `Done when`, add a banned pattern, adjust phase size. Commit them as `dm-agent-team vN`. | Version bumped; the reason for each change is written down. |
 | **5 — Real project, specs** | Start your real greenfield project. Spend real attention at G0–G2, because these gates have the most leverage: G2 is where you confirm the requirements and UX together reach your target state. | G2 approved: the product you actually want, on paper. |
-| **6 — Real project, architecture and plan** | Run G3 and G4. Read the allowlist. Push back on the phase order if risk isn't first. | Specs frozen. |
+| **6 — Real project, architecture and plan** | Run G3 and G4. Read the allowlist. Push back if phases don't follow the layer order, or if risk isn't first within each layer. | Specs frozen. |
 | **7 — Real build and retro** | Run the build to MS-1 or further. Read the metrics. Promote 1–2 lessons into the prompts. | `retro.md` exists and you've decided what v2 changes. |
 
 **Next steps (only when the metrics justify them):** add a cheap pre-review lint agent if the reviewer keeps finding trivia; raise `max-parallel` if stale rebuilds stay rare; move routine phase reviews to a cheaper tier only if escaped defects stay at zero.
@@ -275,15 +275,15 @@ The Lead uses the first mechanism your host supports and records it in `.agent-t
 | spec-00 posture questions and the decision logs | Analyst probes; one `D-###` form with `affects:` the reviewer checks |
 | `ADOPTION-PROTOCOL.md` | [references/ADOPTION.md](./references/ADOPTION.md) |
 
-**What did not.** The fixed .NET/React stack (the architect now chooses a stack per project), the seven-spec chain, numeric gate rubrics, HTML anchors, the layer-by-layer stage plan, and PR-per-stage delivery with merge-on-green (the team never pushes; it commits locally, one phase at a time).
+**What did not.** The fixed .NET/React stack (the architect now chooses a stack per project), the seven-spec chain, numeric gate rubrics, HTML anchors, and spec-06's PR-per-Phase delivery with merge-on-green (the team never pushes; it commits locally, one phase at a time).
 
 **If you have a project on the spec skills:**
 
 | Where the project is | What to do |
 |---|---|
 | Specs not started | Use `/dm-agent-team`. |
-| Specs in progress or gate-passed, no code yet | Start `/dm-agent-team` in the project and list the `01-specifications/` files as *Existing specs* at G0. [ADOPTION.md](./references/ADOPTION.md) maps each old spec to 01, 02, or 03. The team writes its own specs from them, and re-plans spec-06 as vertical slices. |
-| `execution-state.md` exists and Phases are in progress | Finish with `dm-spec-execution`. Switching mid-build means re-planning the remaining work. If you do switch, adopt the specs as above and tell the architect at P4 which features are already built. |
+| Specs in progress or gate-passed, no code yet | Start `/dm-agent-team` in the project and list the `01-specifications/` files as *Existing specs* at G0. [ADOPTION.md](./references/ADOPTION.md) maps each old spec to 01, 02, or 03. The team writes its own specs from them, and re-plans spec-06 as its own inside-out build phases. |
+| `execution-state.md` exists and `dm-spec-execution` Phases are in progress | Finish with `dm-spec-execution`. Switching mid-build means re-planning the remaining work. If you do switch, adopt the specs as above and tell the architect at S4 which features are already built. |
 
 **Things to watch:**
 

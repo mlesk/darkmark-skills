@@ -72,7 +72,7 @@ The three run modes are `stepwise` (default), `checkpoint`, and `yolo`. "Directe
 | Requirements ⇄ UX alignment rounds | run without stopping | run without stopping | run without stopping |
 | Not aligned after 3 rounds | **stop** | **stop** | **stop** |
 | G4 build plan (spec freeze) | **stop** | **stop**: G1–G4 presented together | auto on reviewer PASS |
-| G5 milestone demo | **stop** at each | auto | auto |
+| G5 milestone review | **stop** at each | auto | auto |
 | Phase escalation | **stop** | park phase, continue others | park phase, continue others |
 | Change request | **stop** | **stop** | auto if `class: clarification`, else **stop** |
 | Spec drift, third reopen, circuit breaker, stalled build, G6, hard stops | **stop** | **stop** | **stop** |

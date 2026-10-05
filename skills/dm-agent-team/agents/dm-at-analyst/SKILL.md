@@ -24,7 +24,7 @@ Read the handoff inputs: the brief, `decisions.md`, any reference material, and 
 
 **Done when:** you can state the system's purpose, primary actor, most important outcome, and target state in four sentences that match the brief.
 
-**Alignment round?** If the handoff's `alignment-round:` is a number, you are in a S2 alignment round: skip step 2, apply step 3's drafting rules to every change you make, and run *Alignment round* below.
+**Alignment round?** If the handoff's `alignment-round:` is a number, you are in an S2 alignment round: skip step 2, apply step 3's drafting rules to every change you make, and run *Alignment round* below.
 
 ### 2. Draft first, then ask
 

@@ -1,6 +1,6 @@
 ---
 name: dm-at-architect
-description: Agent-team architect. In design mode, turns the aligned requirements and UX into the architecture and application design (stack, components, the API and data model the screens need, structure, standards, test strategy, dependency allowlist). In plan mode, turns all approved specs into an ordered tracer-bullet build plan. Dispatched by dm-agent-team in S3 and S4; can be invoked directly.
+description: Agent-team architect. In design mode, turns the aligned requirements and UX into the architecture and application design (stack, components, the API and data model the screens need, structure, standards, test strategy, dependency allowlist). In plan mode, turns all approved specs into an ordered inside-out build plan (horizontal layers first, UI phases last). Dispatched by dm-agent-team in S3 and S4; can be invoked directly.
 disable-model-invocation: true
 ---
 
@@ -153,17 +153,17 @@ Rules:
 - **Layer order is the default.** A phase depends only on phases in earlier layers, plus real dependencies within its own layer. No `ui` phase comes before the `application` phases that serve its screens. To deviate (for example, a spike to retire a big unknown early), record an ADR that names the driver.
 - **Skip a layer that doesn't apply** with `n/a — <reason>` in the plan (for example, no `persistence` for a stateless CLI).
 - **Split within a layer by component** (`COMP`), so phases in the same layer can run in parallel. Order phases within a layer by risk first, then dependency, then value.
-- **Own each acceptance criterion once, at the lowest layer that can test it observably:** a pure rule in `domain`, an operation's behaviour in `application`, a screen state or interaction in `ui`. A layer phase that owns no criterion lists the contract items it tests (`DATA` invariants, `API` inputs and errors) under `acceptance tests:`.
+- **Own each acceptance criterion once, at the lowest layer that can test it observably:** a pure rule in `domain`, an operation's behaviour in `application`, a screen state or interaction in `ui`. A phase that owns no criterion lists the contract items it tests under `acceptance tests:`: `DATA` invariants, `API` inputs and errors, or for a `ui` phase the `SCR` states it implements.
 - **Size.** A phase must be finishable in one builder session: as a rough guide, at most 10 files and 5 new acceptance tests. Split any phase that is bigger. Merge phases that are trivially small; each dispatch has a fixed cost.
 - **Plan for parallel builders.** `depends-on:` lists only real dependencies. `touches:` lists exact files or narrow folders, never `src/`. Two phases with overlapping `touches:` can't run at the same time, so shape phases to keep them disjoint. A phase that must edit a hotspot names it in `touches:`.
-- **Milestones** group phases so each one ends with something a human can run and judge. Usually that's a layer or two: the domain's rules passing their tests, the API callable with worked examples, then usable flows.
+- **Milestones** group phases so each one ends with something a human can run and judge. Usually that's a layer or two: the domain's rules passing their tests, then the API callable, then usable flows. The last `application` phase writes worked examples of calling the API (in the README, or as a script) so that milestone has something to show.
 - Tag a phase `tier: deep` if it involves concurrency, security, tricky algorithms, or data migration.
 
 ### 3. Draft and check coverage
 
 Write `04-build-plan.md` using the skeleton below.
 
-**Done when:** every *Must* acceptance criterion maps to exactly one phase that owns its test, at the lowest layer that can test it. Every `DATA` entity, `API`, and `SCR`/`FLOW` maps to a phase. Every phase names its layer and traces to at least one `REQ`. Phases follow the layer order (or an ADR says why not), and no phase depends on a later phase. The *Waves* table shows how wide the plan runs in parallel.
+**Done when:** every *Must* acceptance criterion maps to exactly one phase that owns its test, at the lowest layer that can test it. Every `DATA` entity, `API`, and `SCR`/`FLOW` maps to a phase. Every phase names its layer and traces to at least one `REQ`, except `PHASE-001`, which traces `COMP`/`ADR`/`NFR`. Phases follow the layer order (or an ADR says why not), and no phase depends on a later phase. The *Waves* table shows how wide the plan runs in parallel.
 
 ### Skeleton — `04-build-plan.md`
 
@@ -181,11 +181,18 @@ hotspots: <files from 03 §8>
 ## Phases
 ### PHASE-001 Foundation — MS-1 · layer: foundation · tier: standard
 goal: <one sentence>
-traces: REQ-…, COMP-…, API-…, SCR-…
-acceptance tests: REQ-001.1 → <test intent>   (a layer phase that owns no criterion lists the contract items it tests instead, e.g. DATA-003 invariants, API-002 errors)
+traces: COMP-…, ADR-…, NFR-…
+acceptance tests: none — verify runs green with a smoke test
 touches: <exact files or narrow folders>
 depends-on: none
-done-when: verify is green and <observable behaviour>
+done-when: verify is green and <the README's run and test commands work>
+### PHASE-### <title> — MS-n · layer: domain | persistence | application | ui · tier: standard | deep
+goal: <one sentence>
+traces: REQ-…, COMP-…, DATA-…, API-…, SCR-…
+acceptance tests: REQ-001.1 → <test intent> · or, for a phase that owns no criterion: DATA-003 → <invariant>, API-002 → <error case>, SCR-004 → <state>
+touches: <exact files or narrow folders>
+depends-on: <PHASE-### in earlier layers, or real dependencies in this layer>
+done-when: verify is green and <observable behaviour: tests, API calls, or screens>
 ## Coverage
 | Acceptance criterion | Layer | Phase |
 | DATA / API | Phase |

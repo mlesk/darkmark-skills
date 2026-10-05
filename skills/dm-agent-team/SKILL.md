@@ -23,7 +23,7 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 | Alignment rounds (requirements ↔ UX) | run without stopping | run without stopping | run without stopping |
 | Alignment not reached after 3 rounds | **stop** | **stop** | **stop** |
 | G4 build plan (specs freeze) | **stop** | **stop**: present G1–G4 together | auto on reviewer PASS |
-| G5 milestone demo | **stop** at each | auto, one-line log | auto, one-line log |
+| G5 milestone review | **stop** at each | auto, one-line log | auto, one-line log |
 | Phase escalation (one non-PASS more than the profile allows, `test-red` after the deep retry, or a second stale rebuild) | **stop** | park the phase, continue independent phases | park the phase, continue independent phases |
 | Change request | **stop** | **stop** | auto-approve if `class: clarification`, otherwise **stop** |
 | Spec drift (an approved artifact changed outside a CR) | **stop** | **stop** | **stop** |
@@ -213,7 +213,7 @@ Each phase in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build i
    On a merge conflict or a red verify: `git merge --abort`, then `git worktree remove --force .agent-team/worktrees/PHASE-###` and `git branch -D at/PHASE-###`, mark the phase `stale` with the reason, and add 1 to its `Stale` count. It is rebuilt in a later wave from the new `HEAD`. A stale rebuild does not count as a REVISE round, but a phase going stale a **second** time is an escalation: two phases keep colliding, so the plan's `touches:` are probably wrong.
 6. **Record.** Mark merged phases `done`, reset `consecutive-escalations` on any PASS, and append one `log.md` row per dispatch.
 
-**Milestone end.** In the `prototype` profile, dispatch `dm-at-reviewer` in `milestone-review` mode over the milestone's diff and route findings as fix phases. Then handle **G5 · MS-n** per the mode table. A G5 presentation includes what now works, the exact run commands, the verify summary, and open assumptions.
+**Milestone end.** In the `prototype` profile, dispatch `dm-at-reviewer` in `milestone-review` mode over the milestone's diff and route findings as fix phases. Then handle **G5 · MS-n** per the mode table. A G5 presentation includes what now works (for a layer milestone, the tests or API calls that show it), the exact commands to run them, the verify summary, and open assumptions.
 
 **Circuit breaker:** 3 escalations in a row stop the build in every mode. The plan is probably wrong; recommend sending S4 back to the architect.
 
