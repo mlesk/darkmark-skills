@@ -137,6 +137,7 @@ Quality bar: prototype. Mode: yolo, max-parallel 3.
 
 - **Claude Code:** `.claude/settings.json` → `permissions.allow`, e.g. `"Bash(git:*)"`, `"Bash(<pkg-manager>:*)"`, and one entry for the verify command from `03-architecture.md` §10.
 - **OpenCode:** `permission.bash` in your project's `opencode.jsonc` for the same commands.
+- **Guardrails:** the Lead offers at G0 to install host permission rules that refuse push, publish, deploy, network fetches, and paths outside the project ([references/host-guardrails.md](./references/host-guardrails.md)). They work on OpenCode without hooks.
 
 **6. Hand off to the driver:**
 
@@ -268,4 +269,5 @@ Avoid these (see [GUIDE.md §8](./GUIDE.md#8-common-mistakes-to-avoid) for the f
 | Tiers, effort, escalation ladder | [ROUTING.md](./ROUTING.md) |
 | Sub-agents (dispatched by the Lead, not linked as skills) | [`agents/dm-at-*/SKILL.md`](./agents) |
 | Unattended driver | [`scripts/run.sh`](./scripts/run.sh) |
+| Mechanical precheck, run by the Lead | [`scripts/precheck.sh`](./scripts/precheck.sh) |
 | Parked plan: what an enterprise SDLC would still need | [to-enterprise-SDLC.md](./to-enterprise-SDLC.md) |

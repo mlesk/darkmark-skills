@@ -51,7 +51,7 @@ Extra checks for specific specs:
 
 ## Mode: precheck
 
-A fast mechanical gate that runs before `phase-review`, usually on a light model. Make no judgment calls about design or test quality; that is `phase-review`'s job. Work in the handoff's `workdir:` and write `reviews/PHASE-###-r<round>-precheck.md` using the skeleton below. The verdict is **PASS** or **REVISE** only.
+A fast mechanical gate that runs before `phase-review`. The Lead normally runs `scripts/precheck.sh`, which applies these same checks without a model; you are dispatched only when the script cannot run, on a light model. Make no judgment calls about design or test quality; that is `phase-review`'s job. Work in the handoff's `workdir:` and write `reviews/PHASE-###-r<round>-precheck.md` using the skeleton below. The verdict is **PASS** or **REVISE** only.
 
 1. Run verify per [PROTOCOL.md §Command output](../../PROTOCOL.md#command-output), with output going to `.agent-team/logs/PHASE-###-r<round>-precheck.log`. Non-zero exit is a finding.
 2. Every file in `git status --porcelain --untracked-files=all` (run in the workdir) is inside the phase's `touches:` or is a test file.

@@ -135,6 +135,7 @@ Recommended: <option> — <reason citing drivers> · Chosen: <option> (D-### | a
 ### 7.10 Runtime topology and performance budgets
 ## 8. Project structure (tree), conventions, and hotspot files
 ## 9. Coding standards (or the repo standards file plus deviations)
+suppression exceptions: `<path globs where suppression comments are allowed, e.g. generated code | none>`
 ### 9.1 Abstractions and patterns
 | Abstraction or pattern | Concrete cases now (IDs) | What it simplifies | Costs | Inline it again if | ADR |
 Deliberate duplication: <what looks alike but stays separate, and why>
@@ -142,6 +143,7 @@ Deliberate duplication: <what looks alike but stays separate, and why>
 ### 10.1 Quality gate
 | Check | Tool and version | Preset and deviations (with reasons) | Config file | Command | Fails on |
 ## 11. Dependency allowlist
+list command: `<prints the project's direct dependency names, one per line; the precheck compares them with this table>`
 | Package | Version | License | Purpose | ADR |
 ## 12. Risks and mitigations
 ## 13. Assumptions and open questions
@@ -164,7 +166,7 @@ Build **inside out**: lay the horizontal layers first, each complete and tested,
 
 | Order | Layer | What its phases deliver | How they are tested |
 |---|---|---|---|
-| 1 | `foundation` | `PHASE-001` only: pinned toolchain, project structure, every §10.1 quality check installed and configured, the verify command (quality gate plus a smoke test) running green, every hotspot file with its registration points, the shared §7 plumbing (error types, configuration loading, logging setup), and a README with install, run, and test commands. No business behaviour. | verify green |
+| 1 | `foundation` | `PHASE-001` only: pinned toolchain, project structure, every §10.1 quality check installed and configured, the verify command (quality gate plus a smoke test) running green, a `.gitignore` covering build and test output, the §11 `list command:` working, every hotspot file with its registration points, the shared §7 plumbing (error types, configuration loading, logging setup), and a README with install, run, and test commands. No business behaviour. | verify green |
 | 2 | `domain` | Entities with their invariants and lifecycles (§5), business rules (`BR`), and calculations, as pure code with no I/O | unit tests |
 | 3 | `persistence` | Storage for every `DATA` entity, migrations, keys, concurrency control, and `writes:` rules (§5, §7.6) | tests against the real storage the test strategy names |
 | 4 | `application` | Every `API` operation (§6): validation, error kinds (§7.1), authorisation, atomicity, and the §6.1 non-screen triggers | tests at the API boundary |

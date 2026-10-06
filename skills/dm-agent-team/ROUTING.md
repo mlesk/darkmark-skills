@@ -32,7 +32,7 @@ The rule: **spend reasoning where a mistake is expensive and hard to see, and sa
 | Foundation phase (`PHASE-001`)          | dm-at-builder · phase                           | deep     | medium |
 | Routine phase, fix phase                | dm-at-builder · phase                           | standard | medium |
 | Phase tagged `tier: deep`               | dm-at-builder · phase                           | deep     | medium |
-| Mechanical pre-check                    | dm-at-reviewer · precheck                       | light    | low    |
+| Mechanical pre-check                    | `scripts/precheck.sh`, run by the Lead (fallback: dm-at-reviewer · precheck) | – (light, low on fallback) | –      |
 | Phase review, milestone review          | dm-at-reviewer · phase-review, milestone-review | deep     | medium |
 | Acceptance                              | dm-at-reviewer · acceptance                     | deep     | high   |
 | Retro                                   | Lead                                            | standard | medium |
@@ -42,7 +42,7 @@ Why these defaults:
 - **The architect and planner get the most thinking.** A wrong style, stack, or phase plan costs every later dispatch. The extra thinking is cheap by comparison.
 - **The foundation phase is deep.** It fixes the structure, the hotspot files, and the shared plumbing that every later phase builds on.
 - **Routine phases are standard.** Verify, the pre-check, and the deep review catch their mistakes.
-- **The pre-check is light.** Running verify, diffing `touches:`, and grepping for skipped tests needs no judgment. Failing phases go back to the builder without spending a deep review.
+- **The pre-check is a script.** Running verify, diffing `touches:`, and grepping for test names, skip markers, and dependencies needs no judgment, so `scripts/precheck.sh` does it without a model or a dispatch. Failing phases go back to the builder without spending a deep review.
 - **Verdicts never go below deep.** A cheap judge that passes bad work costs more than it saves.
 
 ## Escalation ladder

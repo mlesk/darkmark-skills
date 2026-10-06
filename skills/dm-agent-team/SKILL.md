@@ -113,6 +113,7 @@ If no state exists (never overwrite files already in `.agent-team/`; if the fold
 3. **First commit.** If the repo has no commits yet, commit `.gitignore` as `chore: agent-team workspace`. `git worktree add` needs a commit to branch from.
 4. **Workspace.** Create the workspace in [PROTOCOL.md §Workspace](./PROTOCOL.md#workspace) and record its absolute path as `workspace:` in `state.md`, with the skill version (`git -C <this skill dir> rev-parse --short HEAD`, or `unknown`).
 5. **Routing.** Write `.agent-team/models.md` per [ROUTING.md §Applying a route](./ROUTING.md#applying-a-route).
+6. **Guardrails.** Read [references/host-guardrails.md](./references/host-guardrails.md) and check whether the host's project config already holds its rules. If not, add one question to the G0 batch: install them (recommended), or run without. On approval, merge them into the config, keeping every rule the human already has.
 
 **Done when:** `.gitignore` lists `.agent-team/`, `state.md` and `models.md` exist, and `state.md` names the workspace, mode, stage, and next action.
 
@@ -131,7 +132,7 @@ Draft as much of `brief.md` as the human's invocation already answers. Then ask 
 - **run mode**: stepwise (recommended for a first run), checkpoint, or yolo
 - **max-parallel builders**: 1 to 4 (recommend 3 if the project is a git repo and the host runs parallel subagents, otherwise 1)
 
-Ask at most one follow-up batch. Write `brief.md` using [PROTOCOL.md §Brief](./PROTOCOL.md#brief) and present **G0**, including one line on model routing from `models.md`. G0 is always a stop.
+Ask at most one follow-up batch. Write `brief.md` using [PROTOCOL.md §Brief](./PROTOCOL.md#brief) and present **G0**, including one line on model routing from `models.md` and one on host guardrails (installed, declined, or not supported by this host). G0 is always a stop.
 
 **Done when:** the human approves G0 and `state.md` records the mode and max-parallel.
 
@@ -202,7 +203,14 @@ Each phase in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build i
 
 1. **Isolate.** Every phase gets its own worktree, even in a wave of one, so the project root only ever changes by integration: `git worktree add .agent-team/worktrees/PHASE-### -b at/PHASE-###` from the current `HEAD`. Record that `HEAD` as the handoff's `base:`, and name the worktree as its `workdir:`. Mark the phase `in-progress`.
 2. **Build.** Write one builder handoff per phase. Its inputs are the phase entry, the spec sections it traces to, `03-architecture.md` §7–§11, and the `02-ux.md` tokens and states of every `SCR` it touches; it also names the base commit. Dispatch all builders in the wave **in parallel** (one message with several subagent calls).
-3. **Check, then review.** As each builder returns `done`, mark the phase `in-review` and dispatch `dm-at-reviewer` in `precheck` mode (light tier) in the same working directory. A precheck FAIL goes straight back to the builder as a REVISE, without a deep review. On a precheck PASS, dispatch `dm-at-reviewer` in `phase-review` mode with the precheck file as an input; it reuses the precheck's verify evidence. Prechecks and reviews run in parallel across the wave. In the `prototype` profile, a precheck PASS is enough until the milestone review.
+3. **Check, then review.** As each builder returns `done`, mark the phase `in-review` and run the precheck yourself, with no dispatch:
+
+   ```bash
+   bash <this skill dir>/scripts/precheck.sh --workspace <workspace> --workdir <phase worktree> \
+        --phase PHASE-### --round <n> --base <base sha>
+   ```
+
+   For a fix phase (`PHASE-F##`), add `--touches "<its touches>" --ids "<the IDs it fixes>"` from its Build row. Exit 0 is PASS and 1 is REVISE; either way the script has written `reviews/PHASE-###-r<n>-precheck.md`. Log the row with Agent `precheck.sh` and Tier `–`. On exit 2 (it could not parse the specs or run), dispatch `dm-at-reviewer` in `precheck` mode (light tier) in the same working directory instead. A precheck REVISE goes straight back to the builder as a REVISE, without a deep review. On a precheck PASS, dispatch `dm-at-reviewer` in `phase-review` mode with the precheck file as an input; it reuses the precheck's verify evidence. Prechecks and reviews run in parallel across the wave. In the `prototype` profile, a precheck PASS is enough until the milestone review.
 4. **Route each verdict:**
    - **PASS:** commit in the phase's working directory as `PHASE-###: <title>` (never push).
    - **REVISE:** re-dispatch the builder with the review as input, escalated per [ROUTING.md §Escalation ladder](./ROUTING.md#escalation-ladder). One more non-PASS than the profile allows is an escalation.

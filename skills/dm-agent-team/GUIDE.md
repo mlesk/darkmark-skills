@@ -55,6 +55,7 @@ The driver stops when the run is done, when a human stop is reached (answer it w
 
 - **Claude Code:** in `.claude/settings.json`, add `permissions.allow` entries such as `"Bash(git:*)"`, `"Bash(<package manager>:*)"`, and one entry for the verify command from `03-architecture.md` §10. Check the rule syntax against the current Claude Code docs.
 - **OpenCode:** set `permission.bash` in `opencode.jsonc` to allow the same commands (this repo's own `opencode.jsonc` allows all bash and asks only for `rm -rf` and `git push`).
+- **Hard-stop guardrails.** At boot the Lead offers to install the host permission rules in [references/host-guardrails.md](./references/host-guardrails.md): `deny` rules for push, publish, deploy, and network commands, `ask` for destructive git and `rm -rf`, and (on OpenCode) `external_directory` denied except for the skills folder. They need no hooks. Keep them when you add the allows above: in OpenCode the last matching rule wins, so put allows before these denies.
 
 Do this after G3, once the stack and verify command are known; before that, the team only writes files.
 
