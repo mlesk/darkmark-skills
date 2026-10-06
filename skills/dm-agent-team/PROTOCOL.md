@@ -25,6 +25,7 @@ All team state lives under `.agent-team/` at the project root (the **team root**
         ├── build/           # dm-at-builder. PHASE-###-report.md per phase
         ├── reviews/         # dm-at-reviewer. One file per review round
         ├── baseline.md      # Lead-owned, brownfield only. Test and quality baseline at baseline-commit
+        ├── discovery-scope.md # Lead-owned, brownfield only. What discovery starts from and must re-check
         ├── approved/        # Lead-owned. Copy of each artifact as approved at its gate, for drift diffs
         ├── changes/         # Lead-owned. CR-###.md change requests
         ├── handoffs/        # Lead-owned. H-###.md; the agent appends only ## Return
@@ -35,11 +36,13 @@ All team state lives under `.agent-team/` at the project root (the **team root**
 
 **Runs.** Each run of the team (the first greenfield build, then each brownfield change) gets its own folder `runs/V<NNN>-<name>/`: a three-digit sequence number and a short kebab-case name. `active` names the run in progress, or says `none` between runs. Exactly one run is active at a time. A run ends `done` (after G6) or `abandoned` (the human chose to abandon it at a stop); either way the Lead sets `active` to `none`.
 
-**Workspace paths are absolute.** Builders and phase reviewers work inside a git worktree, whose checkout holds only a committed snapshot of `.agent-team/`, not the live files. So every handoff gives the run folder's absolute path as `workspace:` and the team root's as `team-root:`. Every path written as `.agent-team/...` in this protocol and in the agent files means `<workspace>/...`, except `active`, `models.md`, and `system/`, which mean `<team-root>/...`. Never read or write team files through a path relative to your working directory: an edit to a worktree's snapshot is outside your phase's `touches:` and fails the precheck.
+**Workspace paths are absolute.** Builders and phase reviewers work inside a git worktree, whose checkout holds only a committed snapshot of `.agent-team/`, not the live files. So every handoff gives the run folder's absolute path as `workspace:` and the team root's as `team-root:`. Every path written as `.agent-team/...` in this protocol, in SKILL.md, and in the agent files means `<workspace>/...`, except `active`, `models.md`, and `system/`, which mean `<team-root>/...`. Never read or write team files through a path relative to your working directory: an edit to a worktree's snapshot is outside your phase's `touches:` and fails the precheck.
 
 **What git ignores.** `.gitignore` lists `.agent-team/runs/*/worktrees/` (nested checkouts git can't track) and `.agent-team/runs/*/logs/` (raw command output). Everything else under `.agent-team/` is committed by the Lead (see SKILL.md §Lead rules).
 
-**System specs.** `system/` holds the current specification of the whole system: every requirement, screen, component, contract, and ADR that exists, without change tags. It is written at the end of each run by the consolidation step (SKILL.md §Consolidate) and is the starting point for the next run's discovery. **IDs are global**: a run continues each prefix's numbering after the highest ID in `system/` and in its own specs, and an item keeps its ID across runs.
+**System specs.** `system/` holds the current specification of the whole system: every requirement, screen, component, contract, and ADR that exists, without change tags. It is written at the end of each run by the consolidation step (SKILL.md §Consolidate) and is the starting point for the next run's discovery. Each `system/` spec starts with a `coverage:` line: `full`, or `partial: <areas>` when the system came from a `--brownfield` discovery that recovered only the areas its change touched. Later runs widen it as they recover more.
+
+**Global and run-local IDs.** Spec items are **global**: `REQ`, `NFR`, `ASM`, `FLOW`, `SCR`, `ADR`, `COMP`, `DATA`, and `API` keep their ID across runs, and a run numbers each of these prefixes after the highest ID in `system/` and in every `runs/*/specs/`, abandoned runs included (their phases may already be in the code). Everything else is **run-local** and restarts in each run: `Q`, `UXF`, `MS`, `PHASE`, `D`, `CR`, and `H`. Outside its own run, cite a run-local ID with its run's sequence number: `V002/D-014`.
 
 Project test, lint, and build tooling must ignore `.agent-team/`.
 
@@ -116,7 +119,7 @@ Fix phases (`PHASE-F##`) also go in this table; Notes gives the finding IDs, the
 
 Every claim downstream of the brief cites an ID. If you cannot trace something, it is not in scope.
 
-**Change tags (brownfield).** In a brownfield run, every item in 01, 02, and 03 carries one of `existing`, `new`, `changed`, or `removed` after its ID, for example `### REQ-007 Export totals — Must · changed (replaces REQ-002)`. Only `new`, `changed`, and `removed` items are work; `existing` items are context the change must not break, and they cite the code they were recovered from. `existing` items are exempt from phase ownership, coverage tables, the acceptance trace matrix, and the Requirements ⇄ UX alignment checks, and a `path:line` (or test) citation counts as a source in every trace and hallucination check.
+**Change tags (brownfield).** In a brownfield run, every item in 01, 02, and 03 carries one of `existing`, `new`, `changed`, or `removed` after its ID, for example `### REQ-002 Export totals — Must · changed`. A `changed` item keeps the ID of the `existing` item it changes and restates it in full; where the baseline version is also listed (01 §0, the baseline parts of 03), it stays as recorded, marked `→ changed`. A `removed` item keeps its ID and cites the `D-###` or `REQ` that removes it. An item that takes another's place under a different meaning is a `removed` item plus a `new` one. Only `new`, `changed`, and `removed` items are work; `existing` items are context the change must not break, and they cite the code they were recovered from. `existing` items are exempt from phase ownership, coverage tables, the acceptance trace matrix, and the Requirements ⇄ UX alignment checks, and a `path:line` (or test) citation counts as a source in every trace and hallucination check.
 
 **Stages and phases.** A **stage** (`S0`–`S6`) is a step of the team's process: kickoff, requirements, UX, architecture, plan, build, acceptance. A **phase** (`PHASE-###`) is one unit of build work in `04-build-plan.md`, built by one builder in one worktree. Phases are planned inside out: horizontal layers first, UI phases last.
 

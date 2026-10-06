@@ -13,11 +13,11 @@ A brownfield run **changes an existing system**. It follows the same stages, gat
 
 ### Boot, in this order
 
-These run **before** the new run folder is created, so it can't make the tree look dirty:
+These run after the Lead has named the run (SKILL.md new-run step 2) and **before** the run folder is created, so it can't make the tree look dirty:
 
 1. **Clean tree.** `git status --porcelain` must be empty. If not, stop: the human commits or stashes first. The team never stashes or discards the human's work. (Earlier runs' `.agent-team/` history is committed, so it doesn't count as dirty.)
 2. **Run branch.** Create `agent-team/<run>` (for example `agent-team/V002-csv-export`) from the current `HEAD` and switch the project root to it (`git switch -c`). That `HEAD` is the `baseline-commit`.
-3. Then continue with the normal boot from *Ignore only what git can't hold* onward, and record `kind:`, `baseline-commit:`, and `run-branch:` in `state.md`. The run's `.agent-team/` commits go on the run branch.
+3. Then continue with the normal boot from *Ignore only what git can't hold* onward (a changed `.gitignore` is committed on the run branch), and record `kind:`, `baseline-commit:`, and `run-branch:` in `state.md`. The run's `.agent-team/` commits go on the run branch. When the run is done, the human merges the run branch (or deletes it) before the next run can start.
 
 **On every resume**, and before planning a wave or integrating, check that `git branch --show-current` equals `run-branch:`. If it doesn't (the human checked out another branch between sessions), stop with `status: blocked`, `halt: wrong-branch`, and ask the human to switch back. The team never merges into any other branch.
 
@@ -33,10 +33,20 @@ Discovery records what exists before anything is designed. It runs after G0 and 
 
 **Two starting points:**
 
-- **After a finished run** (`.agent-team/system/` exists): start from the living specs. Find the commit that last changed `system/` (`git log -1 --format=%H -- .agent-team/system`) and list the code changed since then (`git diff --name-only <that commit> <baseline-commit>`, excluding `.agent-team/`). The baseline 01 §0 and 03 are the relevant parts of `system/`, re-tagged `existing`, checked only against the changed files. If nothing changed, discovery confirms the living specs and goes straight to the regression floor (step 5). Changes made outside the team since the last run are recorded as `existing` and listed at G0.5.
-- **On a codebase the team didn't build** (no `system/`): recover everything from the code, as below.
+- **After a finished run** (`.agent-team/system/` exists): start from the living specs. The baseline 01 §0 and 03 are the parts of `system/` the change touches, re-tagged `existing`, and checked only against the code changed since `system/` was last written. Changes made outside the team since the last run are recorded as `existing` items that differ from `system/` (consolidation folds them back in) and listed at G0.5. If `system/` says `coverage: partial` and the change touches an area it doesn't cover, recover that area from the code, as below. If nothing changed and everything is covered, discovery confirms the living specs and goes straight to the regression floor (step 5).
+- **On a codebase the team didn't build** (no `system/`): recover the area the change touches from the code, as below.
 
-**Inputs** for both discover dispatches: the brief (including the parts of the system it names), `decisions.md`, this file, any existing specs or docs the brief lists ([ADOPTION.md](./ADOPTION.md)), and the repository itself.
+**Discovery scope.** Before the first discover dispatch, the Lead writes `discovery-scope.md` in the workspace:
+
+```markdown
+# Discovery scope
+system-commit: <`git log -1 --format=%H -- .agent-team/system`, or – when there is no system/>
+system-coverage: full | partial: <areas>
+changed since system-commit (`git diff --name-only <system-commit> <baseline-commit> -- . ':!.agent-team'`):
+- <path>
+```
+
+**Inputs** for both discover dispatches: the brief (including the parts of the system it names), `decisions.md`, `discovery-scope.md`, `<team-root>/system/01-requirements.md` and `03-architecture.md` (when they exist; add `02-ux.md` for the designer later), this file, any existing specs or docs the brief lists ([ADOPTION.md](./ADOPTION.md)), and the repository itself. An item taken unchanged from `system/` cites its `system/` ID instead of `path:line`; that counts as a source, unless one of the changed files implements it, in which case it is re-checked against the code and cites it.
 
 1. **Architect, `discover` mode** → `specs/03-architecture.md`, every item tagged `existing` and citing its source files:
    - §3 the system as it is: components, boundaries, and data stores
@@ -79,10 +89,10 @@ Discovery records what exists before anything is designed. It runs after G0 and 
 
 Every item in 01, 02, and 03 carries a change tag (PROTOCOL §IDs and traceability): `existing`, `new`, `changed`, or `removed`. Only `new`, `changed`, and `removed` items are work. `existing` items are context the change must not break, and they are **exempt** from phase ownership, coverage, the acceptance trace matrix, and the Requirements ⇄ UX alignment checks.
 
-- **01:** §0 holds the baseline behaviour. The change's `REQ`s describe what is added or different, and each `changed` or `removed` `REQ` names the `existing` `REQ` it replaces. S1's handoff includes the baseline 03 for context.
+- **01:** §0 holds the baseline behaviour. The change's `REQ`s describe what is added or different. A `changed` `REQ` keeps the ID of the `existing` one it changes and restates it in full; a `removed` one keeps its ID and gives the decision or reason (PROTOCOL §IDs and traceability). S1's handoff includes the baseline 03 for context.
 - **02:** existing screens and design language are the baseline. Skip the `ux-language` dispatch and the design-language questions unless the brief asks for a redesign: reuse the existing tokens and patterns, recorded in §1–§2 as `existing`. Design only `new` and `changed` screens and states; list `existing` screens the change affects indirectly.
 - **03:** design **within** the existing architecture. §2.1–§2.2 read `Chosen: existing (baseline)` and the style-and-stack question batch is skipped, unless the human asked at G0 to re-architect. New components, contracts, and data follow the baseline §7–§9 conventions; deviating from one needs an ADR, as does adding a dependency, a layer, or a pattern the code doesn't already use. §10 lists the quarantined tests under `known failures:` (from the G0.5 decisions) and says how the verify command excludes them: by deselecting them in the test command (for example `--deselect`, `-k "not …"`, an exclude list), **never** by adding skip markers to the tests.
-- **Quality gate (§10.1) ratchets.** Each ratcheted check's command runs only on files changed since the baseline, for example `ruff check $(git diff --name-only --diff-filter=ACMR <baseline-commit> -- '*.py')`, and §10.1 shows that exact command. A new or stricter check is always ratcheted. Findings in untouched files are recorded in `baseline.md` and are not blockers; new and changed files must be clean.
+- **Quality gate (§10.1) ratchets.** Each ratcheted check's command runs only on files changed since the baseline, for example `ruff check $(git diff --name-only --diff-filter=ACMR <baseline-commit> -- '*.py' ':!.agent-team')`, excluding the team's own committed files, and §10.1 shows that exact command. A new or stricter check is always ratcheted. Findings in untouched files are recorded in `baseline.md` and are not blockers; new and changed files must be clean.
 - **Hermetic verify:** if the suite is not hermetic and G0.5 chose `max-parallel: 1`, the hermetic requirement on verify is waived for this run.
 - **Data changes:** any change to a persisted `existing` `DATA` entity needs a migration plan in §5: forward migration, compatibility with existing data, and a rollback.
 
@@ -100,4 +110,4 @@ The inside-out layer order still applies to the change. Brownfield adds:
 - Verify runs the whole existing suite (minus quarantined tests) plus the change's tests. Any test that passed at baseline and now fails is a **blocker** in precheck and review, unless a `behaviour-changes:` `D-###` covers it.
 - The Lead runs `scripts/precheck.sh` with `--brownfield --baseline <baseline-commit>` (and, for a fix phase, `--behaviour-changes "<D-### …>"` from its Build row). It adds check 6: no baseline test file (per 03 §10 `test files:`) was edited or deleted, and no baseline file was deleted, without the declarations above, and every cited `D-###` exists in `decisions.md`. If the script can't run, the reviewer's precheck applies the same check.
 - **Acceptance** re-runs the full existing suite on a clean checkout and compares with `baseline.md`: every test that passed at baseline still passes, or its change or removal is covered by a `behaviour-changes:` `D-###`; every baseline failure is fixed or still quarantined. It re-runs the checks that existed at baseline over the whole repository and compares per file: findings in files the change didn't touch must not have grown.
-- **G6** presents the run branch, the diff summary against `baseline-commit`, the behaviour changes and deletions with their decisions, and the regression comparison. Merging the run branch is the human's action.
+- **G6** presents the run branch, the diff summary against `baseline-commit` (`git diff --stat <baseline-commit> -- . ':!.agent-team'`), the behaviour changes and deletions with their decisions, and the regression comparison. Merging the run branch is the human's action.

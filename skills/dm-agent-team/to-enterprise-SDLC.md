@@ -103,7 +103,7 @@ Add `enterprise` above `production` in SKILL.md §Process profile and the brief'
 | **Non-functional testing** | A performance/load harness for `NFR`s with thresholds; automated accessibility checks (for example axe) to back the designer's WCAG 2.2 AA claim; end-to-end tests for the main `FLOW`s; contract tests between layers | Architect §10, plan layers, reviewer acceptance |
 | **Multiple stakeholders** | Gates that collect several sign-offs (product, UX, security, architecture), each a `D-###` with role | Gates table, gate presentation |
 | **After G6: v1.1 and beyond** | An intake flow for defects and enhancements against a delivered system, reusing brownfield discovery and the CR machinery | SKILL.md, depends on item 4 |
-| **Documentation deliverables** | API reference, an operations guide, and the ADRs published with the code, not only in the ignored workspace | Architect §8, foundation and final phases, evidence bundle |
+| **Documentation deliverables** | API reference, an operations guide, and the ADRs published with the code as product docs, not only in the run folders | Architect §8, foundation and final phases, evidence bundle |
 
 ---
 

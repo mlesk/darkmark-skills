@@ -3,7 +3,8 @@ set -euo pipefail
 
 # run.sh — keep a dm-agent-team run going across fresh host sessions until it
 # reaches a human stop, finishes, or stops making progress. Each session
-# resumes from .agent-team/state.md, so context never accumulates.
+# resumes the active run (.agent-team/active → runs/<run>/state.md), so context
+# never accumulates.
 #
 # Usage:
 #   run.sh [--host opencode|claude|copilot|codex] [--project DIR]
@@ -14,7 +15,7 @@ set -euo pipefail
 #   run.sh --host claude --lead-model sonnet -- --permission-mode acceptEdits
 #   run.sh --host copilot -- --allow-all-tools
 #
-# Exit codes: 0 done · 1 usage · 2 awaiting human · 3 no progress · 4 host failed · 5 session cap
+# Exit codes: 0 done (or no active run) · 1 usage or no run to drive · 2 awaiting human · 3 no progress · 4 host failed · 5 session cap
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 HOST="opencode"
@@ -23,7 +24,7 @@ MAX_SESSIONS=40
 LEAD_MODEL=""
 EXTRA=()
 
-usage() { sed -n '4,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
+usage() { sed -n '4,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -41,15 +42,22 @@ done
 if [[ -n "$LEAD_MODEL" ]]; then EXTRA=(--model "$LEAD_MODEL" "${EXTRA[@]+"${EXTRA[@]}"}"); fi
 
 # The active run is named in .agent-team/active (runs/<name>/ holds its state).
-# A run made by an older version of the skill keeps state.md in the team root.
 TEAM="$PROJECT/.agent-team"
-ACTIVE="$(tr -d '[:space:]' < "$TEAM/active" 2>/dev/null || true)"
-if [[ -n "$ACTIVE" && "$ACTIVE" != none ]]; then RUN_DIR="$TEAM/runs/$ACTIVE"
-elif [[ -f "$TEAM/state.md" ]]; then RUN_DIR="$TEAM"
-else
-  echo "No active run in $TEAM/active. Start one with /dm-agent-team interactively: kickoff and G0 always need a human." >&2
+if [[ -f "$TEAM/state.md" ]]; then
+  echo "$TEAM holds a run in the old single-folder layout. Run /dm-agent-team interactively once to migrate it to runs/." >&2
   exit 1
 fi
+ACTIVE=""
+if [[ -f "$TEAM/active" ]]; then ACTIVE="$(tr -d '[:space:]' < "$TEAM/active")"; fi
+if [[ -z "$ACTIVE" || "$ACTIVE" == none ]]; then
+  if [[ -d "$TEAM/runs" ]]; then
+    echo "No active run: the last run is finished or abandoned. Start the next one with /dm-agent-team interactively."
+    exit 0
+  fi
+  echo "No run yet in $TEAM. Start one with /dm-agent-team interactively: kickoff and G0 always need a human." >&2
+  exit 1
+fi
+RUN_DIR="$TEAM/runs/$ACTIVE"
 STATE="$RUN_DIR/state.md"
 LOGS="$RUN_DIR/logs"
 
@@ -91,7 +99,7 @@ for ((i = 1; i <= MAX_SESSIONS; i++)); do
   # Runs started before stages were renamed still have a phase: field.
   stage="$(field stage)"; [[ -n "$stage" ]] || stage="$(field phase)"; st="$(field status)"
   if [[ "$stage" == "done" ]]; then
-    echo "DONE — see .agent-team/retro.md"; exit 0
+    echo "DONE — see $RUN_DIR/retro.md"; exit 0
   fi
   if [[ "$st" == "awaiting-human" || "$st" == "blocked" ]]; then
     echo "STOP ($st) at $stage — $(field next-action)"

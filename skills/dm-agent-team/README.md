@@ -110,7 +110,7 @@ Mode: stepwise, max-parallel 3.
 
 **5. Keep going.** The Lead writes author handoffs, dispatches agents, routes verdicts, and stops only where the mode says. At each stop you review and answer; it then continues. Run `/dm-agent-team` again in the same folder to resume after a session break.
 
-**6. Approve G6.** After acceptance passes, **G6 is always a stop**. Approve it, then read `.agent-team/retro.md`.
+**6. Approve G6.** After acceptance passes, **G6 is always a stop**. Approve it, then read the run's `retro.md` (`.agent-team/runs/<run>/retro.md`).
 
 ### Keeping a directed run moving
 
@@ -156,7 +156,7 @@ Use this for toys, spikes, and prototypes. YOLO still stops at **G0 and G6** and
 Quality bar: prototype. Mode: yolo, max-parallel 3.
 ```
 
-**4. Answer G0 and approve.** The Lead writes `brief.md`, presents **G0**, and records `mode: yolo`. This is the first of the two stops YOLO keeps. Approving G0 also creates the run's `state.md` and points `.agent-team/active` at it, which the driver requires.
+**4. Answer G0 and approve.** The Lead writes `brief.md`, presents **G0**, and records `mode: yolo`. This is the first of the two stops YOLO keeps. The run's folder, its `state.md`, and the `.agent-team/active` pointer the driver needs already exist from boot; G0 records the mode the driver runs in.
 
 **5. Pre-approve permissions for the unattended session.** A headless session cannot answer prompts, so anything not pre-approved fails. Do this once the stack and verify command are known (after G3), before handing off to the driver. The team needs to edit files and run `git`, the package manager, and the verify command. Pre-approve those in the project's host config rather than using a blanket bypass flag:
 
@@ -184,8 +184,8 @@ Driver flags: `--host opencode|claude|copilot|codex`, `--project DIR`, `--lead-m
 | `3` | No progress in 2 sessions (`state.md` unchanged) | Inspect the logged session; fix the cause |
 | `4` | Host failed twice in a row | Fix the host/permission problem; rerun |
 | `5` | Hit `--max-sessions` | Rerun to continue |
-| `0` | `stage: done` | Finished — read `.agent-team/retro.md` |
-| `1` | Usage error, or no `state.md` (G0 not done yet) | Approve G0 interactively first |
+| `0` | `stage: done`, or no active run | Finished — read the run's `retro.md` |
+| `1` | Usage error, no run yet, or an old single-folder layout | Start (or migrate) the run interactively first |
 
 **8. Approve G6.** Acceptance passes, then **G6 is always a stop**. Review `reviews/acceptance.md` and every auto-approved decision, approve, and the Lead writes `retro.md`, sets `stage: done`, and the driver exits `0`.
 
@@ -205,7 +205,7 @@ Two layers keep a run going without a babysitter:
 - reads `stage`/`status` from `state.md` before each launch — `done` → exit `0`; `awaiting-human`/`blocked` → print the stop and exit `2`;
 - hashes `state.md` (ignoring the per-session `session-dispatches:` counter) and exits `3` if two sessions make no progress;
 - exits `4` after two consecutive host failures; and
-- logs every session to `.agent-team/logs/driver-<timestamp>-sN.log`.
+- logs every session to `.agent-team/runs/<run>/logs/driver-<timestamp>-sN.log`.
 
 It **never answers a stop for you** — that is why some autopilot runs still hand control back at a hard stop or at G6.
 
@@ -260,6 +260,7 @@ A project is built over **runs**: the first builds it, and each later run change
         ├── build/                  # PHASE-###-report.md per phase
         ├── reviews/                # one file per review round
         ├── baseline.md             # brownfield: tests and quality checks at the baseline commit
+        ├── discovery-scope.md      # brownfield: what discovery starts from and re-checks
         ├── approved/               # copy of each artifact as approved (drift diffs)
         ├── changes/                # CR-###.md change requests
         ├── handoffs/               # H-###.md; the agent appends only ## Return
@@ -269,9 +270,10 @@ A project is built over **runs**: the first builds it, and each later run change
 ```
 
 - **Starting a run.** `/dm-agent-team` resumes the run named in `active`. If none is active, it starts the next one (`V003-…`), proposes a name you can change at G0, and, if an earlier run finished, makes it a brownfield change to the system in `system/`.
-- **Ending a run.** After G6, the analyst, designer, and architect fold the run's changes into `system/` (reviewed, and approved with G6); the Lead closes the run and sets `active` to `none`. At any stop you can choose **Abandon run** instead; its folder stays as history.
-- **IDs are global.** `REQ-012` means the same requirement in every run and in `system/`.
-- **Commits.** The Lead commits `.agent-team/` at every gate, session break, and run end, never source code with it, and never pushes.
+- **Ending a run.** After G6, the analyst, designer, and architect fold the run's changes into `system/` (reviewed, and approved with G6); the Lead closes the run and sets `active` to `none`. At any stop you can choose **Abandon run** instead; its folder stays as history, and the stop lists any phases already merged into the code so you can decide what to keep.
+- **Spec IDs are global.** `REQ-012` means the same requirement in every run and in `system/`; a `changed` item keeps its ID. Decisions, change requests, phases, and handoffs are numbered per run and cited across runs as `V002/D-014`.
+- **Brownfield runs live on a branch.** A brownfield run works on `agent-team/<run>`. Merge it (or delete it to discard the run) before the next run: the Lead won't start one while a finished run branch is unmerged, and stops if you start one from another branch while a run is active.
+- **Commits.** The Lead commits `.agent-team/` at every gate, stop, session break, and run end (and `.gitignore` at boot), never source code with it, and never pushes.
 
 At a stop, read the active run's `state.md` first; it names the gate, the artifact, and what you must decide.
 
