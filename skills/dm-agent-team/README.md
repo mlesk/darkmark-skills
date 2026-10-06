@@ -118,6 +118,27 @@ Mode: stepwise, max-parallel 3.
 
 ---
 
+## 5a. Brownfield — changing an existing system
+
+Add `--brownfield` to change an existing codebase instead of building a new one. The flag is required; without it the team assumes a new project and stops at G0 if the folder already holds code.
+
+```text
+/dm-agent-team --brownfield Add CSV export to the monthly invoice screen.
+Target state: I can download this month's invoices as CSV from the invoice list.
+Quality bar: production. Mode: checkpoint, max-parallel 2.
+```
+
+What changes ([references/BROWNFIELD.md](./references/BROWNFIELD.md)):
+
+- **Boot** needs a clean working tree, records the baseline commit, and works on a new branch `agent-team/<project>`; your branch is never touched, and you merge the run branch yourself after G6.
+- **S0.5 Discovery** (before requirements): the architect records the existing architecture, conventions, and quality tools, and the analyst records the current behaviour of the area you're changing. The Lead runs the existing tests to set the **regression floor**.
+- **G0.5 Baseline gate:** you confirm the baseline, and decide for every test already failing whether to fix it or quarantine it.
+- **Change-scoped specs:** every item is tagged `existing`, `new`, `changed`, or `removed`. The designer keeps the existing look; the architect designs within the existing architecture unless you ask to re-architect. New quality rules apply to new and changed files only.
+- **Characterisation tests first:** current behaviour is pinned by tests before any phase changes it.
+- **No regressions:** every test that passed at baseline must keep passing; changing one needs a decision you approve (`behaviour-changes: D-###`), and the precheck script enforces it.
+
+---
+
 ## 6. YOLO mode — step by step
 
 Use this for toys, spikes, and prototypes. YOLO still stops at **G0 and G6** and at every hard stop; everything between runs unattended.
@@ -189,7 +210,7 @@ It **never answers a stop for you** — that is why some autopilot runs still ha
 ## 8. Kickoff prompt template
 
 ```text
-/dm-agent-team <one-paragraph idea>
+/dm-agent-team [--brownfield] <one-paragraph idea, or for brownfield the change you want>
 
 Target state: <what you should be able to see and do when v1 is done>
 Quality bar: prototype | internal | production

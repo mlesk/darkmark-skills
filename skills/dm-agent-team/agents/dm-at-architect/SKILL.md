@@ -19,6 +19,16 @@ The handoff's `mode:` tells you which branch to run.
 
 ---
 
+## Brownfield runs
+
+If the handoff lists `references/BROWNFIELD.md`, this is a change to an existing system. Follow it as well as this file:
+
+- **`discover` mode (S0.5):** write a baseline `03-architecture.md` that describes the system **as it is**, every item tagged `existing` and citing the files it comes from: overview, the components, data, and contracts the change is likely to touch, the conventions the code follows (§7–§9), the existing test command and quality tools (§10–§10.1), and the dependencies in use (§11, with its `list command:`). Describe; don't redesign or judge. Return `needs-human` only for what the code can't tell you.
+- **`design` mode:** design within the baseline. Skip §2.1–§2.2 (`Chosen: existing (baseline)`) unless the brief asks to re-architect. Tag every item `existing`, `new`, `changed`, or `removed`; new work follows the baseline conventions, and a deviation, new dependency, new layer, or new pattern needs an ADR. §10.1 keeps the existing checks and ratchets any new or stricter check to new and changed files. A change to persisted `existing` data needs a migration and rollback plan in §5.
+- **`plan` mode:** `PHASE-001` is the baseline harness; add `characterisation` phases before any phase that changes `existing` behaviour; a phase that edits or deletes a baseline test, or deletes a baseline file, lists it in `touches:` and names the `D-###` in a `behaviour-changes:` line.
+
+---
+
 ## Design mode (S3)
 
 You design after requirements and UX have been aligned and approved at G2. The UX is your brief for the interface: every screen's information, actions, and failure states must be served by what you design. If the human skipped UX (G2 is `n/a` in the handoff's context), design the interface from 01's journeys and acceptance criteria instead, and map `J`s where the rules below say `SCR`/`FLOW`.
@@ -175,6 +185,7 @@ Build **inside out**: lay the horizontal layers first, each complete and tested,
 Rules:
 
 - **Layer order is the default.** A phase depends only on phases in earlier layers, plus real dependencies within its own layer. No `ui` phase comes before the `application` phases that serve its screens. To deviate (for example, a spike to retire a big unknown early), record an ADR that names the driver.
+- **Brownfield adds a `characterisation` layer:** each such phase comes immediately before the phase that changes the behaviour it pins, whatever that phase's layer (see `references/BROWNFIELD.md`).
 - **Skip a layer that doesn't apply** with `n/a — <reason>` in the plan (for example, no `persistence` for a stateless CLI).
 - **Split within a layer by component** (`COMP`), so phases in the same layer can run in parallel. Order phases within a layer by risk first, then dependency, then value.
 - **Own each acceptance criterion once, at the lowest layer that can test it observably:** a pure rule in `domain`, an operation's behaviour in `application`, a screen state or interaction in `ui`. A phase that owns no criterion lists the contract items it tests under `acceptance tests:`: `DATA` invariants, `API` inputs and errors, or for a `ui` phase the `SCR` states it implements.
@@ -211,13 +222,14 @@ acceptance tests: none — verify runs green with a smoke test
 touches: <exact files or narrow folders>
 depends-on: none
 done-when: verify is green and <the README's run and test commands work>
-### PHASE-### <title> — MS-n · layer: domain | persistence | application | ui · tier: standard | deep
+### PHASE-### <title> — MS-n · layer: domain | persistence | application | ui | characterisation · tier: standard | deep
 goal: <one sentence>
 traces: REQ-…, COMP-…, DATA-…, API-…, SCR-…
 acceptance tests: REQ-001.1 → <test intent> · or, for a phase that owns no criterion: DATA-003 → <invariant>, API-002 → <error case>, SCR-004 → <state>
 touches: <exact files or narrow folders>
 depends-on: <PHASE-### in earlier layers, or real dependencies in this layer>
 done-when: verify is green and <observable behaviour: tests, API calls, or screens>
+behaviour-changes: <brownfield only, when the phase edits or deletes a baseline test: D-### …>
 ## Coverage
 | Acceptance criterion | Layer | Phase |
 | DATA / API | Phase |

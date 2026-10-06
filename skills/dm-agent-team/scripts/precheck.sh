@@ -9,15 +9,20 @@ set -uo pipefail
 # Usage:
 #   precheck.sh --workspace DIR --workdir DIR --phase PHASE-### --round N --base SHA
 #               [--touches "path ..."] [--ids "REQ-001.1 DATA-003 ..."]
+#               [--brownfield --baseline SHA [--behaviour-changes "D-012 ..."]]
 #
 # --touches and --ids override what is read from 04-build-plan.md. Use them for
 # fix phases (PHASE-F##), which live only in state.md and their handoff.
+#
+# --brownfield adds check 6: a test that existed at --baseline may be edited or
+# deleted only if the phase lists it in touches: and declares behaviour-changes:.
 #
 # Exit codes: 0 PASS · 1 REVISE · 2 could not run (bad arguments, or a spec the
 # script cannot parse). On 2, the Lead dispatches dm-at-reviewer in precheck mode.
 
 WORKSPACE="" WORKDIR="" PHASE="" ROUND="" BASE="" TOUCHES_OVERRIDE="" IDS_OVERRIDE=""
-usage() { sed -n '4,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
+BROWNFIELD=false BASELINE="" BEHAV_OVERRIDE=""
+usage() { sed -n '4,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --workspace) WORKSPACE="$2"; shift 2 ;;
@@ -27,11 +32,15 @@ while [[ $# -gt 0 ]]; do
     --base)      BASE="$2"; shift 2 ;;
     --touches)   TOUCHES_OVERRIDE="$2"; shift 2 ;;
     --ids)       IDS_OVERRIDE="$2"; shift 2 ;;
+    --brownfield) BROWNFIELD=true; shift ;;
+    --baseline)  BASELINE="$2"; shift 2 ;;
+    --behaviour-changes) BEHAV_OVERRIDE="$2"; shift 2 ;;
     -h|--help)   usage ;;
     *) echo "Unknown option: $1" >&2; usage ;;
   esac
 done
 [[ -n "$WORKSPACE" && -n "$WORKDIR" && -n "$PHASE" && -n "$ROUND" && -n "$BASE" ]] || usage
+if $BROWNFIELD && [[ -z "$BASELINE" ]]; then echo "precheck: --brownfield needs --baseline SHA" >&2; usage; fi
 PLAN="$WORKSPACE/specs/04-build-plan.md"
 ARCH="$WORKSPACE/specs/03-architecture.md"
 REVIEW="$WORKSPACE/reviews/$PHASE-r$ROUND-precheck.md"
@@ -178,6 +187,23 @@ else
   if [[ -z "$EXTRA" ]]; then add_row 5 "dependencies on the allowlist" PASS "\`$DEPS_CMD\` · $(printf '%s\n' "$DEPS" | grep -c .) deps"
   else add_row 5 "dependencies on the allowlist" FAIL "not allowlisted: $EXTRA"
        add_finding "dependency manifest" "not on the 03 §11 allowlist: $EXTRA" "remove it, or raise a dependency CR (hard stop)" 5; fi
+fi
+
+# 6. Brownfield: baseline tests change only with a declared behaviour change ----
+if $BROWNFIELD; then
+  git rev-parse --verify -q "$BASELINE^{commit}" >/dev/null || fail "baseline $BASELINE is not a commit in $WORKDIR"
+  if [[ -n "$BEHAV_OVERRIDE" ]]; then BEHAV="$BEHAV_OVERRIDE"; else BEHAV="$(field behaviour-changes | grep -oE 'D-[0-9]+' | tr '\n' ' ')"; fi
+  TOUCHED_BASE_TESTS=""
+  while IFS=$'\t' read -r st f rest; do
+    [[ -z "$f" ]] && continue
+    [[ "$st" == R* ]] && f="$rest"                  # a rename: the old path is the baseline file
+    is_test "$f" || continue
+    git cat-file -e "$BASELINE:$f" 2>/dev/null || continue
+    if [[ -z "${BEHAV// /}" ]] || ! in_touches "$f"; then TOUCHED_BASE_TESTS+="$f "; fi
+  done < <(git diff --name-status -M "$BASE" | awk -F'\t' '{ if ($1 ~ /^R/) print $1"\t"$3"\t"$2; else print $1"\t"$2 }')
+  if [[ -z "$TOUCHED_BASE_TESTS" ]]; then add_row 6 "baseline tests unchanged, or changed under behaviour-changes:" PASS "baseline $BASELINE · behaviour-changes: ${BEHAV:-none}"
+  else add_row 6 "baseline tests unchanged, or changed under behaviour-changes:" FAIL "edited or deleted: $TOUCHED_BASE_TESTS"
+       add_finding "$TOUCHED_BASE_TESTS" "a test that existed at baseline was edited or deleted without a declared behaviour change" "restore it and fix the regression, or get a D-### accepting the change and add behaviour-changes: (and the file to touches:) via the plan" 6; fi
 fi
 
 # ---- Write the review file ------------------------------------------------------

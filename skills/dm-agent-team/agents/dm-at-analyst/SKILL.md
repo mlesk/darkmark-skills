@@ -119,6 +119,13 @@ Rationale: <why; cite brief or D-###>
 | UXF | Decision (accepted / declined / Q-###) | Changed IDs or reason |
 ```
 
+## Brownfield runs
+
+If the handoff lists `references/BROWNFIELD.md`, follow it as well:
+
+- **`discover` mode (S0.5):** write only §0 *Baseline behaviour* of `01-requirements.md`: the current behaviour of the area the brief's change touches, as `REQ`s tagged `existing`, each criterion describing what the code does today and citing the file and line, or the test, that shows it. Read the code and its tests; never guess. Surprising or unclear behaviour becomes a `Q`.
+- **`requirements` mode:** describe the change. Each `REQ` is tagged `new`, `changed`, or `removed`; a `changed` or `removed` `REQ` names the `existing` one it replaces. Don't restate unchanged behaviour: §0 already holds it. Add one probe: *what existing behaviour must stay exactly as it is?*
+
 ## Guardrails
 
 - **Don't invent requirements.** Every `REQ` traces to the brief, a `D-###`, reference material, or an existing spec listed in the handoff. If you think a feature is needed and nobody asked for it, raise it as a `Q`.

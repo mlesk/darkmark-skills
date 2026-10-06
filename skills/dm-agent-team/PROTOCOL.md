@@ -24,6 +24,7 @@ All team state lives in `.agent-team/` at the project root. Source code lives wh
 ├── build/              # dm-at-builder. PHASE-###-report.md per phase
 ├── reviews/            # dm-at-reviewer. One file per review round
 ├── logs/               # Whoever ran the command. Full command output, never read whole
+├── baseline.md         # Lead-owned, brownfield only. Test and quality baseline at baseline-commit
 ├── approved/           # Lead-owned. Copy of each artifact as approved at its gate, for drift diffs
 ├── changes/            # Lead-owned. CR-###.md change requests
 ├── handoffs/           # Lead-owned. H-###.md; the agent appends only ## Return
@@ -40,10 +41,13 @@ Project test, lint, and build tooling must ignore `.agent-team/`.
 team-version: <skill git sha | unknown>
 project: <name>
 workspace: <absolute path to .agent-team/>
+kind: greenfield | brownfield
+baseline-commit: <brownfield only: sha the run started from | –>
+run-branch: <brownfield only: branch the team integrates into | –>
 mode: stepwise | checkpoint | yolo
 quality-bar: prototype | internal | production
 max-parallel: <1–4>
-stage: S0-kickoff | S1-requirements | S2-ux | S3-architecture | S4-plan | S5-build | S6-acceptance | done
+stage: S0-kickoff | S0.5-discovery | S1-requirements | S2-ux | S3-architecture | S4-plan | S5-build | S6-acceptance | done
 alignment-round: <0 until S2 needs one; counts requirements ⇄ UX rounds>
 status: in-progress | awaiting-human | blocked
 halt: <kind: evidence, only while status is blocked | –>
@@ -86,6 +90,7 @@ Fix phases (`PHASE-F##`) also go in this table; Notes gives the finding IDs, the
 ## Success measures (max 3, measurable)
 ## In scope (v1)
 ## Out of scope (min 3)
+## Kind: greenfield | brownfield (brownfield: the change, the parts of the system it touches, re-architect yes/no)
 ## Constraints (platform, required/forbidden tech, repo standards files)
 ## Reference material — dirty room (dm-at-analyst only)
 - <path> — <what it is>
@@ -99,6 +104,8 @@ Fix phases (`PHASE-F##`) also go in this table; Notes gives the finding IDs, the
 ## IDs and traceability
 
 Every claim downstream of the brief cites an ID. If you cannot trace something, it is not in scope.
+
+**Change tags (brownfield).** In a brownfield run, every item in 01, 02, and 03 carries one of `existing`, `new`, `changed`, or `removed` after its ID, for example `### REQ-007 Export totals — Must · changed (replaces REQ-002)`. Only `new`, `changed`, and `removed` items are work; `existing` items are context the change must not break, and they cite the code they were recovered from.
 
 **Stages and phases.** A **stage** (`S0`–`S6`) is a step of the team's process: kickoff, requirements, UX, architecture, plan, build, acceptance. A **phase** (`PHASE-###`) is one unit of build work in `04-build-plan.md`, built by one builder in one worktree. Phases are planned inside out: horizontal layers first, UI phases last.
 
@@ -142,7 +149,7 @@ The Lead writes `handoffs/H-###.md` before every dispatch:
 # H-###: <agent> — <mode> — <target>
 from: lead
 to: at-<agent>
-mode: requirements | design | ux-language | ux | plan | phase | precheck | spec-review | phase-review | milestone-review | acceptance
+mode: discover | requirements | design | ux-language | ux | plan | phase | precheck | spec-review | phase-review | milestone-review | acceptance
 tier: deep | standard | light
 effort: low | medium | high
 round: <n>
@@ -315,7 +322,7 @@ Compute these from `log.md` and `state.md` for `retro.md`:
 
 1. **Local only.** Read and write only inside the project root and this skill's folder. No web search, no URL fetching, no MCP or remote tools, no issue trackers. Use the local filesystem, local git, and local build and test commands.
 2. **One network exception.** The package manager may install dependencies that appear in the **dependency allowlist** in `specs/03-architecture.md`. Anything else needs a CR.
-3. **Dirty room.** Only `dm-at-analyst` may read the paths listed under *Reference material* in `brief.md`. *Existing specs* are different: they are the human's own documents for this project, and the agents the brief maps them to may read them. An author treats an existing spec in its handoff inputs as settled unless it contradicts the brief, a `D-###`, or another existing spec; each contradiction or gap becomes a `Q` with the existing text as the recommended answer. Anything taken from one cites it as its source (`from <path> §<section>`), and the reviewer accepts that citation like a `D-###`. The analyst describes behaviour in requirements and never copies code or exact text. Every other agent must not open those paths.
+3. **Dirty room.** Only `dm-at-analyst` may read the paths listed under *Reference material* in `brief.md`. In a brownfield run, the project's own existing code is not the dirty room: it is human-owned input every agent may read, cited by path and line (see references/BROWNFIELD.md). *Existing specs* are different: they are the human's own documents for this project, and the agents the brief maps them to may read them. An author treats an existing spec in its handoff inputs as settled unless it contradicts the brief, a `D-###`, or another existing spec; each contradiction or gap becomes a `Q` with the existing text as the recommended answer. Anything taken from one cites it as its source (`from <path> §<section>`), and the reviewer accepts that citation like a `D-###`. The analyst describes behaviour in requirements and never copies code or exact text. Every other agent must not open those paths.
 4. **Spec-derived code.** `dm-at-builder` writes code only from approved specs. It does not reproduce code from memory of a specific named project. If a spec is too thin to implement without inventing behaviour, the builder returns `blocked` and proposes a CR.
 5. **Provenance.** Every phase report lists the sources consulted, which must be spec IDs and project files only. `dm-at-reviewer` audits this, and also checks dependencies against the allowlist and its recorded licenses.
 

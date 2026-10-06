@@ -47,7 +47,13 @@ Extra checks for specific specs:
 - **03 §10.1:** the quality gate has at least a formatter in check mode, a linter with a recognised preset, and type checking where the language supports it, with warnings as errors where possible; extra checks fit the quality bar and `NFR`s; every tool is pinned, on the allowlist, and has a config file, an exact command, and a failure condition; deviations from presets carry reasons; verify runs the whole gate.
 - **03 §9.1:** every listed abstraction names real current cases, what it simplifies, its costs, and when to inline it; none is justified only by a principle (SOLID, DRY, a pattern name) or by code that merely looks alike; deliberate duplication is listed where specs describe similar-looking but separate things.
 - **03:** (if UX was skipped, read `J` for `FLOW` and acceptance criteria for `SCR` below) every `SCR`'s shown information, inputs, and actions map to `API` inputs, outputs, or operations; every `FLOW` has an `API` sequence in §6.2; every failure state in 02 maps to a §7.1 error kind and an `API` error; nothing in 02 was redesigned (a needed change is a CR). Then: unless §2.1 and §2.2 record `Chosen: … (adopted, D-###)` from an existing spec, each evaluates 3–5 viable options (or names what the constraints ruled out), scores every option against every driver, states one recommendation with a driver-based reason, and records the chosen option with its `D-###` or `auto-yolo`; no option violates the brief's required or forbidden technologies; every allowlist entry has a license and an ADR; the verify command is runnable and hermetic (no fixed ports or shared state outside the working directory); hotspot files are listed; every §7 subsection is filled with checkable lines or `n/a — reason`, cites an ADR or NFR, and names where it is enforced; multi-entity writes state atomicity; job-written `DATA` states its `writes:` rule; every non-screen trigger in §6.1 maps to an `API`.
-- **04:** `PHASE-001` is the foundation phase and creates the hotspot files; every phase names its layer, and phases follow the layer order foundation → domain → persistence → application → ui, unless an ADR says why not; no `ui` phase comes before the `application` phases its screens use; each *Must* criterion is owned once, at the lowest layer that can test it; no phase depends on a later one; `touches:` are exact; phases in the same wave have disjoint `touches:`; coverage is complete, including every `DATA` and `API`.
+- **04:** `PHASE-001` is the foundation phase and creates the hotspot files; every phase names its layer, and phases follow the layer order foundation → domain → persistence → application → ui, unless an ADR says why not (in brownfield, a `characterisation` phase sits just before the phase it protects); no `ui` phase comes before the `application` phases its screens use; each *Must* criterion is owned once, at the lowest layer that can test it; no phase depends on a later one; `touches:` are exact; phases in the same wave have disjoint `touches:`; coverage is complete, including every `DATA` and `API`.
+
+Brownfield runs (the handoff lists `references/BROWNFIELD.md`) add these checks:
+
+- **`discover` reviews (baseline 01 §0 and baseline 03):** spot-check at least 5 claims against the code or tests they cite; a claim the code doesn't support is a major finding. Nothing in a baseline spec proposes a change.
+- **Change specs:** every item carries a change tag; every `changed` or `removed` item names what it replaces; 03 follows the baseline conventions unless an ADR says why not, and skips the style evaluation unless re-architecting was asked for; data changes to `existing` entities have a migration and rollback plan.
+- **04:** `PHASE-001` is the baseline harness; a `characterisation` phase precedes every phase that changes `existing` behaviour; every phase that edits a baseline test has `behaviour-changes:` with a `D-###`.
 
 ## Mode: precheck
 
@@ -69,6 +75,7 @@ Work in the handoff's `workdir:`. Scope the review with the phase diff ([PROTOCO
 4. **Scope:** compare the changed files in the phase diff with the phase's `touches:`. Confirm there is no untraced behaviour.
 5. **Clean room:** check the dependency manifest against the allowlist, and look for network calls, hard-coded secrets, and copied external code. Check the *Sources consulted* list.
 6. **Faking:** look for skipped or disabled tests, lowered thresholds, hard-coded outputs, and TODO stubs.
+7. **Brownfield regression:** no test that existed at `baseline-commit` was weakened, deleted, or had its expectation changed beyond what the phase's `behaviour-changes:` `D-###` covers; a characterisation phase changed no production code.
 
 ## Mode: milestone-review
 
@@ -85,6 +92,7 @@ Audit the whole system once all phases are done, and write `reviews/acceptance.m
 5. **Clean-room audit:** list every installed dependency with its license and compare against the allowlist.
 6. Confirm the README explains how to install, run, test, and configure the project.
 7. Confirm there are no open CRs or blocking Qs, and list every remaining `ASM` and every `kind: override` decision for the human.
+8. **Brownfield:** run the full existing suite on a clean checkout and compare it with `baseline.md`: the passing count may only rise, and every baseline failure is fixed or still quarantined by its `D-###`. Re-run the §10.1 checks: findings in files the change didn't touch must not have grown. List every behaviour change with its `D-###` for G6.
 
 ## Skeleton — review file
 

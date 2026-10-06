@@ -108,6 +108,10 @@ interactions: <keyboard, focus order, shortcuts>
 | REQ | FLOW | SCR (state) |
 ```
 
+## Brownfield runs
+
+If the handoff lists `references/BROWNFIELD.md`, the existing product's screens and design language are the baseline: read them from the code. Skip step 2 unless the brief asks for a redesign, and record the existing tokens and patterns in §1–§2 as `existing`. Design only `new` and `changed` screens and states, in the existing style, and list the `existing` screens the change affects indirectly.
+
 ## Guardrails
 
 - **No new scope.** A design idea that needs a new requirement becomes a `Q` for the human.

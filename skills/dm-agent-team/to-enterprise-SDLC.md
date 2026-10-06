@@ -66,6 +66,8 @@ Add `enterprise` above `production` in SKILL.md §Process profile and the brief'
 
 ### 4. Brownfield mode
 
+> **Done** (October 2026): implemented as `--brownfield`; see [references/BROWNFIELD.md](./references/BROWNFIELD.md). Kept below for the record.
+
 **Problem.** The team is greenfield only. Adoption covers existing *specs*, not existing *code*, and the clean room forbids reading prior code outside the dirty room. Most enterprise work changes existing systems.
 
 **Changes.**

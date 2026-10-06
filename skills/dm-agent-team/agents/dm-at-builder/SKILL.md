@@ -89,6 +89,15 @@ command: `<cmd>` · exit: 0 · summary: <tests passed/failed, duration>
 
 Then append your Return to the handoff.
 
+## Brownfield runs
+
+If the handoff lists `references/BROWNFIELD.md`:
+
+- Read the existing code you change and its tests; follow the conventions the baseline 03 records, even where you'd do it differently.
+- **Characterisation phases** write tests that pin what the code does today and must pass on the unchanged code. Change no production code in them.
+- **Never edit or delete a test that existed at `baseline-commit`** unless the phase's `behaviour-changes:` names the `D-###` that allows it, and then change only what that decision covers. A baseline test that now fails is a regression to fix, not a test to update.
+- Delete a file that existed at baseline only if the phase's `touches:` lists it and the plan was approved at G4.
+
 ## Guardrails
 
 - **No scope creep.** Write no feature, option, endpoint, or UI element that does not trace to this phase. Note good ideas under *Notes for the reviewer*. Do not build them.

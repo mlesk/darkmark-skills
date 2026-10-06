@@ -23,6 +23,7 @@ The rule: **spend reasoning where a mistake is expensive and hard to see, and sa
 | Work                                    | Agent · mode                                    | Tier     | Effort |
 | --------------------------------------- | ----------------------------------------------- | -------- | ------ |
 | Orchestration, state, gate presentation | Lead                                            | standard | low    |
+| Brownfield discovery (S0.5)             | dm-at-architect · discover, then dm-at-analyst · discover | deep     | high   |
 | Requirements                            | dm-at-analyst · requirements                    | deep     | medium |
 | Design-language questions               | dm-at-designer · ux-language                    | standard | low    |
 | Approach evaluation and architecture    | dm-at-architect · design                        | deep     | high   |
