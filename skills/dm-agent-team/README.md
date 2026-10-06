@@ -268,3 +268,4 @@ Avoid these (see [GUIDE.md §8](./GUIDE.md#8-common-mistakes-to-avoid) for the f
 | Tiers, effort, escalation ladder | [ROUTING.md](./ROUTING.md) |
 | Sub-agents (dispatched by the Lead, not linked as skills) | [`agents/dm-at-*/SKILL.md`](./agents) |
 | Unattended driver | [`scripts/run.sh`](./scripts/run.sh) |
+| Parked plan: what an enterprise SDLC would still need | [to-enterprise-SDLC.md](./to-enterprise-SDLC.md) |
