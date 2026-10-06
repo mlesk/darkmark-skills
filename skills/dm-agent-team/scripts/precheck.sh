@@ -140,7 +140,8 @@ if [[ $VEXIT -eq 0 ]]; then add_row 1 "verify" PASS "\`$VERIFY\` · exit 0 · $L
 else add_row 1 "verify" FAIL "\`$VERIFY\` · exit $VEXIT · $LOG"
      add_finding "$LOG" "verify exited $VEXIT: $VSUM" "make verify pass" 1; fi
 
-# Files this phase changed (untracked files included; the workspace is git-ignored).
+# Files this phase changed (untracked files included). Reports go to the live workspace,
+# not the worktree, so any change to the worktree's .agent-team/ snapshot is out of scope.
 git add --all --intent-to-add >/dev/null 2>&1
 CHANGED="$(git status --porcelain --untracked-files=all | sed -E 's/^.{3}//; s/^.* -> //' | sort -u)"
 

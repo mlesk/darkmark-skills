@@ -25,6 +25,7 @@ The rule: **spend reasoning where a mistake is expensive and hard to see, and sa
 | Orchestration, state, gate presentation | Lead                                            | standard | low    |
 | Brownfield discovery (S0.5)             | dm-at-architect · discover, then dm-at-analyst · discover | deep     | high   |
 | Requirements                            | dm-at-analyst · requirements                    | deep     | medium |
+| Consolidate into system specs (end of run) | dm-at-analyst / dm-at-designer / dm-at-architect · consolidate | standard | medium |
 | Design-language questions               | dm-at-designer · ux-language                    | standard | low    |
 | Approach evaluation and architecture    | dm-at-architect · design                        | deep     | high   |
 | UX spec                                 | dm-at-designer · ux                             | deep     | medium |
@@ -59,7 +60,7 @@ Never de-escalate during a run. The retro proposes route changes from the metric
 
 ## Applying a route
 
-At boot, write `.agent-team/models.md` from the skeleton below, choosing the first mechanism the host supports. Tell the human at G0 in one line, for example `Routing: named agents (deep → opus, standard → sonnet, light → haiku)`.
+At boot of the first run, write `models.md` in the team root (`.agent-team/models.md`, shared by every run) from the skeleton below, choosing the first mechanism the host supports. Tell the human at G0 in one line, for example `Routing: named agents (deep → opus, standard → sonnet, light → haiku)`.
 
 **Detect the mechanism; don't guess.** Check in this order:
 

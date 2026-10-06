@@ -40,8 +40,18 @@ done
 # Every supported host CLI accepts --model.
 if [[ -n "$LEAD_MODEL" ]]; then EXTRA=(--model "$LEAD_MODEL" "${EXTRA[@]+"${EXTRA[@]}"}"); fi
 
-STATE="$PROJECT/.agent-team/state.md"
-LOGS="$PROJECT/.agent-team/logs"
+# The active run is named in .agent-team/active (runs/<name>/ holds its state).
+# A run made by an older version of the skill keeps state.md in the team root.
+TEAM="$PROJECT/.agent-team"
+ACTIVE="$(tr -d '[:space:]' < "$TEAM/active" 2>/dev/null || true)"
+if [[ -n "$ACTIVE" && "$ACTIVE" != none ]]; then RUN_DIR="$TEAM/runs/$ACTIVE"
+elif [[ -f "$TEAM/state.md" ]]; then RUN_DIR="$TEAM"
+else
+  echo "No active run in $TEAM/active. Start one with /dm-agent-team interactively: kickoff and G0 always need a human." >&2
+  exit 1
+fi
+STATE="$RUN_DIR/state.md"
+LOGS="$RUN_DIR/logs"
 
 if [[ ! -f "$STATE" ]]; then
   echo "No $STATE. Run /dm-agent-team interactively first: kickoff and G0 always need a human." >&2
@@ -55,7 +65,7 @@ field() { grep -m1 "^$1:" "$STATE" | sed "s/^$1:[[:space:]]*//" || true; }
 state_hash() { grep -v '^session-dispatches:' "$STATE" | cksum; }
 
 PROMPT="Read $SKILL_DIR/SKILL.md and act as the dm-agent-team Lead it defines. driver: true. \
-Project root: $PROJECT. Resume from .agent-team/state.md at next-action. \
+Project root: $PROJECT. Resume the active run named in .agent-team/active, at the next-action in its state.md. \
 Do not ask the human anything in this session: at a stop, set status: awaiting-human, \
 write next-action, and end. End the session after finishing the current stage or milestone."
 

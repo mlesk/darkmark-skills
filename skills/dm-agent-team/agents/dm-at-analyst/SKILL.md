@@ -12,7 +12,8 @@ Follow [PROTOCOL.md](../../PROTOCOL.md) in the `dm-agent-team` skill folder (if 
 
 ## You own
 
-- `.agent-team/specs/01-requirements.md`, and nothing else.
+- `.agent-team/specs/01-requirements.md` (the run's spec)
+- `.agent-team/system/01-requirements.md` (the living spec, team root), in `consolidate` mode only
 
 You are the **only** agent allowed to read the *Reference material* paths in `brief.md` (the dirty room). Turn what you learn there into behaviour statements. Never copy code, identifiers, or verbatim text from it.
 
@@ -118,6 +119,10 @@ Rationale: <why; cite brief or D-###>
 ## 12. UX alignment
 | UXF | Decision (accepted / declined / Q-###) | Changed IDs or reason |
 ```
+
+## Consolidate mode
+
+At the end of a run (after acceptance passes), update the living spec `.agent-team/system/01-requirements.md` (in the team root) so it describes the **whole system as now built**, not just this run's change. Start from the current `system/01-requirements.md` (absent after the first run: then start from this run's spec), and merge in this run's approved `01-requirements.md`: add `new` items, replace `changed` ones in place, strike `removed` ones (`~~ID~~ removed in <run> per D-###`), and drop all change tags. Keep every ID exactly as it is; never renumber. §0 *Baseline behaviour* disappears: the system spec simply holds every current requirement. Change nothing else, and don't rewrite or improve existing text. Return the IDs you added, changed, and struck.
 
 ## Brownfield runs
 

@@ -34,8 +34,8 @@ The Lead drives within a session; a driver script drives across sessions. That t
 ## 3. Mental model (60 seconds)
 
 - **Stage S0–S6**, each ending at a **gate G0–G6**. A gate is where a human would normally decide; the run mode says whether it stops or auto-approves.
-- **`.agent-team/state.md`** is the single source of truth: mode, stage, status, gates, phases, and a one-line `next-action` any fresh session can execute. It is the handoff between sessions.
-- **`.agent-team/`** holds all team state and is git-ignored. Source code lives where `specs/03-architecture.md` puts it.
+- **The active run's `state.md`** (`.agent-team/runs/<run>/state.md`) is the single source of truth: mode, stage, status, gates, phases, and a one-line `next-action` any fresh session can execute. It is the handoff between sessions.
+- **`.agent-team/`** holds all team state, one folder per run under `runs/`, and is committed as the project's history (§10). Source code lives where `specs/03-architecture.md` puts it.
 - **A "stop"** means: update `state.md`, present the stop, end the turn. The Lead never asks "shall I continue?" between stops — it just runs to the next one.
 
 ### The stages
@@ -121,7 +121,10 @@ Mode: stepwise, max-parallel 3.
 
 ## 5a. Brownfield — changing an existing system
 
-Add `--brownfield` to change an existing codebase instead of building a new one. The flag is required; without it the team assumes a new project and stops at G0 if the folder already holds code.
+Brownfield is how the team changes an existing system. It happens two ways:
+
+- **Automatically, after your first run.** Once any run has finished, every later run is brownfield: it starts from the living specs in `.agent-team/system/` and checks only the code changed since the last run.
+- **With `--brownfield`, on a codebase the team didn't build.** Without the flag (and with no finished run), the team assumes a new project and stops at G0 if the folder already holds code.
 
 ```text
 /dm-agent-team --brownfield Add CSV export to the monthly invoice screen.
@@ -153,7 +156,7 @@ Use this for toys, spikes, and prototypes. YOLO still stops at **G0 and G6** and
 Quality bar: prototype. Mode: yolo, max-parallel 3.
 ```
 
-**4. Answer G0 and approve.** The Lead writes `brief.md`, presents **G0**, and records `mode: yolo`. This is the first of the two stops YOLO keeps. Approving G0 also creates `.agent-team/state.md`, which the driver requires.
+**4. Answer G0 and approve.** The Lead writes `brief.md`, presents **G0**, and records `mode: yolo`. This is the first of the two stops YOLO keeps. Approving G0 also creates the run's `state.md` and points `.agent-team/active` at it, which the driver requires.
 
 **5. Pre-approve permissions for the unattended session.** A headless session cannot answer prompts, so anything not pre-approved fails. Do this once the stack and verify command are known (after G3), before handing off to the driver. The team needs to edit files and run `git`, the package manager, and the verify command. Pre-approve those in the project's host config rather than using a blanket bypass flag:
 
@@ -235,27 +238,42 @@ For an unattended run, choose the Lead's model with `run.sh --lead-model <model>
 
 ## 10. Where everything lives
 
+A project is built over **runs**: the first builds it, and each later run changes it. Every run has its own folder, and `.agent-team/` is committed, so the project keeps the full history of what was asked, decided, reviewed, and built.
+
 ```
-.agent-team/                 # git-ignored; addressed by absolute path
-├── state.md                 # the current truth: mode, stage, gates, phases, counters
+.agent-team/                 # committed (except runs/*/logs/ and runs/*/worktrees/)
+├── active                   # the run in progress, e.g. V002-csv-export, or none
 ├── models.md                # tier → model mapping (you may edit overrides)
-├── brief.md                 # G0 artifact
-├── decisions.md             # append-only D-### log
-├── log.md                   # append-only run log, one row per dispatch
-├── specs/                   # 01-requirements, 02-ux, 03-architecture, 04-build-plan
-├── ux/prototypes/           # self-contained HTML
-├── build/                   # PHASE-###-report.md per phase
-├── reviews/                 # one file per review round
-├── logs/                    # full command output, never read whole
-├── baseline.md              # brownfield: tests and quality checks at the baseline commit
-├── approved/                # copy of each artifact as approved (drift diffs)
-├── changes/                 # CR-###.md change requests
-├── handoffs/                # H-###.md; the agent appends only ## Return
-├── worktrees/               # one git worktree per phase being built
-└── retro.md                 # written at the end
+├── system/                  # living specs of the whole system, updated at the end of each run
+│   ├── 01-requirements.md
+│   ├── 02-ux.md
+│   └── 03-architecture.md
+└── runs/
+    ├── V001-invoice-tracker/       # a finished run, kept as history
+    └── V002-csv-export/            # the active run
+        ├── state.md                # the current truth: kind, mode, stage, gates, phases, counters
+        ├── brief.md                # G0 artifact
+        ├── decisions.md            # append-only D-### log
+        ├── log.md                  # append-only run log, one row per dispatch
+        ├── specs/                  # this run's 01-requirements, 02-ux, 03-architecture, 04-build-plan
+        ├── ux/prototypes/          # self-contained HTML
+        ├── build/                  # PHASE-###-report.md per phase
+        ├── reviews/                # one file per review round
+        ├── baseline.md             # brownfield: tests and quality checks at the baseline commit
+        ├── approved/               # copy of each artifact as approved (drift diffs)
+        ├── changes/                # CR-###.md change requests
+        ├── handoffs/               # H-###.md; the agent appends only ## Return
+        ├── retro.md                # written at the end
+        ├── logs/                   # git-ignored: full command output, never read whole
+        └── worktrees/              # git-ignored: one git worktree per phase being built
 ```
 
-At a stop, read `state.md` first; it names the gate, the artifact, and what you must decide. Add `.agent-team/` to `.gitignore` (the Lead does this at boot).
+- **Starting a run.** `/dm-agent-team` resumes the run named in `active`. If none is active, it starts the next one (`V003-…`), proposes a name you can change at G0, and, if an earlier run finished, makes it a brownfield change to the system in `system/`.
+- **Ending a run.** After G6, the analyst, designer, and architect fold the run's changes into `system/` (reviewed, and approved with G6); the Lead closes the run and sets `active` to `none`. At any stop you can choose **Abandon run** instead; its folder stays as history.
+- **IDs are global.** `REQ-012` means the same requirement in every run and in `system/`.
+- **Commits.** The Lead commits `.agent-team/` at every gate, session break, and run end, never source code with it, and never pushes.
+
+At a stop, read the active run's `state.md` first; it names the gate, the artifact, and what you must decide.
 
 ---
 

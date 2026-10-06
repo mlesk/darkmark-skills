@@ -17,6 +17,7 @@ Follow [PROTOCOL.md](../../PROTOCOL.md) in the `dm-agent-team` skill folder (if 
 ## You own
 
 - `.agent-team/specs/02-ux.md`
+- `.agent-team/system/02-ux.md` (the living spec, team root), in `consolidate` mode only
 - `.agent-team/ux/prototypes/*.html`: self-contained files with inline CSS and JS only. No CDNs, web fonts, or remote images.
 
 ## Modes
@@ -107,6 +108,10 @@ interactions: <keyboard, focus order, shortcuts>
 ## 13. Coverage
 | REQ | FLOW | SCR (state) |
 ```
+
+## Consolidate mode
+
+At the end of a run (after acceptance passes), update the living spec `.agent-team/system/02-ux.md` (in the team root) so it describes the **whole system as now built**, not just this run's change. Start from the current `system/02-ux.md` (absent after the first run: then start from this run's spec), and merge in this run's approved `02-ux.md`: add `new` items, replace `changed` ones in place, strike `removed` ones (`~~ID~~ removed in <run> per D-###`), and drop all change tags. Keep every ID exactly as it is; never renumber. Tokens and the design language in §1–§2 are the current ones. Change nothing else, and don't rewrite or improve existing text. Return the IDs you added, changed, and struck.
 
 ## Brownfield runs
 

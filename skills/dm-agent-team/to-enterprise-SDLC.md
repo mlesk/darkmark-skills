@@ -27,7 +27,9 @@ Add `enterprise` above `production` in SKILL.md §Process profile and the brief'
 
 ### 1. Evidence bundle and attributable approvals
 
-**Problem.** `.agent-team/` is git-ignored, so decisions, reviews, gate approvals, handoffs, and logs disappear with the workspace. Gate approval is "any human message", with no identity or role, and yolo auto-approves gates.
+**Partly done** (October 2026): `.agent-team/` is now committed, one folder per run, so decisions, reviews, gate approvals, and handoffs survive as history (logs stay ignored). Still open: approver identity, separation of duties, and per-dispatch model and cost.
+
+**Problem (original).** `.agent-team/` was git-ignored, so decisions, reviews, gate approvals, handoffs, and logs disappeared with the workspace. Gate approval is "any human message", with no identity or role, and yolo auto-approves gates.
 
 **Changes.**
 - **Evidence bundle.** At each gate (enterprise) or at G6 (production), the Lead exports a committed bundle to `docs/agent-team/` (path set in 03 §8): approved specs (from `approved/`), the gate's review files, `decisions.md`, the run log, and a manifest with the skill version, models per tier, and the hash of every artifact.

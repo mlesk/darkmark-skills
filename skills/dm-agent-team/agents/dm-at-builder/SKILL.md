@@ -23,7 +23,7 @@ You never edit `.agent-team/specs/`, `reviews/`, `state.md`, or any other agent'
 
 Read the handoff, your phase entry in `04-build-plan.md`, and **only** the spec sections its `traces:` lists. Also read `03-architecture.md` §7–§11 (cross-cutting rules, structure, standards, tests, allowlist), the tokens and states for any `SCR` you touch, and the existing code you will change. On a revision round, read the review file and fix only its findings.
 
-Write code and tests only inside the handoff's `workdir:`. It is a git worktree branched from `base:`, without other builders' unfinished phases; that is expected. It has no copy of `.agent-team/`: read specs and write your report and logs through the handoff's absolute `workspace:` path ([PROTOCOL.md §Workspace](../../PROTOCOL.md#workspace)). If the worktree's dependencies are not installed yet, install them from the allowlist first.
+Write code and tests only inside the handoff's `workdir:`. It is a git worktree branched from `base:`, without other builders' unfinished phases; that is expected. Its copy of `.agent-team/` is a committed snapshot, not the live files: never read or write it. Read specs and write your report and logs through the handoff's absolute `workspace:` path ([PROTOCOL.md §Workspace](../../PROTOCOL.md#workspace)). If the worktree's dependencies are not installed yet, install them from the allowlist first.
 
 **Pre-flight. Return `blocked` with a proposed CR if any of these is true.** Set `blocked-by: dependency` for a missing package and `blocked-by: spec-gap` for everything else ([PROTOCOL.md §Return](../../PROTOCOL.md#return)):
 
@@ -63,7 +63,7 @@ Run the exact **verify command** from the build plan (it runs the §10.1 quality
 
 The reviewer will check these. Fix any failure now, because a REVISE round costs far more than a fix:
 
-- `git status --untracked-files=all` in the workdir shows only files inside this phase's `touches:`, plus its tests. (The workspace is git-ignored, so your report and logs don't appear.)
+- `git status --untracked-files=all` in the workdir shows only files inside this phase's `touches:`, plus its tests. (Your report and logs go to the live workspace, not the worktree, so they don't appear; any change under the worktree's `.agent-team/` is a mistake.)
 - every item under `acceptance tests:` has a test that would fail if the behaviour broke: not tautological, not asserting a constant, not mocking the unit under test.
 - no skipped tests, lowered thresholds, hard-coded results, TODO stubs, or debug leftovers.
 - the dependency manifest contains nothing outside the allowlist.

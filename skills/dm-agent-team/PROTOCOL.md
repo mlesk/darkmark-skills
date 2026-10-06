@@ -4,33 +4,42 @@ This file defines the shared contract for the Lead and every `dm-at-*` agent. Wh
 
 ## Workspace
 
-All team state lives in `.agent-team/` at the project root. Source code lives where `specs/03-architecture.md` puts it.
-
-**The workspace is git-ignored and addressed by absolute path.** `.agent-team/` is listed in `.gitignore` and never committed. Builders and phase reviewers work inside a git worktree, which has no copy of it. So every handoff gives the workspace's absolute path as `workspace:`, and every path written as `.agent-team/...` in this protocol and in the agent files means `<workspace>/...`, never a path relative to your working directory. Source code and tests go in the handoff's `workdir:`; reports, reviews, and logs go in the workspace.
+All team state lives under `.agent-team/` at the project root (the **team root**), and it is **committed** to git as the project's history of runs. Source code lives where `specs/03-architecture.md` puts it.
 
 ```
-.agent-team/
-├── state.md            # Lead-owned. The current truth: mode, stage, gates, phases, counters
-├── models.md           # Lead-owned; human may edit overrides. Tier → model mapping for this host
-├── brief.md            # Lead-owned. G0 artifact
-├── decisions.md        # Lead-owned. Append-only D-### log of decisions
-├── log.md              # Lead-owned. Append-only run log, one row per dispatch
-├── specs/
-│   ├── 01-requirements.md   # dm-at-analyst
-│   ├── 02-ux.md             # dm-at-designer
-│   ├── 03-architecture.md   # dm-at-architect (design)
-│   └── 04-build-plan.md     # dm-at-architect (plan)
-├── ux/prototypes/      # dm-at-designer. Self-contained HTML, no external URLs
-├── build/              # dm-at-builder. PHASE-###-report.md per phase
-├── reviews/            # dm-at-reviewer. One file per review round
-├── logs/               # Whoever ran the command. Full command output, never read whole
-├── baseline.md         # Lead-owned, brownfield only. Test and quality baseline at baseline-commit
-├── approved/           # Lead-owned. Copy of each artifact as approved at its gate, for drift diffs
-├── changes/            # Lead-owned. CR-###.md change requests
-├── handoffs/           # Lead-owned. H-###.md; the agent appends only ## Return
-├── worktrees/          # Lead-owned. One git worktree per phase being built
-└── retro.md            # Lead-owned. Written at the end
+.agent-team/                 # the team root
+├── active                   # control file: the active run's folder name, or `none`
+├── models.md                # Lead-owned; human may edit overrides. Tier → model mapping for this host
+├── system/                  # living specs: the whole system as built so far, consolidated after each run
+│   ├── 01-requirements.md
+│   ├── 02-ux.md
+│   └── 03-architecture.md
+└── runs/
+    └── V002-csv-export/     # one folder per run: the run's **workspace**
+        ├── state.md         # Lead-owned. The current truth: kind, mode, stage, gates, phases, counters
+        ├── brief.md         # Lead-owned. G0 artifact
+        ├── decisions.md     # Lead-owned. Append-only D-### log of this run's decisions
+        ├── log.md           # Lead-owned. Append-only run log, one row per dispatch
+        ├── specs/           # this run's 01-requirements, 02-ux, 03-architecture, 04-build-plan
+        ├── ux/prototypes/   # dm-at-designer. Self-contained HTML, no external URLs
+        ├── build/           # dm-at-builder. PHASE-###-report.md per phase
+        ├── reviews/         # dm-at-reviewer. One file per review round
+        ├── baseline.md      # Lead-owned, brownfield only. Test and quality baseline at baseline-commit
+        ├── approved/        # Lead-owned. Copy of each artifact as approved at its gate, for drift diffs
+        ├── changes/         # Lead-owned. CR-###.md change requests
+        ├── handoffs/        # Lead-owned. H-###.md; the agent appends only ## Return
+        ├── retro.md         # Lead-owned. Written at the end
+        ├── logs/            # git-ignored. Full command output, never read whole
+        └── worktrees/       # git-ignored. One git worktree per phase being built
 ```
+
+**Runs.** Each run of the team (the first greenfield build, then each brownfield change) gets its own folder `runs/V<NNN>-<name>/`: a three-digit sequence number and a short kebab-case name. `active` names the run in progress, or says `none` between runs. Exactly one run is active at a time. A run ends `done` (after G6) or `abandoned` (the human chose to abandon it at a stop); either way the Lead sets `active` to `none`.
+
+**Workspace paths are absolute.** Builders and phase reviewers work inside a git worktree, whose checkout holds only a committed snapshot of `.agent-team/`, not the live files. So every handoff gives the run folder's absolute path as `workspace:` and the team root's as `team-root:`. Every path written as `.agent-team/...` in this protocol and in the agent files means `<workspace>/...`, except `active`, `models.md`, and `system/`, which mean `<team-root>/...`. Never read or write team files through a path relative to your working directory: an edit to a worktree's snapshot is outside your phase's `touches:` and fails the precheck.
+
+**What git ignores.** `.gitignore` lists `.agent-team/runs/*/worktrees/` (nested checkouts git can't track) and `.agent-team/runs/*/logs/` (raw command output). Everything else under `.agent-team/` is committed by the Lead (see SKILL.md §Lead rules).
+
+**System specs.** `system/` holds the current specification of the whole system: every requirement, screen, component, contract, and ADR that exists, without change tags. It is written at the end of each run by the consolidation step (SKILL.md §Consolidate) and is the starting point for the next run's discovery. **IDs are global**: a run continues each prefix's numbering after the highest ID in `system/` and in its own specs, and an item keeps its ID across runs.
 
 Project test, lint, and build tooling must ignore `.agent-team/`.
 
@@ -40,7 +49,9 @@ Project test, lint, and build tooling must ignore `.agent-team/`.
 # Agent Team State
 team-version: <skill git sha | unknown>
 project: <name>
-workspace: <absolute path to .agent-team/>
+run: V<NNN>-<name>
+workspace: <absolute path to this run's folder>
+team-root: <absolute path to .agent-team/>
 kind: greenfield | brownfield
 baseline-commit: <brownfield only: sha the run started from | –>
 run-branch: <brownfield only: branch the team integrates into | –>
@@ -49,7 +60,7 @@ quality-bar: prototype | internal | production
 max-parallel: <1–4>
 stage: S0-kickoff | S0.5-discovery | S1-requirements | S2-ux | S3-architecture | S4-plan | S5-build | S6-acceptance | done
 alignment-round: <0 until S2 needs one; counts requirements ⇄ UX rounds>
-status: in-progress | awaiting-human | blocked
+status: in-progress | awaiting-human | blocked | done | abandoned
 halt: <kind: evidence, only while status is blocked | –>
 next-action: <one line a fresh session can execute>
 session-dispatches: <count since this session started>
@@ -149,13 +160,14 @@ The Lead writes `handoffs/H-###.md` before every dispatch:
 # H-###: <agent> — <mode> — <target>
 from: lead
 to: at-<agent>
-mode: discover | requirements | design | ux-language | ux | plan | phase | precheck | spec-review | phase-review | milestone-review | acceptance
+mode: discover | consolidate | requirements | design | ux-language | ux | plan | phase | precheck | spec-review | phase-review | milestone-review | acceptance
 tier: deep | standard | light
 effort: low | medium | high
 round: <n>
 run-mode: stepwise | checkpoint | yolo
 quality-bar: prototype | internal | production
-workspace: <absolute path to .agent-team/>
+workspace: <absolute path to this run's folder>
+team-root: <absolute path to .agent-team/>
 workdir: <absolute path: project root or worktree>
 base: <commit sha the work starts from | –>
 alignment-round: <n, only in an S2 alignment round | –>
@@ -263,7 +275,7 @@ Key choices: <bullets, each with its ID>
 Assumptions needing your confirmation: <ASM list or none>
 Decided without you since the last stop: <auto D-### list or none>
 Risks: <top 3>
-Your options: Approve · Request changes (say what) · Switch mode · Stop
+Your options: Approve · Request changes (say what) · Switch mode · Stop · Abandon run
 ```
 
 An **escalation** stop (the author or builder ran out of REVISE rounds) also offers **Override (give a reason)**: the human accepts the work despite the open findings. See SKILL.md §Human override.
@@ -288,7 +300,7 @@ git add --all --intent-to-add && git diff <base>          # full diff, new files
 git add --all --intent-to-add && git diff --stat <base>   # file list
 ```
 
-`git status --porcelain --untracked-files=all` in the worktree lists the same files one by one (without the flag, a new folder shows as a single entry). The workspace is git-ignored, so reports and logs never appear.
+`git status --porcelain --untracked-files=all` in the worktree lists the same files one by one (without the flag, a new folder shows as a single entry). Reports and reviews are written to the live workspace, not the worktree, so they never appear.
 
 ## Run log
 
@@ -330,5 +342,5 @@ Compute these from `log.md` and `state.md` for `retro.md`:
 
 When a human invokes a `dm-at-*` skill directly instead of through the Lead:
 
-1. If `.agent-team/state.md` exists, read it. Refuse to edit a frozen spec unless the human names an approved CR. Otherwise do the task, then tell the human to run `/dm-agent-team` to resume, so that state and gates stay consistent.
+1. If `.agent-team/active` names a run, read that run's `state.md`. Refuse to edit a frozen spec unless the human names an approved CR. Otherwise do the task, then tell the human to run `/dm-agent-team` to resume, so that state and gates stay consistent.
 2. If no workspace exists, ask whether to start with `/dm-agent-team` (recommended) or run solo. In solo mode, create only your own output files. You talk to the human directly: ask your questions as one batch per §Questions and wait for the answers. Write your Return as your final message instead of into a handoff. End by asking the human to approve the result. There is no reviewer in solo mode, so say so.

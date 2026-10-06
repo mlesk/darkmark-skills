@@ -14,10 +14,15 @@ Follow [PROTOCOL.md](../../PROTOCOL.md) in the `dm-agent-team` skill folder (if 
 
 - `.agent-team/specs/03-architecture.md` (design mode)
 - `.agent-team/specs/04-build-plan.md` (plan mode)
+- `.agent-team/system/03-architecture.md` (the living spec, team root), in `consolidate` mode only
 
 The handoff's `mode:` tells you which branch to run.
 
 ---
+
+## Consolidate mode
+
+At the end of a run (after acceptance passes), update the living spec `.agent-team/system/03-architecture.md` (in the team root) so it describes the **whole system as now built**, not just this run's change. Start from the current `system/03-architecture.md` (absent after the first run: then start from this run's spec), and merge in this run's approved `03-architecture.md`: add `new` items, replace `changed` ones in place, strike `removed` ones (`~~ID~~ removed in <run> per D-###`), and drop all change tags. Keep every ID exactly as it is; never renumber. Keep every ADR, marking any this run superseded. Leave out run-only content: §2.1–§2.2 evaluations become just the chosen style and stack, and the build plan stays in the run. Change nothing else, and don't rewrite or improve existing text. Return the IDs you added, changed, and struck.
 
 ## Brownfield runs
 

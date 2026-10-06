@@ -6,17 +6,18 @@ A brownfield run **changes an existing system**. It follows the same stages, gat
 
 ## Starting a brownfield run
 
-- The human invokes `/dm-agent-team --brownfield <description of the change>`. The flag is required; the Lead never switches into brownfield on its own. Without it, a folder that already holds source code is a G0 stop asking the human to restart with `--brownfield`.
+- A run is brownfield in two cases:
+  - **After a finished run.** Once any run in `.agent-team/runs/` has ended `done`, every later run is brownfield automatically: the team is changing the system it built, and `.agent-team/system/` describes it.
+  - **On a codebase the team didn't build.** The human invokes `/dm-agent-team --brownfield <description of the change>`. Without the flag (and with no finished run), a folder that already holds source code is a G0 stop asking the human to restart with `--brownfield`.
 - The Lead records `kind: brownfield`, `baseline-commit:`, and `run-branch:` in `state.md`. Resumes and `scripts/run.sh` read the kind from there; the flag is not needed again.
 
 ### Boot, in this order
 
-These run **before** the workspace is created, so the new `.agent-team/` folder can't make the tree look dirty:
+These run **before** the new run folder is created, so it can't make the tree look dirty:
 
-1. **Clean tree.** `git status --porcelain` must be empty. If not, stop: the human commits or stashes first. The team never stashes or discards the human's work.
-2. **Run branch.** Create `agent-team/<project>` from the current `HEAD` and switch the project root to it (`git switch -c`). That `HEAD` is the `baseline-commit`.
-3. **Ignore the workspace.** Add `.agent-team/` to `.gitignore` and commit it on the run branch as `chore: agent-team workspace`.
-4. Then continue with the normal boot from *Workspace* onward, and record `kind:`, `baseline-commit:`, and `run-branch:` in `state.md`.
+1. **Clean tree.** `git status --porcelain` must be empty. If not, stop: the human commits or stashes first. The team never stashes or discards the human's work. (Earlier runs' `.agent-team/` history is committed, so it doesn't count as dirty.)
+2. **Run branch.** Create `agent-team/<run>` (for example `agent-team/V002-csv-export`) from the current `HEAD` and switch the project root to it (`git switch -c`). That `HEAD` is the `baseline-commit`.
+3. Then continue with the normal boot from *Ignore only what git can't hold* onward, and record `kind:`, `baseline-commit:`, and `run-branch:` in `state.md`. The run's `.agent-team/` commits go on the run branch.
 
 **On every resume**, and before planning a wave or integrating, check that `git branch --show-current` equals `run-branch:`. If it doesn't (the human checked out another branch between sessions), stop with `status: blocked`, `halt: wrong-branch`, and ask the human to switch back. The team never merges into any other branch.
 
@@ -29,6 +30,11 @@ The existing repository is **human-owned input**, not reference material: every 
 ## S0.5 Discovery and gate G0.5 (baseline)
 
 Discovery records what exists before anything is designed. It runs after G0 and before S1.
+
+**Two starting points:**
+
+- **After a finished run** (`.agent-team/system/` exists): start from the living specs. Find the commit that last changed `system/` (`git log -1 --format=%H -- .agent-team/system`) and list the code changed since then (`git diff --name-only <that commit> <baseline-commit>`, excluding `.agent-team/`). The baseline 01 §0 and 03 are the relevant parts of `system/`, re-tagged `existing`, checked only against the changed files. If nothing changed, discovery confirms the living specs and goes straight to the regression floor (step 5). Changes made outside the team since the last run are recorded as `existing` and listed at G0.5.
+- **On a codebase the team didn't build** (no `system/`): recover everything from the code, as below.
 
 **Inputs** for both discover dispatches: the brief (including the parts of the system it names), `decisions.md`, this file, any existing specs or docs the brief lists ([ADOPTION.md](./ADOPTION.md)), and the repository itself.
 
