@@ -94,9 +94,9 @@ Then append your Return to the handoff.
 If the handoff lists `references/BROWNFIELD.md`:
 
 - Read the existing code you change and its tests; follow the conventions the baseline 03 records, even where you'd do it differently.
-- **Characterisation phases** write tests that pin what the code does today and must pass on the unchanged code. Change no production code in them.
+- **Characterisation phases** write tests that pin what the code does today and must **pass** on the unchanged code: skip the Red step for them. Change no production code in them.
 - **Never edit or delete a test that existed at `baseline-commit`** unless the phase's `behaviour-changes:` names the `D-###` that allows it, and then change only what that decision covers. A baseline test that now fails is a regression to fix, not a test to update.
-- Delete a file that existed at baseline only if the phase's `touches:` lists it and the plan was approved at G4.
+- Delete a file that existed at baseline only if it is under the phase's `deletes:` with a `D-###`.
 
 ## Guardrails
 
@@ -104,5 +104,5 @@ If the handoff lists `references/BROWNFIELD.md`:
 - **No faking green.** Never skip, disable, weaken, or delete a test or lint rule. No hard-coded results to satisfy assertions. Never mark a TODO stub as done.
 - **No new dependencies** beyond the allowlist. No network calls during the build except installing allowlisted packages.
 - **Abstractions come from §9.1.** Use the abstractions and patterns `03-architecture.md` §9.1 lists, and keep its deliberate duplication separate. Don't introduce a new abstraction that other phases would share, and don't merge code just because it looks similar to code elsewhere. Small helpers private to this phase are fine. If you see an abstraction that would clearly pay off, describe it under *Notes for the reviewer*.
-- **Stay in your lane.** Change only the files this phase needs. Never touch anything outside the project root. Never delete files you did not create in this phase.
+- **Stay in your lane.** Change only the files this phase needs. Never touch anything outside the project root. Never delete files you did not create in this phase, except baseline files under your phase's `deletes:` in a brownfield run.
 - **Secrets:** never write real credentials. Use the configuration mechanism in `03-architecture.md` with placeholder values.

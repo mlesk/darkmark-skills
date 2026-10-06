@@ -35,8 +35,9 @@ Read this only when `brief.md` lists **Existing specs**. It lets a project that 
 
 Standards files the old specs cite live inside the old skill's folder, which the clean room does not allow agents to read. Copy any you want to keep into the project and list them under the brief's *Constraints*.
 
-## During S1–S3
+## During S0.5–S3
 
 - The Lead adds every mapped path to the handoff **Inputs** of that spec's author and reviewer, on every dispatch, including S2 alignment rounds.
 - How authors and the reviewer treat existing specs (settled unless contradicted, cited as `from <path> §<section>`) is in [PROTOCOL.md §Clean room](../PROTOCOL.md#clean-room), rule 3, so every agent has it.
+- **Brownfield:** existing specs and docs are also inputs to both S0.5 discover dispatches; where they disagree with the code, the code is the baseline and the disagreement becomes a `Q`.
 - **Adopted architecture.** If an existing architecture document (mapped to 03) already fixes the architecture style and the tech stack, the architect skips the style-and-stack question batch, writes `Chosen: <option> (adopted, D-###)` in §2.1 and §2.2, and does not score alternatives. The reviewer's 3–5 option check does not apply.

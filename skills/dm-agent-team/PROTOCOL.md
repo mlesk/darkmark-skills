@@ -71,7 +71,7 @@ consecutive-escalations: 0
 |---|---|---|---|---|---|---|---|---|
 
 Phase status: pending | in-progress | in-review | done | stale | escalated | blocked
-Fix phases (`PHASE-F##`) also go in this table; Notes gives the finding IDs, the owning phase, and `touches:`.
+Fix phases (`PHASE-F##`) also go in this table; Notes gives the finding IDs, the owning phase, `touches:`, and in brownfield any `behaviour-changes:` and `deletes:`.
 
 ## Open items (shown at the next human stop)
 - <CR / Q / escalation ids awaiting the human>
@@ -105,7 +105,7 @@ Fix phases (`PHASE-F##`) also go in this table; Notes gives the finding IDs, the
 
 Every claim downstream of the brief cites an ID. If you cannot trace something, it is not in scope.
 
-**Change tags (brownfield).** In a brownfield run, every item in 01, 02, and 03 carries one of `existing`, `new`, `changed`, or `removed` after its ID, for example `### REQ-007 Export totals — Must · changed (replaces REQ-002)`. Only `new`, `changed`, and `removed` items are work; `existing` items are context the change must not break, and they cite the code they were recovered from.
+**Change tags (brownfield).** In a brownfield run, every item in 01, 02, and 03 carries one of `existing`, `new`, `changed`, or `removed` after its ID, for example `### REQ-007 Export totals — Must · changed (replaces REQ-002)`. Only `new`, `changed`, and `removed` items are work; `existing` items are context the change must not break, and they cite the code they were recovered from. `existing` items are exempt from phase ownership, coverage tables, the acceptance trace matrix, and the Requirements ⇄ UX alignment checks, and a `path:line` (or test) citation counts as a source in every trace and hallucination check.
 
 **Stages and phases.** A **stage** (`S0`–`S6`) is a step of the team's process: kickoff, requirements, UX, architecture, plan, build, acceptance. A **phase** (`PHASE-###`) is one unit of build work in `04-build-plan.md`, built by one builder in one worktree. Phases are planned inside out: horizontal layers first, UI phases last.
 

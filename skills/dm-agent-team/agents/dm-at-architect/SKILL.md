@@ -23,9 +23,9 @@ The handoff's `mode:` tells you which branch to run.
 
 If the handoff lists `references/BROWNFIELD.md`, this is a change to an existing system. Follow it as well as this file:
 
-- **`discover` mode (S0.5):** write a baseline `03-architecture.md` that describes the system **as it is**, every item tagged `existing` and citing the files it comes from: overview, the components, data, and contracts the change is likely to touch, the conventions the code follows (§7–§9), the existing test command and quality tools (§10–§10.1), and the dependencies in use (§11, with its `list command:`). Describe; don't redesign or judge. Return `needs-human` only for what the code can't tell you.
-- **`design` mode:** design within the baseline. Skip §2.1–§2.2 (`Chosen: existing (baseline)`) unless the brief asks to re-architect. Tag every item `existing`, `new`, `changed`, or `removed`; new work follows the baseline conventions, and a deviation, new dependency, new layer, or new pattern needs an ADR. §10.1 keeps the existing checks and ratchets any new or stricter check to new and changed files. A change to persisted `existing` data needs a migration and rollback plan in §5.
-- **`plan` mode:** `PHASE-001` is the baseline harness; add `characterisation` phases before any phase that changes `existing` behaviour; a phase that edits or deletes a baseline test, or deletes a baseline file, lists it in `touches:` and names the `D-###` in a `behaviour-changes:` line.
+- **`discover` mode (S0.5):** write a baseline `03-architecture.md` that describes the system **as it is**, every item tagged `existing` and citing the files it comes from: overview, the components, data, and contracts the change is likely to touch, the conventions the code follows (§7–§9), the existing test command, a `test files:` line of globs for every test and test-support file, and whether the suite is hermetic (§10), the existing quality tools with their commands (§10.1), and the dependencies in use (§11, with its `list command:`). Describe; don't redesign or judge. Return `needs-human` only for what the code can't tell you.
+- **`design` mode:** design within the baseline. Skip §2.1–§2.2 (`Chosen: existing (baseline)`) unless the brief asks to re-architect. Tag every item `existing`, `new`, `changed`, or `removed`; new work follows the baseline conventions, and a deviation, new dependency, new layer, or new pattern needs an ADR. §10.1 keeps the existing checks and ratchets them (and any new or stricter check) to files changed since `baseline-commit`, showing the exact changed-files command for each. §10 lists `known failures:` from the G0.5 quarantine decisions and excludes them by deselection in the test command, never with skip markers. A change to persisted `existing` data needs a migration and rollback plan in §5.
+- **`plan` mode:** `PHASE-001` is the baseline harness; add `characterisation` phases before any phase that changes `existing` behaviour; a phase that edits or deletes a baseline test lists it in `touches:` and names the `D-###` in a `behaviour-changes:` line; deleting any other baseline file goes under `deletes: <path> (D-###)`; every such `D-###` must be human-sourced.
 
 ---
 
@@ -230,6 +230,7 @@ touches: <exact files or narrow folders>
 depends-on: <PHASE-### in earlier layers, or real dependencies in this layer>
 done-when: verify is green and <observable behaviour: tests, API calls, or screens>
 behaviour-changes: <brownfield only, when the phase edits or deletes a baseline test: D-### …>
+deletes: <brownfield only, baseline files this phase deletes: path (D-###), …>
 ## Coverage
 | Acceptance criterion | Layer | Phase |
 | DATA / API | Phase |

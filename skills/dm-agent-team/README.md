@@ -43,6 +43,7 @@ The Lead drives within a session; a driver script drives across sessions. That t
 | Stage | Who | Produces | Gate |
 |---|---|---|---|
 | S0 Kickoff | Lead | `brief.md`, including your **target state**: what you can see and do when v1 is done | G0 |
+| S0.5 Discovery (brownfield only) | architect, then analyst | baseline 03 and 01 §0 of the existing system, and `baseline.md` (tests and quality checks today) | G0.5: you settle every baseline failure |
 | S1 Requirements | analyst | `01-requirements.md` | G1: the baseline for UX |
 | S2 UX ⇄ requirements | designer, then analyst and designer in alignment rounds | `02-ux.md`, prototypes, and an updated 01 | G2: both agree and reach the target state |
 | S3 Architecture | architect | `03-architecture.md`: stack, API, data model, conventions | G3 |
@@ -246,6 +247,7 @@ For an unattended run, choose the Lead's model with `run.sh --lead-model <model>
 ├── build/                   # PHASE-###-report.md per phase
 ├── reviews/                 # one file per review round
 ├── logs/                    # full command output, never read whole
+├── baseline.md              # brownfield: tests and quality checks at the baseline commit
 ├── approved/                # copy of each artifact as approved (drift diffs)
 ├── changes/                 # CR-###.md change requests
 ├── handoffs/                # H-###.md; the agent appends only ## Return

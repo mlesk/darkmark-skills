@@ -9,20 +9,23 @@ set -uo pipefail
 # Usage:
 #   precheck.sh --workspace DIR --workdir DIR --phase PHASE-### --round N --base SHA
 #               [--touches "path ..."] [--ids "REQ-001.1 DATA-003 ..."]
-#               [--brownfield --baseline SHA [--behaviour-changes "D-012 ..."]]
+#               [--brownfield --baseline SHA [--behaviour-changes "D-012 ..."] [--deletes "path ..."]]
 #
 # --touches and --ids override what is read from 04-build-plan.md. Use them for
 # fix phases (PHASE-F##), which live only in state.md and their handoff.
 #
 # --brownfield adds check 6: a test that existed at --baseline may be edited or
-# deleted only if the phase lists it in touches: and declares behaviour-changes:.
+# deleted only if the phase lists it in touches: and declares behaviour-changes:;
+# any other baseline file may be deleted only if listed under deletes:; and every
+# cited D-### must exist in decisions.md. Tests are the files matching 03 §10
+# 'test files:' globs (a filename heuristic only when that line is missing).
 #
 # Exit codes: 0 PASS · 1 REVISE · 2 could not run (bad arguments, or a spec the
 # script cannot parse). On 2, the Lead dispatches dm-at-reviewer in precheck mode.
 
 WORKSPACE="" WORKDIR="" PHASE="" ROUND="" BASE="" TOUCHES_OVERRIDE="" IDS_OVERRIDE=""
-BROWNFIELD=false BASELINE="" BEHAV_OVERRIDE=""
-usage() { sed -n '4,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
+BROWNFIELD=false BASELINE="" BEHAV_OVERRIDE="" DELETES_OVERRIDE=""
+usage() { sed -n '4,25p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --workspace) WORKSPACE="$2"; shift 2 ;;
@@ -35,6 +38,7 @@ while [[ $# -gt 0 ]]; do
     --brownfield) BROWNFIELD=true; shift ;;
     --baseline)  BASELINE="$2"; shift 2 ;;
     --behaviour-changes) BEHAV_OVERRIDE="$2"; shift 2 ;;
+    --deletes)   DELETES_OVERRIDE="$2"; shift 2 ;;
     -h|--help)   usage ;;
     *) echo "Unknown option: $1" >&2; usage ;;
   esac
@@ -87,6 +91,7 @@ table_col() {   # print column $1 of the data rows of a markdown table on stdin
 ALLOWLIST="$(section '## 11.' | table_col 1 | tr -d '`' | grep -v '^$' || true)"
 DEPS_CMD="$(section '## 11.' | grep -m1 -i '^list command:' | sed 's/^[Ll]ist command:[[:space:]]*//' | strip)"
 QUALITY_CONFIGS="$(section '### 10.1' | table_col 4 | tr ',' '\n' | strip | grep -vE '^(–|-|n/a|none)?$' || true)"
+TEST_GLOBS="$(section '## 10.' | grep -m1 -i '^test files:' | sed 's/^[^:]*:[[:space:]]*//' | tr ',' ' ' | tr -d '`')"
 SUPPRESS_OK="$(section '## 9.' | grep -m1 -i '^suppression exceptions:' | sed 's/^[^:]*:[[:space:]]*//' | tr -d '`')"
 
 # ---- Helpers ------------------------------------------------------------------
@@ -100,7 +105,15 @@ in_touches() {   # is $1 inside one of the touches entries (exact, folder, or gl
   return 1
 }
 is_test() {
-  local f="$1" b; b="$(basename "$f")"
+  local f="$1" b g
+  if [[ -n "${TEST_GLOBS// /}" ]]; then   # the project's own definition, from 03 §10
+    for g in $TEST_GLOBS; do
+      # shellcheck disable=SC2053
+      [[ "$f" == $g || "$f" == ${g#\*\*/} ]] && return 0
+    done
+    return 1
+  fi
+  b="$(basename "$f")"
   [[ "/$f" == */test/* || "/$f" == */tests/* || "/$f" == */__tests__/* || "/$f" == */spec/* ]] && return 0
   [[ "$b" == test_* || "$b" == *_test.* || "$b" == *.test.* || "$b" == *.spec.* || "$b" == *_spec.* || "$b" == *Test.* || "$b" == *Tests.* ]]
 }
@@ -135,7 +148,7 @@ CHANGED="$(git status --porcelain --untracked-files=all | sed -E 's/^.{3}//; s/^
 OUT=""
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
-  in_touches "$f" || is_test "$f" || OUT+="$f "
+  in_touches "$f" || is_test "$f" || case " ${DELETES_OVERRIDE} $(field deletes | tr ',' '\n' | sed 's/(.*//' | strip | tr '\n' ' ') " in *" $f "*) ;; *) OUT+="$f " ;; esac
 done <<< "$CHANGED"
 if [[ -z "$OUT" ]]; then add_row 2 "scope: changes inside touches: or tests" PASS "$(printf '%s\n' "$CHANGED" | grep -c . ) files checked"
 else add_row 2 "scope: changes inside touches: or tests" FAIL "outside: $OUT"
@@ -189,21 +202,35 @@ else
        add_finding "dependency manifest" "not on the 03 §11 allowlist: $EXTRA" "remove it, or raise a dependency CR (hard stop)" 5; fi
 fi
 
-# 6. Brownfield: baseline tests change only with a declared behaviour change ----
+# 6. Brownfield: baseline tests and files change only under declared decisions --
 if $BROWNFIELD; then
   git rev-parse --verify -q "$BASELINE^{commit}" >/dev/null || fail "baseline $BASELINE is not a commit in $WORKDIR"
   if [[ -n "$BEHAV_OVERRIDE" ]]; then BEHAV="$BEHAV_OVERRIDE"; else BEHAV="$(field behaviour-changes | grep -oE 'D-[0-9]+' | tr '\n' ' ')"; fi
-  TOUCHED_BASE_TESTS=""
-  while IFS=$'\t' read -r st f rest; do
-    [[ -z "$f" ]] && continue
-    [[ "$st" == R* ]] && f="$rest"                  # a rename: the old path is the baseline file
-    is_test "$f" || continue
-    git cat-file -e "$BASELINE:$f" 2>/dev/null || continue
-    if [[ -z "${BEHAV// /}" ]] || ! in_touches "$f"; then TOUCHED_BASE_TESTS+="$f "; fi
-  done < <(git diff --name-status -M "$BASE" | awk -F'\t' '{ if ($1 ~ /^R/) print $1"\t"$3"\t"$2; else print $1"\t"$2 }')
-  if [[ -z "$TOUCHED_BASE_TESTS" ]]; then add_row 6 "baseline tests unchanged, or changed under behaviour-changes:" PASS "baseline $BASELINE · behaviour-changes: ${BEHAV:-none}"
-  else add_row 6 "baseline tests unchanged, or changed under behaviour-changes:" FAIL "edited or deleted: $TOUCHED_BASE_TESTS"
-       add_finding "$TOUCHED_BASE_TESTS" "a test that existed at baseline was edited or deleted without a declared behaviour change" "restore it and fix the regression, or get a D-### accepting the change and add behaviour-changes: (and the file to touches:) via the plan" 6; fi
+  DEL_LINE="$DELETES_OVERRIDE"; [[ -n "$DEL_LINE" ]] || DEL_LINE="$(field deletes)"
+  DELETES="$(printf '%s' "$DEL_LINE" | tr ',' '\n' | sed 's/(.*//' | strip | tr '\n' ' ')"
+  DEL_DS="$(printf '%s' "$DEL_LINE" | grep -oE 'D-[0-9]+' | tr '\n' ' ')"
+  BAD_TESTS="" BAD_DELETES="" UNKNOWN_DS=""
+  # NUL-separated and unquoted, so unusual paths can't slip past.
+  while IFS= read -r -d '' st; do
+    if [[ "$st" == R* || "$st" == C* ]]; then IFS= read -r -d '' f; IFS= read -r -d '' _new; else IFS= read -r -d '' f; fi
+    git cat-file -e "$BASELINE:$f" 2>/dev/null || continue          # not a baseline file
+    if is_test "$f"; then
+      if [[ -z "${BEHAV// /}" ]] || ! in_touches "$f"; then BAD_TESTS+="$f "; fi
+    elif [[ "$st" == D* ]]; then
+      case " $DELETES " in *" $f "*) [[ -n "${DEL_DS// /}" ]] || BAD_DELETES+="$f " ;; *) BAD_DELETES+="$f " ;; esac
+    fi
+  done < <(git -c core.quotePath=false diff -z --name-status -M "$BASE")
+  for d in $BEHAV $DEL_DS; do
+    grep -qE "^## $d( |$)" "$WORKSPACE/decisions.md" 2>/dev/null || UNKNOWN_DS+="$d "
+  done
+  if [[ -z "$BAD_TESTS$BAD_DELETES$UNKNOWN_DS" ]]; then
+    add_row 6 "baseline tests and files change only under declared decisions" PASS "baseline $BASELINE · behaviour-changes: ${BEHAV:-none} · deletes: ${DELETES:-none}"
+  else
+    add_row 6 "baseline tests and files change only under declared decisions" FAIL "see findings"
+    [[ -n "$BAD_TESTS" ]] && add_finding "$BAD_TESTS" "a test that existed at baseline was edited or deleted without a declared behaviour change" "restore it and fix the regression, or get a D-### accepting the change and add behaviour-changes: (and the file to touches:) via the plan" 6
+    [[ -n "$BAD_DELETES" ]] && add_finding "$BAD_DELETES" "a baseline file was deleted without being listed under deletes: with a D-###" "restore it, or get a human D-### and list it under deletes: via the plan" 6
+    [[ -n "$UNKNOWN_DS" ]] && add_finding "decisions.md" "cited decisions not found: $UNKNOWN_DS" "cite a D-### that exists in decisions.md" 6
+  fi
 fi
 
 # ---- Write the review file ------------------------------------------------------

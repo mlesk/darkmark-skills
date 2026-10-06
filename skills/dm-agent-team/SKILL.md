@@ -33,7 +33,7 @@ The mode is set at kickoff and stored as `mode:` in `state.md`. **The default is
 | Third reopen of the same spec | **stop** | **stop** | **stop** |
 | Circuit breaker, stalled build, builder `blocked-by: env`, G6 acceptance, hard stops | **stop** | **stop** | **stop** |
 
-**Hard stops in every mode:** adding a dependency that is not on the allowlist; touching anything outside the project root; deleting files the team did not create; `git push`, publish, or deploy; anything involving secrets or credentials.
+**Hard stops in every mode:** adding a dependency that is not on the allowlist; touching anything outside the project root; deleting files the team did not create (brownfield's one exception: a baseline file listed under a phase's `deletes:` with a human-sourced `D-###`, per references/BROWNFIELD.md); `git push`, publish, or deploy; anything involving secrets or credentials.
 
 **Human override.** At an escalation stop, the human may accept the work despite REVISE findings. They must give a reason in words. Log a `D-###` with `kind: override`, the reason, and the finding IDs it waives; write a gate as `approved (override)`. For a phase, route the override as a PASS (commit, then integrate), mark it `done`, and write `override D-###` in its Notes. An override is never automatic, and never applies to a BLOCK, a builder `blocked`, a hard stop, or a red verify. The acceptance review lists every override.
 
@@ -107,9 +107,9 @@ Your context is the scarcest resource in the run. Every token you hold is re-rea
 
 ### 1. Boot
 
-Find the project root (the git root, or the current directory if there is no git repo). If `.agent-team/state.md` exists, read it and `decisions.md`, set `session-dispatches: 0`, then resume at `next-action`. Print a short **resume report**: stage, status, the last approved gate, phase counts by status, and `next-action`. Then run the integrity check (§Spec integrity). If a stop is still pending (`status: awaiting-human` or `blocked`), re-present it and end the turn. If any phase is `in-progress` or `in-review`, or the project root has an unfinished merge, run step 4 §Recover first.
+Find the project root (the git root, or the current directory if there is no git repo). If `.agent-team/state.md` exists, read it and `decisions.md`, set `session-dispatches: 0`, then resume at `next-action`. Print a short **resume report**: stage, status, the last approved gate, phase counts by status, and `next-action`. Then run the integrity check (§Spec integrity). In a brownfield run, also check that the project root is on `run-branch:`; if not, it's a `blocked` stop (`halt: wrong-branch`). If a stop is still pending (`status: awaiting-human` or `blocked`), re-present it and end the turn. If any phase is `in-progress` or `in-review`, or the project root has an unfinished merge, run step 4 §Recover first.
 
-If no state exists (never overwrite files already in `.agent-team/`; if the folder exists without `state.md`, ask the human what it is first), record `kind: greenfield`, or `kind: brownfield` if the invocation has `--brownfield`. Without the flag, if the folder already holds source code, make G0 a stop that asks the human to restart with `--brownfield` (or confirm they really want a new project here). For brownfield, also run the boot additions in [references/BROWNFIELD.md](./references/BROWNFIELD.md) (clean tree, run branch, baseline commit) before step 2.
+If no state exists (never overwrite files already in `.agent-team/`; if the folder exists without `state.md`, ask the human what it is first), record `kind: greenfield`, or `kind: brownfield` if the invocation has `--brownfield`. Without the flag, if the folder already holds source code, make G0 a stop that asks the human to restart with `--brownfield` (or confirm they really want a new project here). For brownfield, first run the boot steps in [references/BROWNFIELD.md](./references/BROWNFIELD.md) (clean tree, run branch, `.gitignore` commit), **before** creating anything below, so the new workspace can't make the tree look dirty.
 
 1. **Git.** The build stage needs git (worktrees, per-phase commits, scope checks). If the folder is not a git repo, ask the human whether to run `git init`. If they decline, the run can still produce the specs up to G4, but S5 is a `blocked` stop.
 2. **Ignore the workspace.** Add `.agent-team/` (the whole folder) to `.gitignore`. Team state is never committed: worktrees would otherwise get stale copies of it, and it would show up in every phase's `git status`.
@@ -144,7 +144,7 @@ Ask at most one follow-up batch. Write `brief.md` using [PROTOCOL.md §Brief](./
 
 Run [references/BROWNFIELD.md §S0.5](./references/BROWNFIELD.md#s05-discovery-and-gate-g05-baseline): the architect in `discover` mode, then the analyst in `discover` mode, each followed by a `spec-review` routed as in step 3's loop; then record the regression floor in `baseline.md` yourself. Present **G0.5** per the mode table, with a `D-###` (fix or quarantine) for every test failing at baseline.
 
-**Done when:** G0.5 is approved, every baseline failure has its `D-###`, and verify is green on `baseline-commit` with quarantined tests excluded.
+**Done when:** G0.5 is approved and every baseline test failure, quality-finding set, and hermeticity problem has a human-sourced `D-###`. Verify is defined later and made green by `PHASE-001`.
 
 ### 3. Spec stages — S1 to S4
 
@@ -157,12 +157,12 @@ The flow is **Requirements ⇄ UX → Architecture → Build plan**. Requirement
 | S3 Architecture and app design | dm-at-architect | `design` | `specs/03-architecture.md` | G3 |
 | S4 Build plan | dm-at-architect | `plan` | `specs/04-build-plan.md` | G4 |
 
-**Overlap.** The analyst writes a full draft of 01 before it asks its first question batch. When that first S1 Return is `needs-human`, also dispatch `dm-at-designer` in `ux-language` mode with the brief and the draft 01, and merge both agents' question batches into one stop. For a headless product (library or service), S2 designs the developer experience: commands, output formats, and error messages. Skip S2 only if the human approves skipping it at G1.
+**Overlap.** The analyst writes a full draft of 01 before it asks its first question batch. When that first S1 Return is `needs-human`, also dispatch (except in brownfield, unless the brief asks for a redesign) `dm-at-designer` in `ux-language` mode with the brief and the draft 01, and merge both agents' question batches into one stop. For a headless product (library or service), S2 designs the developer experience: commands, output formats, and error messages. Skip S2 only if the human approves skipping it at G1.
 
 Run each stage's authoring as this loop (S2 adds the alignment rounds in §Requirements ⇄ UX alignment):
 
 1. **Write the author handoff** ([PROTOCOL.md §Handoff](./PROTOCOL.md#handoff)). Inputs: the brief, `decisions.md`, every approved upstream spec, and any existing specs the brief maps to this stage ([references/ADOPTION.md](./references/ADOPTION.md)).
-2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per stage; after that, the author records the rest as `ASM` with its recommended answer. In S3, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `03-architecture.md` §2.1–§2.2. Skip that batch when an adopted existing spec already fixes both.
+2. **Dispatch the author.** Log every `auto-decisions:` entry in the Return as a `D-###`, in the entry form in [PROTOCOL.md §IDs and traceability](./PROTOCOL.md#ids-and-traceability), with `affects:` copied from the question. If the Return is `needs-human`, handle the question batch per the mode table, log each answer as `D-###`, and re-dispatch. At most 3 question rounds per stage; after that, the author records the rest as `ASM` with its recommended answer. In S3, the first batch is always the architecture-style and tech-stack choice; present it with the architect's evaluation tables in `03-architecture.md` §2.1–§2.2. Skip that batch when an adopted existing spec already fixes both, and in brownfield unless the human asked at G0 to re-architect.
 3. **Dispatch `dm-at-reviewer`** in `spec-review` mode. Its inputs are the brief, the spec, every approved upstream spec, and `decisions.md`.
 4. **Route the verdict:**
    - **PASS:** go to the gate.
@@ -196,7 +196,7 @@ The reviewer's spec-review of 02 includes the alignment checks, so every round i
 
 Approved artifacts must not change behind the team's back: a hand edit after approval makes `state.md` lie, and phases built from the old text never get rebuilt.
 
-- **Record.** When a gate is approved, write `git hash-object <artifact>` into its Hash column and copy the artifact to `approved/<file>` (overwriting any earlier copy): `brief.md` for G0, the spec file for G1–G4. G2 covers `02-ux.md` (prototypes are throwaway) and also re-records `01-requirements.md` on G1's row; G3 covers `03-architecture.md`.
+- **Record.** When a gate is approved, write `git hash-object <artifact>` into its Hash column and copy the artifact to `approved/<file>` (overwriting any earlier copy): `brief.md` for G0, `baseline.md` for G0.5 (brownfield), the spec file for G1–G4. G2 covers `02-ux.md` (prototypes are throwaway) and also re-records `01-requirements.md` on G1's row; G3 covers `03-architecture.md`.
 - **Check** at boot, before each wave, and before presenting each gate: re-hash every artifact with a recorded hash. Skip any artifact whose gate row is `reopened`, `recheck`, or `aligning`: it is being edited on purpose.
 - **Drift** (a hash differs): a `blocked` stop in every mode, with `halt: drift: <file> changed since G<n>`. Show the human what changed with `git diff --no-index <workspace>/approved/<file> <workspace>/<artifact path>` (written to a log; quote at most the changed hunks' headers and 10 lines). The human either **adopts** the edit, which the Lead then runs as a CR (so the reviewer re-checks it and the affected phases go stale), or **reverts** it.
 - **Re-record** the hash and the copy only when a gate is approved again: after a CR, after a re-check, or after the human adopts an edit through a CR. Never re-record just to clear a drift stop.
@@ -240,6 +240,8 @@ Each phase in `specs/04-build-plan.md` has `depends-on:` and `touches:`. Build i
 **Fix phases.** The plan is frozen, so a fix phase (`PHASE-F##`) lives only in `state.md` and its handoff. Add a Build row for it with the finding IDs it fixes, the owning phase, `touches:` (the owning phase's `touches:` plus any file the finding names), and no dependencies. Its handoff lists the review file, the owning phase's plan entry, the spec sections that phase traces to, and the same `02` and `03` sections as any builder handoff. It then runs through the same wave loop as any phase.
 
 **Recover.** On resume, before planning a wave:
+
+0. In a brownfield run, confirm the project root is on `run-branch:` (else stop, `halt: wrong-branch`).
 
 1. If the project root has an unfinished merge (`git rev-parse -q --verify MERGE_HEAD`), run `git merge --abort`, then run step 5 (Integrate) for that phase again; it already passed review.
 2. For each phase that is `in-progress` or `in-review`: if the latest handoff for it has a Return, route that Return or verdict as normal. Otherwise re-dispatch the same handoff: a builder rebuilds from `base:` in a fresh worktree (`git worktree remove --force`, `git branch -D`, then step 1), and an interrupted precheck or review is simply re-run.
