@@ -56,7 +56,7 @@ session-dispatches: <count this session>
 |---|---|---|---|---|---|
 | brief | brief.md | pending | – | – | |
 
-Gates: brief · baseline (brownfield) · product (01, 02) · plan (03, 04) · MS-n · accept.
+Gates: brief · baseline (brownfield: `baseline.md` only) · product (01, 02) · plan (03, 04) · MS-n · accept.
 Status: pending | in-review | approved | approved (auto-<mode>) | approved (override) | n/a
 Commit: the `.agent-team/` commit made at approval. Drift is checked against it.
 

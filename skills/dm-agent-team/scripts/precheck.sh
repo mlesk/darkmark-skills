@@ -133,6 +133,12 @@ add_finding() { FINDINGS+=("| $(( ${#FINDINGS[@]} + 1 )) | major | $1 | $2 | $3 
 cd "$WORKDIR" || fail "cannot enter $WORKDIR"
 git rev-parse --verify -q "$BASE^{commit}" >/dev/null || fail "base $BASE is not a commit in $WORKDIR"
 
+# Mark new files intent-to-add first, so verify's changed-file ratchets
+# (git diff <baseline>) see them, and so does the scope check below. Reports go
+# to the live workspace, not the worktree: any change to the worktree's
+# .agent-team/ snapshot is out of scope.
+git add --all --intent-to-add >/dev/null 2>&1
+
 # 1. Verify ---------------------------------------------------------------------
 bash -c "$VERIFY" > "$LOG" 2>&1; VEXIT=$?
 VSUM="$(tail -n 3 "$LOG" | tr '\n' ' ' | cut -c1-200)"
@@ -140,9 +146,6 @@ if [[ $VEXIT -eq 0 ]]; then add_row 1 "verify" PASS "\`$VERIFY\` · exit 0 · $L
 else add_row 1 "verify" FAIL "\`$VERIFY\` · exit $VEXIT · $LOG"
      add_finding "$LOG" "verify exited $VEXIT: $VSUM" "make verify pass" 1; fi
 
-# Files this phase changed (untracked files included). Reports go to the live workspace,
-# not the worktree, so any change to the worktree's .agent-team/ snapshot is out of scope.
-git add --all --intent-to-add >/dev/null 2>&1
 CHANGED="$(git status --porcelain --untracked-files=all | sed -E 's/^.{3}//; s/^.* -> //' | sort -u)"
 
 # 2. Scope ----------------------------------------------------------------------

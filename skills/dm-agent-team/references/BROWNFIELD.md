@@ -58,7 +58,7 @@ After a finished run, discovery starts from `system/`: the baseline is the part 
 - **01** describes only the change, with change tags; 02 reuses the existing design language and designs only `new` and `changed` screens.
 - **03** designs within the existing architecture: §1 reads `Chosen: existing (baseline)` unless the human asked to re-architect. A deviation from the baseline conventions, a new dependency, layer, or pattern needs an ADR. A change to persisted `existing` data needs a migration, compatibility with existing data, and a rollback in §4.
 - **§10** lists `known failures:` (the quarantined tests) and excludes them from verify by deselection in the test command, never by skip markers.
-- **§10.1 ratchets**: each ratcheted check runs only on files changed since the baseline, for example `ruff check $(git diff --name-only --diff-filter=ACMR <baseline-commit> -- '*.py' ':!.agent-team')`, and shows that exact command. New checks are always ratcheted.
+- **§10.1 ratchets**: each ratcheted check runs only on files changed since the baseline, for example `ruff check $(git diff --name-only --diff-filter=ACMR <baseline-commit> -- '*.py' ':!.agent-team')`, and shows that exact command. New checks are always ratcheted. Run `git add --all --intent-to-add` before verify in a worktree, or the ratchet misses new files.
 
 ## Planning the change
 

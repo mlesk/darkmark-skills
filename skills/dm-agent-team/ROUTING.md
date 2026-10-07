@@ -24,7 +24,7 @@ Effort: `low` act directly · `medium` think, then act (default) · `high` consi
 | `PHASE-001` and phases marked `risk: high` | deep | medium |
 | Other phases and fix phases | standard | medium |
 | Consolidation | standard | medium |
-| Precheck | `scripts/precheck.sh` (fallback: reviewer at light, low) | – |
+| Precheck | `scripts/precheck.sh` (fallback: reviewer at standard, low) | – |
 
 ## Escalation
 

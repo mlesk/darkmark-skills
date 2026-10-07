@@ -15,7 +15,7 @@ The lean version came from one observation: the cost of a run was driven by proc
 7. **Rare paths load on demand.** Multi-run bookkeeping, recovery, drift, and brownfield live in `references/`; the Lead reads them only when they apply.
 8. **A word budget.** `word-budget.txt` caps every runtime file, and lint fails over budget. To add a rule, remove one, or raise the budget deliberately and say why.
 
-**What stays non-negotiable:** fresh-context independent review at the gates, verify as a hard gate, the human gates (brief, product, accept), one owner per file, the clean room and allowlist, trace IDs from requirement to test, and resumable state.
+**What stays non-negotiable:** fresh-context independent review at the gates, verify as a hard gate, the human gates that stop in every mode (brief, accept), one owner per file, the clean room and allowlist, trace IDs from requirement to test, and resumable state.
 
 ## 2. The team
 
