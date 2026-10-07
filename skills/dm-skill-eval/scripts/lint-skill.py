@@ -9,6 +9,9 @@ Usage:
 Errors (exit 1): missing frontmatter, name/directory mismatch, bad name,
 missing or over-long description, broken relative links.
 Warnings: long SKILL.md body, repo-local or absolute paths.
+Word budgets: if a skill has a word-budget.txt (lines of "<relative path> <max
+words>", # for comments), a listed file over its budget is an error. To add
+words to a budgeted file, remove words elsewhere or raise the budget on purpose.
 With --all, README.md errors: a top-level skill that is not linked, or a
 relative link that does not resolve.
 """
@@ -75,6 +78,23 @@ def lint(skill_dir):
     lines, words = body.count("\n"), len(body.split())
     if lines > WARN_LINES or words > WARN_WORDS:
         warnings.append(f"SKILL.md body is {lines} lines / {words} words; move detail into references/")
+
+    budget = skill_dir / "word-budget.txt"
+    if budget.is_file():
+        for line in budget.read_text(encoding="utf-8").splitlines():
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            rel, _, limit = line.rpartition(" ")
+            target = skill_dir / rel.strip()
+            if not target.is_file():
+                errors.append(f"word-budget.txt: no file '{rel.strip()}'")
+            elif not limit.isdigit():
+                errors.append(f"word-budget.txt: bad limit in '{line}'")
+            else:
+                n = len(target.read_text(encoding="utf-8").split())
+                if n > int(limit):
+                    errors.append(f"{rel.strip()}: {n} words, over its budget of {limit}")
 
     for md in sorted(skill_dir.rglob("*.md")):
         content = md.read_text(encoding="utf-8")

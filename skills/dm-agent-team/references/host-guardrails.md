@@ -67,7 +67,7 @@ Check the rule syntax against the current Claude Code permissions documentation 
 
 ## Other hosts
 
-If the host has no permission rules, say so at G0: the hard stops then rest on the instructions, the precheck, and the reviewer alone.
+If the host has no permission rules, say so at the brief gate: the hard stops then rest on the instructions, the precheck, and the reviewer alone.
 
 ## Not covered by rules
 

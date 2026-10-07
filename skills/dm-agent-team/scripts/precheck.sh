@@ -190,7 +190,7 @@ fi
 
 # 5. Dependencies ---------------------------------------------------------------
 if [[ -z "$DEPS_CMD" ]]; then
-  add_row 5 "dependencies on the allowlist" n/a "03 §11 has no 'list command:'; check by hand at phase-review"
+  add_row 5 "dependencies on the allowlist" n/a "03 §11 has no 'list command:'; check by hand at review"
 else
   DEPS="$(bash -c "$DEPS_CMD" 2>>"$LOG" | strip | grep -v '^$' || true)"
   EXTRA=""

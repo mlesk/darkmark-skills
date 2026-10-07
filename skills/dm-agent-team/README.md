@@ -1,316 +1,162 @@
 # dm-agent-team — Usage Guide
 
-**Start here.** This is the primary guide to running the `dm-agent-team` skill: what it is, and the exact steps to execute it in both **directed** (you at the gates) and **YOLO** (unattended to the end) modes.
+**Start here.** How to run the `dm-agent-team` skill, in directed mode (you at the gates) or yolo mode (unattended between the first and last gate).
 
-- Deep background, design rationale, and the seven-day rollout: [GUIDE.md](./GUIDE.md).
-- The runtime contract the Lead follows: [SKILL.md](./SKILL.md), [PROTOCOL.md](./PROTOCOL.md), [ROUTING.md](./ROUTING.md).
+- Design rationale, host setup, and migrating from the spec skills: [GUIDE.md](./GUIDE.md).
+- The runtime the Lead follows: [SKILL.md](./SKILL.md), [PROTOCOL.md](./PROTOCOL.md), [ROUTING.md](./ROUTING.md).
 
 ---
 
 ## 1. What it is
 
-A Lead skill plus five sub-agents — **analyst, architect, designer, builder, reviewer** — that take one greenfield idea in one folder through **requirements ⇄ UX → architecture → build plan → clean-room, test-driven implementation → acceptance**. Requirements and UX are iterated together until they agree and reach the target state you describe; only then is the architecture (API, data model, stack) designed to deliver them.
+A Lead skill plus five sub-agents (**analyst, designer, architect, builder, reviewer**) that take an idea in one folder through **product (requirements and UX) → plan (architecture and build phases) → clean-room, test-driven build → acceptance**.
 
-**Goal:** a working, tested, well-designed application while you make only the decisions that matter.
+This is the **lean** version. It keeps the parts that make the team dependable and drops the ceremony that made small projects slow:
 
-What makes it dependable rather than hype:
-
-- **One owner per file.** Agents cannot overwrite each other.
-- **Trace IDs everywhere** (`REQ → SCR → API/ADR → PHASE → test`). An invented feature has no ID, so the reviewer sees it.
-- **Independent review in a fresh context.** The author never grades its own work.
-- **A clean room.** Code derives only from approved specs and local files; dependencies only from an allowlist you approve.
-- **Seven human gates (G0–G6)** plus a stop on anything irreversible. The run mode decides which gates stop for you.
-- **Hard retry limits** (2 revise rounds, 3 test attempts, a breaker after 3 escalations in a row). Failures stop and ask; they don't spiral.
-- **Cheap by design.** Fresh subagent per agent, the Lead reads Returns not artifacts, questions arrive in batches with recommended answers, parallel phases build in git worktrees.
-
-The Lead drives within a session; a driver script drives across sessions. That two-layer split is the whole trick — see §7.
+- **The process scales to the project.** At the brief gate you confirm a size (small, standard, large). A small CLI gets one requirements spec with UX notes, one plan, a few large phases, and one acceptance review. A large app gets a separate UX spec, milestone reviews, and deep reviews of risky phases.
+- **Independent review where it pays.** A fresh-context reviewer checks each spec gate and the finished system, and blocks only on what would ship a defect or force someone to guess. Every phase is also checked by `scripts/precheck.sh`, which costs no tokens.
+- **Agents settle small things themselves.** A builder that finds a small gap decides it, records the decision, and shows it to you at the next stop. Change requests are only for scope, shared contracts, and dependencies.
+- **Unchanged guarantees:** one owner per file, trace IDs from requirements to tests, a clean room with a dependency allowlist, verify as a hard gate, and human gates where they matter.
+- **A word budget** (`word-budget.txt`, checked by lint) stops the instructions from growing back.
 
 ## 2. Prerequisites
 
-- **A git repository** at the project root. The build stage needs worktrees, per-phase commits, and scope checks. (Without git you still get specs up to G4; S5 becomes a `blocked` stop.)
-- **An agent host that starts subagents** — OpenCode, Claude Code, or Copilot CLI — and ideally runs them in parallel.
-- **The skill linked** into `~/.agents/skills/` (see step 1 below).
+- A **git repository** at the project root (worktrees, per-phase commits, scope checks). Without git you still get the specs; the build is a `blocked` stop.
+- An **agent host that starts subagents** (OpenCode, Claude Code, or Copilot CLI), ideally in parallel.
+- The skill linked into `~/.agents/skills/` (`./scripts/link-skills.sh` from the repo root), or invoked by path (§9).
 
-## 3. Mental model (60 seconds)
-
-- **Stage S0–S6**, each ending at a **gate G0–G6**. A gate is where a human would normally decide; the run mode says whether it stops or auto-approves.
-- **The active run's `state.md`** (`.agent-team/runs/<run>/state.md`) is the single source of truth: mode, stage, status, gates, phases, and a one-line `next-action` any fresh session can execute. It is the handoff between sessions.
-- **`.agent-team/`** holds all team state, one folder per run under `runs/`, and is committed as the project's history (§10). Source code lives where `specs/03-architecture.md` puts it.
-- **A "stop"** means: update `state.md`, present the stop, end the turn. The Lead never asks "shall I continue?" between stops — it just runs to the next one.
-
-### The stages
+## 3. Mental model
 
 | Stage | Who | Produces | Gate |
 |---|---|---|---|
-| S0 Kickoff | Lead | `brief.md`, including your **target state**: what you can see and do when v1 is done | G0 |
-| S0.5 Discovery (brownfield only) | architect, then analyst | baseline 03 and 01 §0 of the existing system, and `baseline.md` (tests and quality checks today) | G0.5: you settle every baseline failure |
-| S1 Requirements | analyst | `01-requirements.md` | G1: the baseline for UX |
-| S2 UX ⇄ requirements | designer, then analyst and designer in alignment rounds | `02-ux.md`, prototypes, and an updated 01 | G2: both agree and reach the target state |
-| S3 Architecture | architect | `03-architecture.md`: stack, API, data model, conventions | G3 |
-| S4 Build plan | architect | `04-build-plan.md`: build phases layered inside out (foundation → domain → persistence → API), then UI phases, grouped into milestones | G4: specs freeze |
-| S5 Build | builders, in parallel worktrees | code, tests, one commit per phase | G5 per milestone |
-| S6 Acceptance | reviewer | `reviews/acceptance.md` | G6 |
+| S0 Brief | Lead | `brief.md`: your **target state**, size, quality bar, mode | **brief** (always stops) |
+| S0.5 Discovery (brownfield) | architect, analyst, Lead | the system as it is, and `baseline.md` | **baseline** |
+| S1 Product | analyst; designer in standard and large runs | `01-requirements.md` (with UX notes in small runs), `02-ux.md` | **product**: do these reach your target state? |
+| S2 Plan | architect | `03-architecture.md`, `04-build-plan.md` (inside out: foundation, core layers, UI last; a few large phases) | **plan**: specs freeze |
+| S3 Build | builders, in parallel worktrees | code, tests, one commit per phase | **MS-n** per milestone |
+| S4 Accept | reviewer, then consolidation into `system/` | `reviews/acceptance.md` | **accept** (always stops) |
 
-Every author turn is followed by an independent review. In S2, the designer logs every requirements problem it finds while designing (a missing failure path, an ambiguous rule, a journey that can't be finished) as feedback in 02 §12. The analyst answers each item in 01 §12, the designer updates the screens, and both are re-reviewed. The loop repeats until nothing is open and the alignment checks pass; then G2 asks you whether the result is what you want to reach.
+- **`state.md`** in the active run's folder is the single source of truth, and its `next-action` line lets any fresh session resume.
+- **A stop** means the Lead updates state, presents the stop, commits `.agent-team/`, and ends its turn. Between stops it never asks "shall I continue?".
 
-## 4. Pick an execution path
+### Size
 
-| | **Directed** | **YOLO** |
-|---|---|---|
-| You are asked at | every question batch and gate (stepwise), or question batches + G0 + G2 + G1–G4 together + G6 (checkpoint) | G0 and G6 only |
-| Best for | first runs, projects you must get exactly right | toys, spikes, prototypes |
-| How you drive it | stay in one interactive session and answer each stop | answer G0, then hand off to `scripts/run.sh` |
-| Continuity | one session (the Lead takes session breaks; you resume) | the driver starts a fresh session per stage/milestone |
+| | small | standard | large |
+|---|---|---|---|
+| For | a CLI, library, script, single-screen tool | a multi-screen app or a service | many components, production stakes |
+| UX | UX notes inside 01 | separate 02 | separate 02 |
+| Phases | 1–4 | 3–8 | ≤ 10 per milestone |
+| Build review | precheck script; acceptance | plus one review per milestone | plus deep review of `risk: high` phases |
+| REVISE rounds | 1 | 2 | 2 |
 
-The three run modes are `stepwise` (default), `checkpoint`, and `yolo`. "Directed" covers stepwise + checkpoint — you are in the loop at the gates. You can **change mode at any stop**.
+## 4. Run modes
 
 | Event | stepwise (default) | checkpoint | yolo |
 |---|---|---|---|
-| G0 brief and run mode | **stop** | **stop** | **stop** |
-| Agent questions | **stop**, ask the batch | **stop**, ask the batch | recommended answers adopted, logged as `auto-yolo` |
-| G1 requirements baseline, G3 architecture | **stop** at each | auto on reviewer PASS | auto on reviewer PASS |
-| G2 requirements + UX aligned (target state) | **stop** | **stop** | auto on reviewer PASS |
-| Requirements ⇄ UX alignment rounds | run without stopping | run without stopping | run without stopping |
-| Not aligned after 3 rounds | **stop** | **stop** | **stop** |
-| G4 build plan (spec freeze) | **stop** | **stop**: G1–G4 presented together | auto on reviewer PASS |
-| G5 milestone review | **stop** at each | auto | auto |
-| Phase escalation | **stop** | park phase, continue others | park phase, continue others |
-| Change request | **stop** | **stop** | auto if `class: clarification`, else **stop** |
-| Spec drift, third reopen, circuit breaker, stalled build, G6, hard stops | **stop** | **stop** | **stop** |
+| brief, accept | **stop** | **stop** | **stop** |
+| baseline (brownfield) | **stop** | **stop** | auto, unless a baseline decision is needed |
+| agent questions | **stop** | **stop** | recommended answers adopted |
+| product | **stop** | **stop** | auto on PASS |
+| plan | **stop** | auto on PASS | auto on PASS |
+| milestones | **stop** | auto | auto |
+| escalation | **stop** | park, continue others | park, continue others |
+| change request | **stop** | **stop** | auto if clarification |
+| hard stop, drift, stalled build, circuit breaker | **stop** | **stop** | **stop** |
 
-**Hard stops in every mode:** new non-allowlisted dependency; anything outside the project root; deleting files the team did not create; `git push`, publish, or deploy; anything involving secrets or credentials.
+**Hard stops in every mode:** a dependency not on the allowlist; anything outside the project root; deleting files the team didn't create; `git push`, publish, or deploy; secrets.
 
----
-
-## 5. Directed mode — step by step
-
-Use this for a first run or a project you care about getting exactly right.
-
-**1. Link the skill** (once per checkout, from the skills repo root):
+## 5. Directed run
 
 ```bash
-./scripts/link-skills.sh          # add --dry-run first to preview
-```
-
-**2. Create the project folder and initialize git:**
-
-```bash
+./scripts/link-skills.sh                 # once, from the skills repo root
 mkdir my-project && cd my-project && git init
 ```
 
-**3. Start an interactive session and kick off.** State the mode in words — the Lead never infers it:
-
 ```text
 /dm-agent-team Build a local-first CLI that tracks consulting hours per client and exports monthly invoices as PDF.
-Quality bar: production. Constraint: .NET 10.
-Mode: stepwise, max-parallel 3.
+Target state: I can log hours, list them by client, and export a month as PDF.
+Size: small. Quality bar: internal. Mode: stepwise, max-parallel 2.
 ```
 
-**4. Answer G0.** The Lead interviews you with one batch of questions (each with a recommended answer), writes `brief.md`, and presents **G0**. G0 is always a stop in every mode. Approve it; `state.md` records the mode and max-parallel.
+1. **Brief gate.** The Lead asks one batch of questions about the gaps, each with a recommended answer, then presents the brief. Approve it.
+2. **Product gate.** Read the requirements (and UX). This is the cheapest point to change *what* you're building.
+3. **Plan gate.** Check the stack, the phases, and the quality gate. Push back if there are many tiny phases.
+4. **Milestones** (stepwise), then the **accept gate**. Then read the run's `retro.md`.
 
-**5. Keep going.** The Lead writes author handoffs, dispatches agents, routes verdicts, and stops only where the mode says. At each stop you review and answer; it then continues. Run `/dm-agent-team` again in the same folder to resume after a session break.
+Run `/dm-agent-team` again in the folder to resume after a session break.
 
-**6. Approve G6.** After acceptance passes, **G6 is always a stop**. Approve it, then read the run's `retro.md` (`.agent-team/runs/<run>/retro.md`).
+## 6. Yolo run
 
-### Keeping a directed run moving
-
-- **Inside a session, never a babysitter.** The Lead runs to the next stop. It takes a **session break** after each stage/milestone, after ~25 dispatches (`session-dispatches`), or when the host warns about context — printing `PAUSED — resume with /dm-agent-team or scripts/run.sh`.
-- **To automate the gaps between your gates**, point the driver at a directed run too — it will simply stop (exit `2`) at each gate for you. In `stepwise` it warns that it stops at every gate; `checkpoint` gives longer stretches.
-
----
-
-## 5a. Brownfield — changing an existing system
-
-Brownfield is how the team changes an existing system. It happens two ways:
-
-- **Automatically, after your first run.** Once any run has finished, every later run is brownfield: it starts from the living specs in `.agent-team/system/` and checks only the code changed since the last run.
-- **With `--brownfield`, on a codebase the team didn't build.** Without the flag (and with no finished run), the team assumes a new project and stops at G0 if the folder already holds code.
-
-```text
-/dm-agent-team --brownfield Add CSV export to the monthly invoice screen.
-Target state: I can download this month's invoices as CSV from the invoice list.
-Quality bar: production. Mode: checkpoint, max-parallel 2.
-```
-
-What changes ([references/BROWNFIELD.md](./references/BROWNFIELD.md)):
-
-- **Boot** needs a clean working tree, records the baseline commit, and works on a new branch `agent-team/<project>`; your branch is never touched, and you merge the run branch yourself after G6.
-- **S0.5 Discovery** (before requirements): the architect records the existing architecture, conventions, and quality tools, and the analyst records the current behaviour of the area you're changing. The Lead runs the existing tests to set the **regression floor**.
-- **G0.5 Baseline gate:** you confirm the baseline, and decide for every test already failing whether to fix it or quarantine it.
-- **Change-scoped specs:** every item is tagged `existing`, `new`, `changed`, or `removed`. The designer keeps the existing look; the architect designs within the existing architecture unless you ask to re-architect. New quality rules apply to new and changed files only.
-- **Characterisation tests first:** current behaviour is pinned by tests before any phase changes it.
-- **No regressions:** every test that passed at baseline must keep passing; changing one needs a decision you approve (`behaviour-changes: D-###`), and the precheck script enforces it.
-
----
-
-## 6. YOLO mode — step by step
-
-Use this for toys, spikes, and prototypes. YOLO still stops at **G0 and G6** and at every hard stop; everything between runs unattended.
-
-**1–2. Same as directed:** link the skill, create the git project folder.
-
-**3. Kick off with YOLO chosen in words**, in an interactive session:
-
-```text
-/dm-agent-team Build a local-first CLI that tracks consulting hours per client and exports monthly invoices as PDF.
-Quality bar: prototype. Mode: yolo, max-parallel 3.
-```
-
-**4. Answer G0 and approve.** The Lead writes `brief.md`, presents **G0**, and records `mode: yolo`. This is the first of the two stops YOLO keeps. The run's folder, its `state.md`, and the `.agent-team/active` pointer the driver needs already exist from boot; G0 records the mode the driver runs in.
-
-**5. Pre-approve permissions for the unattended session.** A headless session cannot answer prompts, so anything not pre-approved fails. Do this once the stack and verify command are known (after G3), before handing off to the driver. The team needs to edit files and run `git`, the package manager, and the verify command. Pre-approve those in the project's host config rather than using a blanket bypass flag:
-
-- **Claude Code:** `.claude/settings.json` → `permissions.allow`, e.g. `"Bash(git:*)"`, `"Bash(<pkg-manager>:*)"`, and one entry for the verify command from `03-architecture.md` §10.
-- **OpenCode:** `permission.bash` in your project's `opencode.jsonc` for the same commands.
-- **Guardrails:** the Lead offers at G0 to install host permission rules that refuse push, publish, deploy, network fetches, and paths outside the project ([references/host-guardrails.md](./references/host-guardrails.md)). They work on OpenCode without hooks.
-
-**6. Hand off to the driver:**
+Kick off with `Mode: yolo` in words, approve the brief gate interactively, then hand off to the driver:
 
 ```bash
-# from inside the project folder — one fresh session per stage/milestone
 ~/.agents/skills/dm-agent-team/scripts/run.sh --host opencode
-
-# target another directory / use a stronger Lead model
-~/.agents/skills/dm-agent-team/scripts/run.sh --host claude --project /path/to/project --lead-model sonnet
+~/.agents/skills/dm-agent-team/scripts/run.sh --host claude --lead-model sonnet -- --permission-mode acceptEdits
 ```
 
-Driver flags: `--host opencode|claude|copilot|codex`, `--project DIR`, `--lead-model MODEL`, `--max-sessions N` (default 40), and `-- <extra host args>` (e.g. `-- --permission-mode acceptEdits`). `--help` prints usage.
+A headless session can't answer permission prompts. Before the build, pre-approve `git`, the package manager, and the verify command in the host config (`.claude/settings.json` `permissions.allow`, or OpenCode `permission.bash`), and keep the guardrails the Lead offers at the brief gate ([references/host-guardrails.md](./references/host-guardrails.md)).
 
-**7. Handle stops and rerun.** The driver exits instead of burning sessions:
-
-| Exit | Meaning | Action |
+| Exit | Meaning | Do |
 |---|---|---|
-| `2` | `awaiting-human` / `blocked` — a hard stop or G6 | Answer it in an interactive `/dm-agent-team` session, then rerun the driver |
-| `3` | No progress in 2 sessions (`state.md` unchanged) | Inspect the logged session; fix the cause |
-| `4` | Host failed twice in a row | Fix the host/permission problem; rerun |
-| `5` | Hit `--max-sessions` | Rerun to continue |
-| `0` | `stage: done`, or no active run | Finished — read the run's `retro.md` |
-| `1` | Usage error, no run yet, or an old single-folder layout | Start (or migrate) the run interactively first |
+| `0` | done, or no active run | read the run's `retro.md` |
+| `1` | usage error, no run yet, or an old layout | start or migrate interactively |
+| `2` | a stop: a gate, a question, a hard stop | answer it in `/dm-agent-team`, rerun the driver |
+| `3` | two sessions without progress | inspect the session log in `runs/<run>/logs/` |
+| `4` | host failed twice | fix the host or permissions |
+| `5` | hit `--max-sessions` | rerun |
 
-**8. Approve G6.** Acceptance passes, then **G6 is always a stop**. Review `reviews/acceptance.md` and every auto-approved decision, approve, and the Lead writes `retro.md`, sets `stage: done`, and the driver exits `0`.
+## 7. Brownfield
 
-> **Caution:** YOLO accepts every recommended answer. Keep it for toys, spikes, and prototypes, and prefer `checkpoint` until the team's first-pass PASS rate is high on your projects.
+After a run finishes, every later run is brownfield: it starts from the living specs in `.agent-team/system/`. On a codebase the team didn't build, invoke `/dm-agent-team --brownfield <change>`. A brownfield run works on a branch `agent-team/<run>` from a clean tree, records the existing behaviour and a test baseline (the **baseline gate**: you decide to fix or quarantine each failing test), tags every spec item `existing`, `new`, `changed`, or `removed`, pins behaviour with characterisation tests before changing it, and blocks any regression. You merge the run branch yourself. Details: [references/BROWNFIELD.md](./references/BROWNFIELD.md).
 
----
+## 8. Where everything lives
 
-## 7. How continuation works
+```
+.agent-team/                 # committed, except runs/*/logs/ and runs/*/worktrees/
+├── active                   # the run in progress, or none
+├── models.md                # tier → model mapping (edit overrides here)
+├── system/                  # living specs of the whole system, updated at the end of each run
+└── runs/V001-invoice-cli/   # one folder per run
+    ├── state.md  brief.md  decisions.md  log.md  retro.md
+    ├── specs/  reviews/  build/  handoffs/  changes/
+    └── logs/  worktrees/    # git-ignored
+```
 
-Two layers keep a run going without a babysitter:
+Runs, consolidation, and abandoning a run: [references/RUNS.md](./references/RUNS.md). Drift, recovery, escalations: [references/EXCEPTIONS.md](./references/EXCEPTIONS.md).
 
-1. **Inside a session — the drive rule.** The Lead never pauses to ask "shall I continue?" It updates state and executes `next-action` immediately. A turn ends only at a stop, at `stage: done`, or at a session break.
-2. **Across sessions — session breaks + `scripts/run.sh`.** One session cannot run forever: context grows and cost per turn grows with it. So on a driver run the Lead ends the session cleanly after each stage or milestone (or ~25 dispatches), leaving `state.md` current. The driver then launches the **next fresh host session**, which resumes at `next-action` with zero accumulated context.
+## 9. Comparing lean with the full version
 
-`run.sh` is a loop that:
+The full version lives on branch `claude/confident-darwin-89mgs2`; this one on `lean`. Both are called `dm-agent-team`, so run them from two checkouts and two copies of the project:
 
-- reads `stage`/`status` from `state.md` before each launch — `done` → exit `0`; `awaiting-human`/`blocked` → print the stop and exit `2`;
-- hashes `state.md` (ignoring the per-session `session-dispatches:` counter) and exits `3` if two sessions make no progress;
-- exits `4` after two consecutive host failures; and
-- logs every session to `.agent-team/runs/<run>/logs/driver-<timestamp>-sN.log`.
+```bash
+git clone <this repo> ~/skills-full && git -C ~/skills-full checkout claude/confident-darwin-89mgs2
+git clone <this repo> ~/skills-lean && git -C ~/skills-lean checkout lean
+mkdir -p ~/try/full ~/try/lean && git -C ~/try/full init && git -C ~/try/lean init
+```
 
-It **never answers a stop for you** — that is why some autopilot runs still hand control back at a hard stop or at G6.
-
----
-
-## 8. Kickoff prompt template
+Invoke each by path instead of by its linked name, so neither depends on `~/.agents/skills`:
 
 ```text
-/dm-agent-team [--brownfield] <one-paragraph idea, or for brownfield the change you want>
-
-Target state: <what you should be able to see and do when v1 is done>
-Quality bar: prototype | internal | production
-Constraints: <platform, required/forbidden tech, standards files>
-Reference material (dirty room, analyst-only): <paths>
-Existing specs: <paths, or none>
-Mode: stepwise | checkpoint | yolo, max-parallel <1-4>
+Read ~/skills-lean/skills/dm-agent-team/SKILL.md and act as the dm-agent-team Lead it defines. <your kickoff text>
 ```
 
-Anything you leave out, the Lead asks for at G0 — with a recommended answer you can accept as-is. Two answers it always needs in words: the **run mode** and **max-parallel** (recommend 3 if the project is a git repo and your host runs parallel subagents, otherwise 1).
+For the driver, call each checkout's own `scripts/run.sh`. If you installed the host guardrails, allow each checkout's skill folder under `external_directory`. Use the same kickoff text, mode, and models for both, and compare:
 
----
+- **cost and time:** the host's token and cost totals, and wall-clock time from brief to accept;
+- **dispatches:** rows in each run's `log.md` (per stage, and per phase);
+- **churn:** REVISE rounds, change requests, stale rebuilds, and escalations (`retro.md`);
+- **outcome:** tests passing, acceptance findings, and your own judgment of the product at the accept gate.
 
-## 9. Model routing
-
-Every dispatch gets a **tier** (which model) and an **effort** (how much thinking), resolved from [ROUTING.md](./ROUTING.md) and recorded in `.agent-team/models.md` (you may edit overrides there). Defaults: the **deep** tier for approach evaluation, plans, specs, review verdicts, and hard phases; the **standard** tier for the Lead and routine phases; the **light** tier only for the mechanical precheck — never verdicts.
-
-For an unattended run, choose the Lead's model with `run.sh --lead-model <model>`.
-
----
-
-## 10. Where everything lives
-
-A project is built over **runs**: the first builds it, and each later run changes it. Every run has its own folder, and `.agent-team/` is committed, so the project keeps the full history of what was asked, decided, reviewed, and built.
-
-```
-.agent-team/                 # committed (except runs/*/logs/ and runs/*/worktrees/)
-├── active                   # the run in progress, e.g. V002-csv-export, or none
-├── models.md                # tier → model mapping (you may edit overrides)
-├── system/                  # living specs of the whole system, updated at the end of each run
-│   ├── 01-requirements.md
-│   ├── 02-ux.md
-│   └── 03-architecture.md
-└── runs/
-    ├── V001-invoice-tracker/       # a finished run, kept as history
-    └── V002-csv-export/            # the active run
-        ├── state.md                # the current truth: kind, mode, stage, gates, phases, counters
-        ├── brief.md                # G0 artifact
-        ├── decisions.md            # append-only D-### log
-        ├── log.md                  # append-only run log, one row per dispatch
-        ├── specs/                  # this run's 01-requirements, 02-ux, 03-architecture, 04-build-plan
-        ├── ux/prototypes/          # self-contained HTML
-        ├── build/                  # PHASE-###-report.md per phase
-        ├── reviews/                # one file per review round
-        ├── baseline.md             # brownfield: tests and quality checks at the baseline commit
-        ├── discovery-scope.md      # brownfield: what discovery starts from and re-checks
-        ├── approved/               # copy of each artifact as approved (drift diffs)
-        ├── changes/                # CR-###.md change requests
-        ├── handoffs/               # H-###.md; the agent appends only ## Return
-        ├── retro.md                # written at the end
-        ├── logs/                   # git-ignored: full command output, never read whole
-        └── worktrees/              # git-ignored: one git worktree per phase being built
-```
-
-- **Starting a run.** `/dm-agent-team` resumes the run named in `active`. If none is active, it starts the next one (`V003-…`), proposes a name you can change at G0, and, if an earlier run finished, makes it a brownfield change to the system in `system/`.
-- **Ending a run.** After G6, the analyst, designer, and architect fold the run's changes into `system/` (reviewed, and approved with G6); the Lead closes the run and sets `active` to `none`. At any stop you can choose **Abandon run** instead; its folder stays as history, and the stop lists any phases already merged into the code so you can decide what to keep.
-- **Spec IDs are global.** `REQ-012` means the same requirement in every run and in `system/`; a `changed` item keeps its ID. Decisions, change requests, phases, and handoffs are numbered per run and cited across runs as `V002/D-014`.
-- **Brownfield runs live on a branch.** A brownfield run works on `agent-team/<run>`. Merge it (or delete it to discard the run) before the next run: the Lead won't start one while a finished run branch is unmerged, and stops if you start one from another branch while a run is active.
-- **Commits.** The Lead commits `.agent-team/` at every gate, stop, session break, and run end (and `.gitignore` at boot), never source code with it, and never pushes.
-
-At a stop, read the active run's `state.md` first; it names the gate, the artifact, and what you must decide.
-
----
-
-## 11. Resuming and recovering
-
-- **Resume any run:** run `/dm-agent-team` in the project folder, or rerun `scripts/run.sh`. The Lead reads `state.md`, prints a resume report, re-checks artifact integrity, and continues at `next-action`.
-- **Answer a stop:** do it in an interactive session, then rerun the driver.
-- **Interrupted mid-build:** the Lead detects `in-progress`/`in-review` phases and an unfinished merge, and recovers — re-dispatching the same handoff in a fresh worktree, or re-running the interrupted precheck/review.
-- **Spec drift** (an approved artifact changed by hand): a `blocked` stop in every mode, showing you the diff. You either adopt the edit (the Lead runs it as a change request, so the reviewer re-checks and affected phases go stale) or revert it.
-
----
-
-## 12. Common mistakes
-
-Avoid these (see [GUIDE.md §8](./GUIDE.md#8-common-mistakes-to-avoid) for the full list):
-
-1. **Rubber-stamping G1 and G2** — they decide most of the outcome. G2 is the last cheap point to change *what* you're building.
-2. **Letting the reviewer share context with the author** — that is self-review.
-3. **Building UI before the layers under it** — build inside out (foundation, domain, persistence, API), then the UI phases.
-4. **Raising retry limits when things fail** — a repeated failure usually means the spec is wrong; fix it via a change request.
-5. **Editing frozen specs by hand mid-build** — the state then lies.
-6. **Running one giant session** — let the Lead take session breaks and let the driver resume.
-7. **Choosing YOLO for a real project on day one** — use `checkpoint` until first-pass PASS rates are high.
-
----
-
-## 13. Reference
+## 10. Reference
 
 | Topic | File |
 |---|---|
-| Design rationale, rollout plan, host setup | [GUIDE.md](./GUIDE.md) |
-| Lead runtime, stages, gates, run modes | [SKILL.md](./SKILL.md) |
-| Workspace, state contract, handoffs, IDs, change requests | [PROTOCOL.md](./PROTOCOL.md) |
-| Tiers, effort, escalation ladder | [ROUTING.md](./ROUTING.md) |
-| Sub-agents (dispatched by the Lead, not linked as skills) | [`agents/dm-at-*/SKILL.md`](./agents) |
-| Unattended driver | [`scripts/run.sh`](./scripts/run.sh) |
-| Mechanical precheck, run by the Lead | [`scripts/precheck.sh`](./scripts/precheck.sh) |
-| Parked plan: what an enterprise SDLC would still need | [to-enterprise-SDLC.md](./to-enterprise-SDLC.md) |
+| Rationale, host setup, migration | [GUIDE.md](./GUIDE.md) |
+| Lead runtime | [SKILL.md](./SKILL.md) |
+| Shared contract | [PROTOCOL.md](./PROTOCOL.md) |
+| Tiers and effort | [ROUTING.md](./ROUTING.md) |
+| Runs and living specs · rare situations · brownfield · existing specs | [RUNS.md](./references/RUNS.md) · [EXCEPTIONS.md](./references/EXCEPTIONS.md) · [BROWNFIELD.md](./references/BROWNFIELD.md) · [ADOPTION.md](./references/ADOPTION.md) |
+| Sub-agents | [`agents/dm-at-*/SKILL.md`](./agents) |
+| Driver and precheck | [`scripts/run.sh`](./scripts/run.sh) · [`scripts/precheck.sh`](./scripts/precheck.sh) |
+| Instruction word budgets | [word-budget.txt](./word-budget.txt) |
+| Parked: what an enterprise SDLC would add | [to-enterprise-SDLC.md](./to-enterprise-SDLC.md) |
