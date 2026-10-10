@@ -30,7 +30,7 @@ For a phase, read its entry in 03 §13, the spec items it traces to, 03 §6–§
 ## Done when
 
 - The 03 `verify:` command exits 0 (quality gate and tests), run per [PROTOCOL.md §Command output](../../PROTOCOL.md#command-output) into `logs/PHASE-###-r<round>-verify.log`. Don't run `verify-full`; the Lead does.
-- `git status --untracked-files=all` shows only files inside `touches:` plus tests. `scripts/precheck.sh` checks this, the test names, skip and focus markers, `TODO`s, suppressions, and the allowlist before anyone reviews you.
+- `git status --untracked-files=all -- . ':!.agent-team'` shows only files inside `touches:` plus tests. `scripts/precheck.sh` checks this, the test names, skip and focus markers, `TODO`s, suppressions, and the allowlist before anyone reviews you.
 - No skipped or weakened tests, hard-coded results, stubs, or debug leftovers; no network beyond allowlisted installs; no real credentials.
 
 ## Report

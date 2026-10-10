@@ -14,8 +14,7 @@ Only the Lead reads this file. Agents see only the `Effort:` line of their dispa
 | The Lead (interview, specs, integration) | the session model: run interactive sessions on the deep tier, since the Lead now writes the specs; driver build sessions may use `--lead-model` standard | – |
 | Spec review, milestone review, phase review | deep | medium |
 | Acceptance | deep | high |
-| Builder: `PHASE-001`, `risk: high` | deep | medium |
-| Builder: other phases, fix phases | standard | medium |
+| Builder (started once, resumed for every phase) | deep when its first phase is `PHASE-001` or `risk: high`, else standard | medium |
 | Any REVISE resume, and the `test-red` retry | same tier | high |
 | Precheck | `scripts/precheck.sh` (fallback: reviewer at standard, low) | – |
 

@@ -31,7 +31,7 @@ Review 01, 02 (if any), and 03 together against the brief and `decisions.md`:
 - **01 holds no technology or layout** (one author wrote both specs; solution bias in 01 is a major).
 - **03:** the quality gate has at least a formatter, a linter, and type checking where the language supports it, each pinned and allowlisted; `verify` is exact, runs the gate, is hermetic, and is plausibly under 3 minutes (else `verify-full` is named); every §7 abstraction names real cases and its costs, none justified only by a principle or look-alike code.
 - **§13:** `PHASE-001` is the foundation (brownfield: the baseline harness); phases go inside out and none depends on a later one; each *Must* criterion is owned once; `touches:` are exact; every `DATA` and `API` is built somewhere. A phase count far above the size's range is a major; trivial phases not merged, a minor.
-- **Baseline specs** (brownfield `discover`): check only that claims match the code they cite (spot-check at least 5); the 03 and §13 checks don't apply.
+- **Baseline specs** (a brownfield `spec-review` before the baseline gate; the dispatch says so): check only that claims match the code they cite (spot-check at least 5); the 03 and §13 checks don't apply.
 
 ## `precheck` (fallback)
 

@@ -15,7 +15,7 @@ On resume, before building:
 
 1. In brownfield, the project root must be on `run-branch:`; otherwise stop (`blocked`, `halt: wrong-branch`).
 2. If the project root has an unfinished merge (`git rev-parse -q --verify MERGE_HEAD`), `git merge --abort` and integrate that lane again (PARALLEL.md step 3).
-3. A phase `in-progress` or `in-review` was interrupted. With one builder in the project root, discard the partial work back to the last phase commit (`git checkout -- . && git clean -fd`, after checking the tree holds nothing but that phase's files) and start a fresh builder on the phase. In a lane, remove the worktree and branch and open a new lane. An interrupted precheck or review is simply re-run.
+3. A phase `in-progress` or `in-review` was interrupted. With one builder in the project root, discard the partial work back to the last phase commit (`git reset -q && git checkout -- . && git clean -fd -- . ':!.agent-team'`, after checking the tree holds nothing but that phase's files) and start a fresh builder on the phase. In a lane, remove the worktree and branch and open a new lane. An interrupted precheck or review is simply re-run.
 
 ## Escalation
 
@@ -33,4 +33,4 @@ Three escalations in a row (`consecutive-escalations`, reset by any PASS) stop t
 
 ## Blocked phases
 
-When a builder's `blocked` cause is resolved (the human fixed the environment, or the spec change is made), resume the builder on the phase from the current `HEAD` (a lane first discards its partial work: `git checkout -- . && git clean -fd` in the worktree). If a scope change was refused and the phase can't be built as specified, mark it `escalated`.
+When a builder's `blocked` cause is resolved (the human fixed the environment, or the spec change is made), resume the builder on the phase from the current `HEAD` (a lane first discards its partial work: `git reset -q && git checkout -- . && git clean -fd` in the worktree). If a scope change was refused and the phase can't be built as specified, mark it `escalated`.

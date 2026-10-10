@@ -72,9 +72,8 @@ fi
 mkdir -p "$LOGS"
 
 field() { grep -m1 "^$1:" "$STATE" | sed "s/^$1:[[:space:]]*//" || true; }
-# Progress = any change to state.md other than the per-session dispatch counter,
-# which every session rewrites even when nothing else moves.
-state_hash() { grep -v '^session-dispatches:' "$STATE" | cksum; }
+# Progress = any change to state.md.
+state_hash() { cksum < "$STATE"; }
 
 PROMPT="Read $SKILL_DIR/SKILL.md and act as the dm-agent-team Lead it defines. driver: true. \
 Project root: $PROJECT. Resume the active run named in .agent-team/active, at the next-action in its state.md. \
@@ -103,11 +102,11 @@ COSTS="$RUN_DIR/costs.tsv"
 # total_cost_usd, num_turns, and duration_ms. Other hosts report nothing: blank cells.
 record_cost() {
   local cost turns dur
-  cost="$(grep -o '"total_cost_usd":[0-9.]*' "$2" | tail -1 | cut -d: -f2)"
-  turns="$(grep -o '"num_turns":[0-9]*' "$2" | tail -1 | cut -d: -f2)"
-  dur="$(grep -o '"duration_ms":[0-9]*' "$2" | tail -1 | cut -d: -f2)"
+  cost="$(grep -o '"total_cost_usd":[0-9.]*' "$2" | tail -1 | cut -d: -f2 || true)"
+  turns="$(grep -o '"num_turns":[0-9]*' "$2" | tail -1 | cut -d: -f2 || true)"
+  dur="$(grep -o '"duration_ms":[0-9]*' "$2" | tail -1 | cut -d: -f2 || true)"
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$1" "$stage" "$cost" "$turns" "$dur" "${2##*/}" >> "$COSTS"
-  [[ -n "$cost" ]] && echo "  cost: \$$cost · turns: $turns"
+  [[ -z "$cost" ]] || echo "  cost: \$$cost · turns: $turns"
 }
 
 stalls=0

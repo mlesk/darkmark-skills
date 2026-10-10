@@ -36,7 +36,7 @@ Discovery (S0.5) records what exists before anything is designed. It runs after 
 
 2. **Baseline 03** → `specs/03-architecture.md`, every item `existing` and cited: components and boundaries; the data and contracts the change will likely touch; the conventions, structure, and coding standards in use; the test command, a `test files:` line of globs matching every test and test-support file, and whether the suite is hermetic (can two copies run at once from two directories?); the quality tools already configured, with commands; the dependencies in use and a `list command:`. Describe, don't judge; no §13 yet.
 3. **Baseline 01** → `specs/01-requirements.md` §0 *Baseline behaviour*: the current behaviour of the area the change touches, as `existing` `REQ`s whose criteria describe what the code does today, each cited. Record a surprise as an `ASM` to confirm at the gate, not a guess.
-4. **Reviewer, `spec-review`** of both (one dispatch): spot-checks at least 5 claims against the code; an unsupported claim is a major.
+4. **Reviewer, `spec-review`** of both (one dispatch, saying they are baseline specs): spot-checks at least 5 claims against the code; an unsupported claim is a major.
 5. **The baseline.** On `baseline-commit`, run the test command and each existing quality check per PROTOCOL §Command output, and write `baseline.md`:
 
    ```markdown
