@@ -51,10 +51,10 @@ ACTIVE=""
 if [[ -f "$TEAM/active" ]]; then ACTIVE="$(tr -d '[:space:]' < "$TEAM/active")"; fi
 if [[ -z "$ACTIVE" || "$ACTIVE" == none ]]; then
   if [[ -d "$TEAM/runs" ]]; then
-    echo "No active run: the last run is finished or abandoned. Start the next one with /dm-agent-team interactively."
+    echo "No active run on this branch: the last run is finished or abandoned, or a brownfield run is active on an agent-team/* branch. Start or resume it with /dm-agent-team interactively."
     exit 0
   fi
-  echo "No run yet in $TEAM. Start one with /dm-agent-team interactively: kickoff and G0 always need a human." >&2
+  echo "No run yet in $TEAM. Start one with /dm-agent-team interactively: the brief gate always needs a human." >&2
   exit 1
 fi
 RUN_DIR="$TEAM/runs/$ACTIVE"
@@ -62,7 +62,7 @@ STATE="$RUN_DIR/state.md"
 LOGS="$RUN_DIR/logs"
 
 if [[ ! -f "$STATE" ]]; then
-  echo "No $STATE. Run /dm-agent-team interactively first: kickoff and G0 always need a human." >&2
+  echo "No $STATE. Run /dm-agent-team interactively first: the brief gate always needs a human." >&2
   exit 1
 fi
 mkdir -p "$LOGS"
