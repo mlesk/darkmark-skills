@@ -15,6 +15,10 @@ set -euo pipefail
 #   run.sh --host claude --lead-model sonnet -- --permission-mode acceptEdits
 #   run.sh --host copilot -- --allow-all-tools
 #
+# Each session's cost and turn count (when the host reports them: Claude Code's
+# JSON output) are appended to <run>/costs.tsv for the retro and for comparing
+# versions of this skill.
+#
 # Exit codes: 0 done (or no active run) · 1 usage or no run to drive · 2 awaiting human · 3 no progress · 4 host failed · 5 session cap
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
@@ -24,7 +28,7 @@ MAX_SESSIONS=40
 LEAD_MODEL=""
 EXTRA=()
 
-usage() { sed -n '4,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
+usage() { sed -n '4,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -82,7 +86,7 @@ run_host() {
     opencode) (cd "$PROJECT" && opencode run "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
     # The prompt goes first: options such as --allowedTools take a variable
     # number of values and would swallow a prompt placed after them.
-    claude)   (cd "$PROJECT" && claude -p "$PROMPT" "${EXTRA[@]+"${EXTRA[@]}"}") ;;
+    claude)   (cd "$PROJECT" && claude -p "$PROMPT" --output-format json "${EXTRA[@]+"${EXTRA[@]}"}") ;;
     copilot)  (cd "$PROJECT" && copilot -p "$PROMPT" "${EXTRA[@]+"${EXTRA[@]}"}") ;;
     codex)    (cd "$PROJECT" && codex exec "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
     *) echo "Unsupported host: $HOST" >&2; exit 1 ;;
@@ -92,6 +96,19 @@ run_host() {
 if [[ "$(field mode)" == "stepwise" ]]; then
   echo "Note: mode is stepwise, so the run stops at every gate. Switch to checkpoint or yolo at a stop for longer unattended runs."
 fi
+
+COSTS="$RUN_DIR/costs.tsv"
+[[ -f "$COSTS" ]] || printf 'when\tsession\tstage\tcost_usd\tturns\tduration_ms\tlog\n' > "$COSTS"
+# Claude Code's --output-format json ends with one JSON object holding
+# total_cost_usd, num_turns, and duration_ms. Other hosts report nothing: blank cells.
+record_cost() {
+  local cost turns dur
+  cost="$(grep -o '"total_cost_usd":[0-9.]*' "$2" | tail -1 | cut -d: -f2)"
+  turns="$(grep -o '"num_turns":[0-9]*' "$2" | tail -1 | cut -d: -f2)"
+  dur="$(grep -o '"duration_ms":[0-9]*' "$2" | tail -1 | cut -d: -f2)"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$1" "$stage" "$cost" "$turns" "$dur" "${2##*/}" >> "$COSTS"
+  [[ -n "$cost" ]] && echo "  cost: \$$cost · turns: $turns"
+}
 
 stalls=0
 failures=0
@@ -118,7 +135,8 @@ for ((i = 1; i <= MAX_SESSIONS; i++)); do
     echo "  host exited non-zero (see $log)"
     if (( failures >= 2 )); then echo "Host failed twice in a row." >&2; exit 4; fi
   fi
-  tail -n 3 "$log" | sed 's/^/  │ /'
+  record_cost "$i" "$log"
+  tail -n 3 "$log" | cut -c1-200 | sed 's/^/  │ /'
 
   if [[ "$(state_hash)" == "$before" ]]; then
     stalls=$((stalls + 1))

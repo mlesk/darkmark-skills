@@ -57,10 +57,7 @@ Each skill is symlinked into that directory, so pulling the repo updates the ski
 
 ### Building
 
-- [`dm-agent-team`](skills/dm-agent-team/SKILL.md) - A Lead plus five sub-agents (analyst, architect, designer, builder, reviewer) that take a product idea through requirements and UX, then architecture and a build plan, to a clean-room, test-driven implementation in local files. The process scales to the project's size (small, standard, large); three run modes (stepwise, checkpoint, yolo); a few large build phases planned inside out and built in parallel git worktrees, checked by a script and reviewed at milestones and acceptance; a `--brownfield` mode for changing existing systems; and a driver script for unattended runs. The successor to `dm-spec-creation` + `dm-spec-execution`. Its agent-only sub-agents are dispatched by the Lead and are not linked as skills:
-  - [`dm-at-analyst`](skills/dm-agent-team/agents/dm-at-analyst/SKILL.md) (agent-only)
-  - [`dm-at-architect`](skills/dm-agent-team/agents/dm-at-architect/SKILL.md) (agent-only)
-  - [`dm-at-designer`](skills/dm-agent-team/agents/dm-at-designer/SKILL.md) (agent-only)
+- [`dm-agent-team`](skills/dm-agent-team/SKILL.md) - A Lead plus two sub-agents (builder, reviewer) that take a product idea from one discovery interview, through a single warm-context pass that writes requirements, UX, architecture and build plan, through an independent review, to a clean-room, test-driven build by a persistent builder and an independent acceptance. The process scales to the project's size (small, standard, large); three run modes (stepwise, checkpoint, yolo); a script checks every phase, parallel lanes in git worktrees serve large runs, a `--brownfield` mode changes existing systems, and a driver script runs unattended and records cost per session. The successor to `dm-spec-creation` + `dm-spec-execution`. Its agent-only sub-agents are dispatched by the Lead and are not linked as skills:
   - [`dm-at-builder`](skills/dm-agent-team/agents/dm-at-builder/SKILL.md) (agent-only)
   - [`dm-at-reviewer`](skills/dm-agent-team/agents/dm-at-reviewer/SKILL.md) (agent-only)
 - [`dm-debug`](skills/dm-debug/SKILL.md) - Hypothesis-driven debugging: reproduce, shrink, rank hypotheses, run experiments that tell them apart, and fix the root cause with a regression test seen failing first. Keeps a debug log.

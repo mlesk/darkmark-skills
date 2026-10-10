@@ -11,7 +11,8 @@ set -uo pipefail
 #               [--touches "path ..."] [--ids "REQ-001.1 DATA-003 ..."]
 #               [--brownfield --baseline SHA [--behaviour-changes "D-012 ..."] [--deletes "path ..."]]
 #
-# --touches and --ids override what is read from 04-build-plan.md. Use them for
+# --touches and --ids override what is read from the build plan (03 §13, or an
+# older run's 04-build-plan.md). Use them for
 # fix phases (PHASE-F##), which live only in state.md and their handoff.
 #
 # --brownfield adds check 6: a test that existed at --baseline may be edited or
@@ -45,19 +46,20 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n "$WORKSPACE" && -n "$WORKDIR" && -n "$PHASE" && -n "$ROUND" && -n "$BASE" ]] || usage
 if $BROWNFIELD && [[ -z "$BASELINE" ]]; then echo "precheck: --brownfield needs --baseline SHA" >&2; usage; fi
-PLAN="$WORKSPACE/specs/04-build-plan.md"
 ARCH="$WORKSPACE/specs/03-architecture.md"
+# The build plan is 03 §13; runs from older versions keep a separate 04.
+PLAN="$WORKSPACE/specs/04-build-plan.md"; [[ -f "$PLAN" ]] || PLAN="$ARCH"
 REVIEW="$WORKSPACE/reviews/$PHASE-r$ROUND-precheck.md"
 LOG="$WORKSPACE/logs/$PHASE-r$ROUND-precheck.log"
 fail() { echo "precheck: $*" >&2; exit 2; }
-[[ -f "$PLAN" && -f "$ARCH" && -d "$WORKDIR" ]] || fail "missing $PLAN, $ARCH, or $WORKDIR"
+[[ -f "$ARCH" && -d "$WORKDIR" ]] || fail "missing $ARCH or $WORKDIR"
 mkdir -p "$WORKSPACE/reviews" "$WORKSPACE/logs"
 
 strip() { sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^`//' -e 's/`$//'; }
 
 # ---- Read the specs -----------------------------------------------------------
 VERIFY="$(grep -m1 '^verify:' "$PLAN" | sed 's/^verify:[[:space:]]*//' | strip)"
-[[ -n "$VERIFY" ]] || fail "no 'verify:' line in 04-build-plan.md"
+[[ -n "$VERIFY" ]] || fail "no 'verify:' line in the build plan ($PLAN)"
 
 phase_block() {   # lines of this phase's entry in 04
   awk -v id="$PHASE" '
@@ -70,7 +72,7 @@ field() { printf '%s\n' "$BLOCK" | grep -m1 "^$1:" | sed "s/^$1:[[:space:]]*//";
 
 if [[ -n "$TOUCHES_OVERRIDE" ]]; then TOUCHES="$TOUCHES_OVERRIDE"
 else
-  [[ -n "$BLOCK" ]] || fail "$PHASE not found in 04-build-plan.md (pass --touches and --ids for a fix phase)"
+  [[ -n "$BLOCK" ]] || fail "$PHASE not found in $PLAN (pass --touches and --ids for a fix phase)"
   TOUCHES="$(field touches | tr ',' ' ' | tr -d '`')"
 fi
 [[ -n "${TOUCHES// /}" ]] || fail "$PHASE has no touches:"
@@ -242,7 +244,7 @@ VERDICT=PASS; [[ ${#FINDINGS[@]} -gt 0 ]] && VERDICT=REVISE
 {
   echo "# Review: $PHASE — precheck — round $ROUND"
   echo "verdict: $VERDICT"
-  echo "checked-against: specs/04-build-plan.md#$PHASE, specs/03-architecture.md §9 §10.1 §11"
+  echo "checked-against: ${PLAN##*/}#$PHASE, specs/03-architecture.md §9 §10.1 §11"
   echo "by: scripts/precheck.sh (mechanical; no judgment calls)"
   echo "## Evidence"
   echo "| Command | Exit | Summary |"
