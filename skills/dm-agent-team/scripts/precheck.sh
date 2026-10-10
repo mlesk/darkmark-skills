@@ -11,7 +11,8 @@ set -uo pipefail
 #               [--touches "path ..."] [--ids "REQ-001.1 DATA-003 ..."]
 #               [--brownfield --baseline SHA [--behaviour-changes "D-012 ..."] [--deletes "path ..."]]
 #
-# --touches and --ids override what is read from 04-build-plan.md. Use them for
+# --touches and --ids override what is read from the build plan (03 §13, or an
+# older run's 04-build-plan.md). Use them for
 # fix phases (PHASE-F##), which live only in state.md and their handoff.
 #
 # --brownfield adds check 6: a test that existed at --baseline may be edited or
@@ -45,19 +46,20 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n "$WORKSPACE" && -n "$WORKDIR" && -n "$PHASE" && -n "$ROUND" && -n "$BASE" ]] || usage
 if $BROWNFIELD && [[ -z "$BASELINE" ]]; then echo "precheck: --brownfield needs --baseline SHA" >&2; usage; fi
-PLAN="$WORKSPACE/specs/04-build-plan.md"
 ARCH="$WORKSPACE/specs/03-architecture.md"
+# The build plan is 03 §13; runs from older versions keep a separate 04.
+PLAN="$WORKSPACE/specs/04-build-plan.md"; [[ -f "$PLAN" ]] || PLAN="$ARCH"
 REVIEW="$WORKSPACE/reviews/$PHASE-r$ROUND-precheck.md"
 LOG="$WORKSPACE/logs/$PHASE-r$ROUND-precheck.log"
 fail() { echo "precheck: $*" >&2; exit 2; }
-[[ -f "$PLAN" && -f "$ARCH" && -d "$WORKDIR" ]] || fail "missing $PLAN, $ARCH, or $WORKDIR"
+[[ -f "$ARCH" && -d "$WORKDIR" ]] || fail "missing $ARCH or $WORKDIR"
 mkdir -p "$WORKSPACE/reviews" "$WORKSPACE/logs"
 
 strip() { sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^`//' -e 's/`$//'; }
 
 # ---- Read the specs -----------------------------------------------------------
 VERIFY="$(grep -m1 '^verify:' "$PLAN" | sed 's/^verify:[[:space:]]*//' | strip)"
-[[ -n "$VERIFY" ]] || fail "no 'verify:' line in 04-build-plan.md"
+[[ -n "$VERIFY" ]] || fail "no 'verify:' line in the build plan ($PLAN)"
 
 phase_block() {   # lines of this phase's entry in 04
   awk -v id="$PHASE" '
@@ -70,7 +72,7 @@ field() { printf '%s\n' "$BLOCK" | grep -m1 "^$1:" | sed "s/^$1:[[:space:]]*//";
 
 if [[ -n "$TOUCHES_OVERRIDE" ]]; then TOUCHES="$TOUCHES_OVERRIDE"
 else
-  [[ -n "$BLOCK" ]] || fail "$PHASE not found in 04-build-plan.md (pass --touches and --ids for a fix phase)"
+  [[ -n "$BLOCK" ]] || fail "$PHASE not found in $PLAN (pass --touches and --ids for a fix phase)"
   TOUCHES="$(field touches | tr ',' ' ' | tr -d '`')"
 fi
 [[ -n "${TOUCHES// /}" ]] || fail "$PHASE has no touches:"
@@ -134,10 +136,10 @@ cd "$WORKDIR" || fail "cannot enter $WORKDIR"
 git rev-parse --verify -q "$BASE^{commit}" >/dev/null || fail "base $BASE is not a commit in $WORKDIR"
 
 # Mark new files intent-to-add first, so verify's changed-file ratchets
-# (git diff <baseline>) see them, and so does the scope check below. Reports go
-# to the live workspace, not the worktree: any change to the worktree's
-# .agent-team/ snapshot is out of scope.
-git add --all --intent-to-add >/dev/null 2>&1
+# (git diff <baseline>) see them, and so does the scope check below. The team's
+# own files (.agent-team/: the Lead's state edits, this phase's report and
+# review files) are never part of a phase, so every git query excludes them.
+git add --all --intent-to-add -- . ':!.agent-team' >/dev/null 2>&1
 
 # 1. Verify ---------------------------------------------------------------------
 bash -c "$VERIFY" > "$LOG" 2>&1; VEXIT=$?
@@ -146,7 +148,7 @@ if [[ $VEXIT -eq 0 ]]; then add_row 1 "verify" PASS "\`$VERIFY\` · exit 0 · $L
 else add_row 1 "verify" FAIL "\`$VERIFY\` · exit $VEXIT · $LOG"
      add_finding "$LOG" "verify exited $VEXIT: $VSUM" "make verify pass" 1; fi
 
-CHANGED="$(git status --porcelain --untracked-files=all | sed -E 's/^.{3}//; s/^.* -> //' | sort -u)"
+CHANGED="$(git status --porcelain --untracked-files=all -- . ':!.agent-team' | sed -E 's/^.{3}//; s/^.* -> //' | sort -u)"
 
 # 2. Scope ----------------------------------------------------------------------
 OUT=""
@@ -156,7 +158,7 @@ while IFS= read -r f; do
 done <<< "$CHANGED"
 if [[ -z "$OUT" ]]; then add_row 2 "scope: changes inside touches: or tests" PASS "$(printf '%s\n' "$CHANGED" | grep -c . ) files checked"
 else add_row 2 "scope: changes inside touches: or tests" FAIL "outside: $OUT"
-     add_finding "$OUT" "changed outside the phase's touches:" "revert, or raise a CR if the plan is wrong" 2; fi
+     add_finding "$OUT" "changed outside the phase's touches:" "revert, or return blocked: spec-gap if the plan is wrong" 2; fi
 
 # 3. A test per acceptance-tests item ---------------------------------------------
 MISSING=""
@@ -173,7 +175,7 @@ else add_row 3 "a test per acceptance-tests item" FAIL "no test name contains: $
      add_finding "test files" "no test named for $MISSING" "add a test named with the ID in code form (REQ-004.2 → REQ_004_2)" 3; fi
 
 # 4. Markers, suppressions, quality configs -------------------------------------
-ADDED="$(git diff "$BASE" -U0 --no-color | awk '/^\+\+\+ b\//{f=substr($0,7)} /^\+[^+]/{print f": "substr($0,2)}')"
+ADDED="$(git diff "$BASE" -U0 --no-color -- . ':!.agent-team' | awk '/^\+\+\+ b\//{f=substr($0,7)} /^\+[^+]/{print f": "substr($0,2)}')"
 B='(^|[^A-Za-z0-9_])'   # portable word start (BSD grep has no reliable \b)
 SKIP_RE="\\.skip\\(|\\.only\\(|${B}xit\\(|${B}xdescribe\\(|${B}fit\\(|${B}fdescribe\\(|@pytest\\.mark\\.skip|@unittest\\.skip|\\[Ignore\\]|@Disabled|t\\.Skip\\(|#\\[ignore\\]|${B}(TODO|FIXME)([^A-Za-z0-9_]|\$)"
 SUPP_RE='eslint-disable|# *noqa|type: *ignore|@ts-ignore|@ts-nocheck|pragma warning disable|@SuppressWarnings|#\[allow\(|nolint|rubocop:disable|pylint: *disable'
@@ -187,7 +189,7 @@ if [[ -z "$MARKS$SUPPS$CFG" ]]; then add_row 4 "no skip/focus markers, TODO/FIXM
 else
   add_row 4 "no skip/focus markers, TODO/FIXME, suppressions, or quality-config edits" FAIL "see findings"
   [[ -n "$MARKS" ]] && add_finding "$(printf '%s\n' "$MARKS" | cut -d: -f1 | sort -u | tr '\n' ' ')" "skip/focus marker or TODO: $(printf '%s\n' "$MARKS" | cut -c1-80 | tr '\n' ';' | tr '|' '/')" "remove them; never skip tests or leave stubs" 4
-  [[ -n "$SUPPS" ]] && add_finding "$(printf '%s\n' "$SUPPS" | cut -d: -f1 | sort -u | tr '\n' ' ')" "suppression comment: $(printf '%s\n' "$SUPPS" | cut -c1-80 | tr '\n' ';' | tr '|' '/')" "fix the finding at its cause, or add the file to 03 §9 suppression exceptions via a CR" 4
+  [[ -n "$SUPPS" ]] && add_finding "$(printf '%s\n' "$SUPPS" | cut -d: -f1 | sort -u | tr '\n' ' ')" "suppression comment: $(printf '%s\n' "$SUPPS" | cut -c1-80 | tr '\n' ';' | tr '|' '/')" "fix the finding at its cause, or return blocked: spec-gap to add the file to 03 §9 suppression exceptions" 4
   [[ -n "$CFG" ]] && add_finding "$CFG" "quality config changed outside touches:" "revert; quality rules change only through the plan" 4
 fi
 
@@ -203,7 +205,7 @@ else
   done <<< "$DEPS"
   if [[ -z "$EXTRA" ]]; then add_row 5 "dependencies on the allowlist" PASS "\`$DEPS_CMD\` · $(printf '%s\n' "$DEPS" | grep -c .) deps"
   else add_row 5 "dependencies on the allowlist" FAIL "not allowlisted: $EXTRA"
-       add_finding "dependency manifest" "not on the 03 §11 allowlist: $EXTRA" "remove it, or raise a dependency CR (hard stop)" 5; fi
+       add_finding "dependency manifest" "not on the 03 §11 allowlist: $EXTRA" "remove it, or return blocked: dependency (hard stop)" 5; fi
 fi
 
 # 6. Brownfield: baseline tests and files change only under declared decisions --
@@ -223,7 +225,7 @@ if $BROWNFIELD; then
     elif [[ "$st" == D* ]]; then
       case " $DELETES " in *" $f "*) [[ -n "${DEL_DS// /}" ]] || BAD_DELETES+="$f " ;; *) BAD_DELETES+="$f " ;; esac
     fi
-  done < <(git -c core.quotePath=false diff -z --name-status -M "$BASE")
+  done < <(git -c core.quotePath=false diff -z --name-status -M "$BASE" -- . ':!.agent-team')
   for d in $BEHAV $DEL_DS; do
     grep -qE "^## $d( |$)" "$WORKSPACE/decisions.md" 2>/dev/null || UNKNOWN_DS+="$d "
   done
@@ -242,7 +244,7 @@ VERDICT=PASS; [[ ${#FINDINGS[@]} -gt 0 ]] && VERDICT=REVISE
 {
   echo "# Review: $PHASE — precheck — round $ROUND"
   echo "verdict: $VERDICT"
-  echo "checked-against: specs/04-build-plan.md#$PHASE, specs/03-architecture.md §9 §10.1 §11"
+  echo "checked-against: ${PLAN##*/}#$PHASE, specs/03-architecture.md §9 §10.1 §11"
   echo "by: scripts/precheck.sh (mechanical; no judgment calls)"
   echo "## Evidence"
   echo "| Command | Exit | Summary |"
