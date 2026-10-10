@@ -1,6 +1,6 @@
 # Plan: taking dm-agent-team to an enterprise SDLC
 
-**Status: parked — food for thought, not scheduled.** Agents never load this file. It was written against the full version of the team (gates G0–G6, separate 03 sections such as §7 conventions); on the lean version, read G1–G2 as the product gate, G3–G4 as the plan gate, G5 as milestone gates, G6 as the accept gate, and §7 as 03 §6. An `enterprise` bar would map naturally to the `large` size plus stricter gates. It records what the team would need before an enterprise could trust it, where each change would go, and in what order.
+**Status: parked — food for thought, not scheduled.** Agents never load this file. It was written against the full version of the team (gates G0–G6, separate 03 sections such as §7 conventions); on the lean version, read G1–G2 as the product gate, G3–G4 as the plan gate, G5 as milestone gates, G6 as the accept gate, and §7 as 03 §6. An `enterprise` bar would map naturally to the `large` size plus stricter gates. In lean-2 the Lead writes the specs itself and the analyst, designer, and architect no longer exist as agents: read their names below as the Lead at S1, `log.md` as `state.md` §Log, and `handoffs/` as the dispatch log. It records what the team would need before an enterprise could trust it, where each change would go, and in what order.
 
 ## Context
 

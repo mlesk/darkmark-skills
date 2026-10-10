@@ -6,7 +6,7 @@ Skills live in a flat list under `skills/`. Each skill is a directory containing
 - Each skill entry in the top-level `README.md` must link the skill name to its `SKILL.md`.
 - All skills use the `dm-` prefix to avoid collisions with other plugins and mark the set. Agent-only sub-agents nested inside a skill (the `dm-at-*` agents in `dm-agent-team`) also use it; the legacy `spec-*` sub-skills keep the `spec-` prefix.
 - `skills/dm-spec-creation` bundles standards, templates, gates, orchestration docs, and the seven `specs/spec-*` sub-skills. Each sub-skill has its own `SKILL.md` (marked `user-invocable: false`, agent-only) and its own entry in the top-level `README.md`.
-- `skills/dm-agent-team` is a Lead skill with five nested agent-only sub-agents under `agents/dm-at-*/`. Each has its own `SKILL.md` and its own README entry. The Lead dispatches them by path; they are never linked.
+- `skills/dm-agent-team` is a Lead skill with two nested agent-only sub-agents under `agents/dm-at-*/` (builder, reviewer); the Lead itself interviews, writes the specs, and integrates. Each has its own `SKILL.md` and its own README entry. The Lead dispatches them by path; they are never linked.
 - `dm-agent-team` supersedes `dm-spec-creation` + `dm-spec-execution`. Put new spec and execution features into `dm-agent-team`, not the spec skills. When the spec skills are retired, move both to `skills/deprecated/` in one commit, because `dm-spec-execution` reads `../dm-spec-creation/`.
 - `skills/experimental/` holds work-in-progress skills.
 - `skills/deprecated/` holds disabled skills.
