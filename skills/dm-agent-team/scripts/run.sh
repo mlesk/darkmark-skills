@@ -3,7 +3,8 @@ set -euo pipefail
 
 # run.sh — keep a dm-agent-team run going across fresh host sessions until it
 # reaches a human stop, finishes, or stops making progress. Each session
-# resumes from .agent-team/state.md, so context never accumulates.
+# resumes the active run (.agent-team/active → runs/<run>/state.md), so context
+# never accumulates.
 #
 # Usage:
 #   run.sh [--host opencode|claude|copilot|codex] [--project DIR]
@@ -14,7 +15,7 @@ set -euo pipefail
 #   run.sh --host claude --lead-model sonnet -- --permission-mode acceptEdits
 #   run.sh --host copilot -- --allow-all-tools
 #
-# Exit codes: 0 done · 1 usage · 2 awaiting human · 3 no progress · 4 host failed · 5 session cap
+# Exit codes: 0 done (or no active run) · 1 usage or no run to drive · 2 awaiting human · 3 no progress · 4 host failed · 5 session cap
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 HOST="opencode"
@@ -23,7 +24,7 @@ MAX_SESSIONS=40
 LEAD_MODEL=""
 EXTRA=()
 
-usage() { sed -n '4,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
+usage() { sed -n '4,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -40,8 +41,25 @@ done
 # Every supported host CLI accepts --model.
 if [[ -n "$LEAD_MODEL" ]]; then EXTRA=(--model "$LEAD_MODEL" "${EXTRA[@]+"${EXTRA[@]}"}"); fi
 
-STATE="$PROJECT/.agent-team/state.md"
-LOGS="$PROJECT/.agent-team/logs"
+# The active run is named in .agent-team/active (runs/<name>/ holds its state).
+TEAM="$PROJECT/.agent-team"
+if [[ -f "$TEAM/state.md" ]]; then
+  echo "$TEAM holds a run in the old single-folder layout. Run /dm-agent-team interactively once to migrate it to runs/." >&2
+  exit 1
+fi
+ACTIVE=""
+if [[ -f "$TEAM/active" ]]; then ACTIVE="$(tr -d '[:space:]' < "$TEAM/active")"; fi
+if [[ -z "$ACTIVE" || "$ACTIVE" == none ]]; then
+  if [[ -d "$TEAM/runs" ]]; then
+    echo "No active run: the last run is finished or abandoned. Start the next one with /dm-agent-team interactively."
+    exit 0
+  fi
+  echo "No run yet in $TEAM. Start one with /dm-agent-team interactively: kickoff and G0 always need a human." >&2
+  exit 1
+fi
+RUN_DIR="$TEAM/runs/$ACTIVE"
+STATE="$RUN_DIR/state.md"
+LOGS="$RUN_DIR/logs"
 
 if [[ ! -f "$STATE" ]]; then
   echo "No $STATE. Run /dm-agent-team interactively first: kickoff and G0 always need a human." >&2
@@ -50,17 +68,21 @@ fi
 mkdir -p "$LOGS"
 
 field() { grep -m1 "^$1:" "$STATE" | sed "s/^$1:[[:space:]]*//" || true; }
-state_hash() { git hash-object "$STATE" 2>/dev/null || cksum < "$STATE"; }
+# Progress = any change to state.md other than the per-session dispatch counter,
+# which every session rewrites even when nothing else moves.
+state_hash() { grep -v '^session-dispatches:' "$STATE" | cksum; }
 
 PROMPT="Read $SKILL_DIR/SKILL.md and act as the dm-agent-team Lead it defines. driver: true. \
-Project root: $PROJECT. Resume from .agent-team/state.md at next-action. \
+Project root: $PROJECT. Resume the active run named in .agent-team/active, at the next-action in its state.md. \
 Do not ask the human anything in this session: at a stop, set status: awaiting-human, \
-write next-action, and end. End the session after finishing the current phase or milestone."
+write next-action, and end. End the session after finishing the current stage or milestone."
 
 run_host() {
   case "$HOST" in
     opencode) (cd "$PROJECT" && opencode run "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
-    claude)   (cd "$PROJECT" && claude -p "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
+    # The prompt goes first: options such as --allowedTools take a variable
+    # number of values and would swallow a prompt placed after them.
+    claude)   (cd "$PROJECT" && claude -p "$PROMPT" "${EXTRA[@]+"${EXTRA[@]}"}") ;;
     copilot)  (cd "$PROJECT" && copilot -p "$PROMPT" "${EXTRA[@]+"${EXTRA[@]}"}") ;;
     codex)    (cd "$PROJECT" && codex exec "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
     *) echo "Unsupported host: $HOST" >&2; exit 1 ;;
@@ -74,19 +96,21 @@ fi
 stalls=0
 failures=0
 for ((i = 1; i <= MAX_SESSIONS; i++)); do
-  phase="$(field phase)"; st="$(field status)"
-  if [[ "$phase" == "done" ]]; then
-    echo "DONE — see .agent-team/retro.md"; exit 0
+  # Runs started before stages were renamed still have a phase: field.
+  stage="$(field stage)"; [[ -n "$stage" ]] || stage="$(field phase)"; st="$(field status)"
+  if [[ "$stage" == "done" ]]; then
+    echo "DONE — see $RUN_DIR/retro.md"; exit 0
   fi
   if [[ "$st" == "awaiting-human" || "$st" == "blocked" ]]; then
-    echo "STOP ($st) at $phase — $(field next-action)"
+    echo "STOP ($st) at $stage — $(field next-action)"
+    if [[ "$st" == "blocked" ]]; then echo "  halt: $(field halt)"; fi
     echo "Answer it in an interactive /dm-agent-team session, then rerun this script."
     exit 2
   fi
 
   before="$(state_hash)"
   log="$LOGS/driver-$(date +%Y%m%d-%H%M%S)-s$i.log"
-  echo "[session $i/$MAX_SESSIONS] $phase — $(field next-action)"
+  echo "[session $i/$MAX_SESSIONS] $stage — $(field next-action)"
   if run_host > "$log" 2>&1; then
     failures=0
   else

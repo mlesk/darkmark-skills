@@ -3,6 +3,8 @@ name: dm-spec-execution
 description: Autonomous implementation loop for solutions specified by the sibling `dm-spec-creation` skill. Reads `01-specifications/spec-06-execution-plan.md` and maintains `01-specifications/execution-state.md` as the source of truth. Runs the inside-out Phase state machine defined in `../dm-spec-creation/standards/planning-standards-inside-out-phases.md` §11 — pick next pending Phase whose dependencies are done, mark in-progress, read spec-anchors, resolve open decisions, implement deliverables, verify done-when, open PR, merge on green, mark done, loop. Stops cleanly on failure (state stays consistent), on context-budget halts (writes a resume-hint), and when all Phases are done. Use after `dm-spec-creation` reports DONE and you want to ship code.
 ---
 
+> **Being replaced by `dm-agent-team`.** This skill still works, but new projects should use `dm-agent-team`. Projects already using it: see [Migrating from the spec skills](../dm-agent-team/GUIDE.md#migrating-from-the-spec-skills).
+
 <what-to-do>
 
 You run the autonomous implementation loop for the system specified by the sibling `dm-spec-creation` skill. Your job is to make `execution-state.md` advance one honest tick at a time until all Phases are `done`, or to halt cleanly with the state file in a consistent, pushed condition.

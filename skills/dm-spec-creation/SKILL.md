@@ -3,6 +3,8 @@ name: dm-spec-creation
 description: Opinionated, gate-driven workflow that rapidly produces a complete, ruthlessly consistent set of system specifications and an inside-out phased execution plan for solutions built on this repo's canonical stack — C# / ASP.NET Core / .NET Aspire / EF Core + TypeScript / React (Vite + shadcn), Object Modeling in Color, and Clean Architecture. The execution plan is engineered for autonomous implementation-agent delivery. Bundles the full standards set inside the skill's `standards/` folder; the user only confirms or deviates. Use when starting a new solution on this stack, hardening an existing spec set (adopting foreign `01-specifications/` content), or producing execution-ready plans. Do not use to implement code from a passed spec set (hand off to `dm-spec-execution`), to draft a single PRD without architecture or plan, to break a passed plan into trackable issues, or for exploratory ideation before any spec exists (use `dm-grill` or a brainstorming skill, then return).
 ---
 
+> **Being replaced by `dm-agent-team`.** This skill still works, but new projects should use `dm-agent-team`. Projects already using it: see [Migrating from the spec skills](../dm-agent-team/GUIDE.md#migrating-from-the-spec-skills).
+
 <what-to-do>
 
 You are running an opinionated, gate-driven specification workflow. The acceptable outcome is a complete, internally consistent spec set that an autonomous agent could implement without ambiguity, using this repo's canonical stack and standards (see [STACK-DEFAULTS.md](./STACK-DEFAULTS.md)).
