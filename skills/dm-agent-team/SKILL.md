@@ -23,7 +23,7 @@ Set `size:` from the interview; the human confirms it at the brief gate:
 | Phases (vertical slices) | 1–3 | 3–6 | ≤ 8 |
 | Build | a fresh builder per phase, in order, in the project root | the same | lanes in worktrees if phases are independent |
 | Build review | precheck inside each phase; coverage and acceptance at the end | plus coverage and one `milestone-review` per milestone | plus a `phase-review` for `risk: high` phases |
-| REVISE rounds before escalation | 1 | 2 | 2 |
+| REVISE rounds per phase before escalation | 1 | 2 | 2 |
 
 The quality bar (prototype, internal, production) sets how strict the quality gate and NFR measurement are; size sets the process.
 
@@ -39,7 +39,7 @@ Set at the brief gate; **default `stepwise`**; use `checkpoint` or `yolo` only w
 | milestone gate | **stop** | auto | auto |
 | spec change of scope or a shared contract | **stop** | **stop** | you decide, log it, show it at the next stop |
 | escalation | **stop** | park the phase, continue others | park the phase, continue others |
-| hard stop, drift, stalled build, `env`, circuit breaker | **stop** | **stop** | **stop** |
+| hard stop, drift, stalled build, `env`, circuit breaker, reviewer BLOCK | **stop** | **stop** | **stop** |
 
 **Hard stops in every mode:** a dependency not on the allowlist; anything outside the project root; deleting files the team didn't create (brownfield: only under a phase's `deletes:`); `git push`, publish, or deploy; secrets or credentials.
 
@@ -81,22 +81,22 @@ Run [references/BROWNFIELD.md §Discovery](./references/BROWNFIELD.md#discovery-
 
 Then write the specs yourself, in one pass, per [references/SPECS.md](./references/SPECS.md): `specs/01-requirements.md` (with §UX notes unless 02 is written), `specs/02-ux.md` (only when the size table says), `specs/03-architecture.md` with the build plan in its §13; together under about 10,000 words. Write 01 before deciding anything in 03. Where you would have asked, decide, record an `ASM`, and move on.
 
-Then dispatch the reviewer (`spec-review`) once over them all. Fix every finding yourself. **Resume** the reviewer only if there was a major, to re-check the majors; minors you fix silently and list in one `D-###`. One more non-PASS is an escalation. Present the **spec gate** outcome first: target state and flows, key requirements, style and stack, phases and milestones, the quality gate, open assumptions, risks. The human's changes become `D-###`s, applied in place and re-reviewed. Approving the gate freezes the specs ([PROTOCOL.md §Spec changes](./PROTOCOL.md#spec-changes-after-the-spec-gate)). Take the session break here.
+Then dispatch the reviewer (`spec-review`) once over them all. Fix every finding yourself. **Resume** the reviewer only if there was a major, to re-check the majors; minors you fix silently and list in one `D-###`. One more non-PASS is an escalation, whatever the size. Present the **spec gate** outcome first: target state and flows, key requirements, style and stack, phases and milestones, the quality gate, open assumptions, risks. The human's changes become `D-###`s, applied in place and re-reviewed. Approving the gate freezes the specs ([PROTOCOL.md §Spec changes](./PROTOCOL.md#spec-changes-after-the-spec-gate)). Take the session break here.
 
 ### 4. Build — S2
 
 Phases are in 03 §13, each with `depends-on:`, `touches:`, and `acceptance tests:`. With `max-parallel: 1`, the project root is the only workdir; with more, follow [references/PARALLEL.md](./references/PARALLEL.md).
 
-1. **Dispatch a fresh builder for the first ready phase** with `build/handoff.md`, `base:` the current `HEAD`, the exact `precheck.sh` command for the phase, and `verify-full: yes` when the phase ends a milestone. Mark it `in-progress`. Majors from the last milestone review on this phase's files go in the dispatch as `fix:` items. The builder runs verify, the precheck, and verify-full when asked **before it returns**, so a failure costs one turn, not a round trip.
-2. **On `done`,** read the report and the precheck file its `verify:` line names. A PASS the script wrote is the evidence; re-run it only if the tree changed since. When the script exits 2, dispatch the reviewer in `precheck` mode.
+1. **Dispatch a fresh builder for the first ready phase** (`pending` or `stale`, every `depends-on:` phase `done`) with `build/handoff.md`, `base:` the current `HEAD`, the exact `precheck.sh` command for the phase, and `verify-full: yes` when the phase ends a milestone. Mark it `in-progress`. Majors from the last milestone review on this phase's files go in the dispatch as `fix:` items. The builder runs verify, the precheck, and verify-full when asked **before it returns**, so a failure costs one turn, not a round trip.
+2. **On `done`,** read the report and the precheck file its `verify:` line names. A PASS the script wrote is the evidence; re-run it only if the tree changed since. When the script exits 2, mark the phase `in-review` and dispatch the reviewer in `precheck` mode. In large runs, a passed `risk: high` phase is `in-review` for a `phase-review` of its diff before commit; a REVISE counts as a round, its majors resumed as `fix:` items, then re-checked.
 3. **PASS:** commit the phase's files, its report, its precheck file, and the `state.md` rows together as `PHASE-###: <title>` (`git add` by path, never `-A`). Mark the phase `done`, log the row, and dispatch the next ready phase. **REVISE** (a red precheck the builder could not fix): resume it at the next effort level; one more non-PASS than the size allows is an escalation. **`blocked`:** route on `blocked-by:` ([PROTOCOL.md §Return](./PROTOCOL.md#return)); a `spec-gap` is a spec change you make, after which the builder is resumed with the changed IDs.
-4. **Milestone end.** Run `scripts/coverage.sh --label MS-n`; a FAIL goes to the next dispatch as a `fix:` item. In standard and large runs dispatch the reviewer (`milestone-review`) over the milestone's diff with the coverage file. A **major** goes as a `fix:` item into the next phase that touches the file, or, after the last phase, into one fix phase (`PHASE-F##`, a Build row with the findings, the owning phase, and `touches:`); **minors** go to `state.md` §Backlog, swept once before acceptance, never re-checked. Resume the reviewer to re-check majors only. Then the **MS-n gate** per the mode table, showing what now works and how to try it. A one-milestone run skips this. Take the session break after the gate.
+4. **Milestone end.** Run `scripts/coverage.sh --label MS-n`; a FAIL goes to the next dispatch as a `fix:` item. In standard and large runs dispatch the reviewer (`milestone-review`) over the milestone's diff with the coverage file. A **major** goes as a `fix:` item into the next phase that touches the file, or, after the last phase, into one fix phase (`PHASE-F##`, a Build row with the findings, the owning phase, and `touches:`); **minors** go to `state.md` §Backlog, swept once before acceptance, never re-checked. Majors are re-checked once fixed: a `PHASE-F##` by resuming the reviewer before the gate, deferred `fix:` items by the next `milestone-review`; the gate lists deferred majors as open. Then the **MS-n gate** per the mode table, showing what now works and how to try it. A one-milestone run skips this. Take the session break after the gate.
 
-Escalations, stalls, the circuit breaker, blocked phases, dirty-tree recovery, and overrides: EXCEPTIONS.md.
+Escalations, stalls, the circuit breaker, blocked phases, dirty-tree recovery, overrides, and a reviewer BLOCK in any mode: EXCEPTIONS.md.
 
 ### 5. Accept — S3, accept gate
 
-Start any further check 03 §10 names outside verify-full in the background, then run verify-full and `scripts/coverage.sh --all --label accept`. Sweep a non-empty §Backlog in one fix phase. Then dispatch the reviewer (`acceptance`) at high effort with the coverage file and the list of every post-gate spec change. When the reviewer returns, read the background result; its failures and the reviewer's majors become one fix phase through step 4, then **resume** the reviewer once to re-check. After a PASS, fold the run into `system/` yourself ([references/RUNS.md §Consolidate](./references/RUNS.md#consolidate)) and present the **accept gate**: `reviews/acceptance.md`, every decision made without the human, the `system/` changes in one line. Always a stop.
+Start any further check 03 §10 names outside verify-full in the background, then run verify-full and `scripts/coverage.sh --all --label accept`. Sweep a non-empty §Backlog in one fix phase. Then dispatch the reviewer (`acceptance`) at high effort with the coverage file and the list of every post-gate spec change. When the reviewer returns, read the background result; its failures and the reviewer's majors become one fix phase through step 4, then **resume** the reviewer once to re-check; a second non-PASS is an escalation stop in every mode. After a PASS, fold the run into `system/` yourself ([references/RUNS.md §Consolidate](./references/RUNS.md#consolidate)) and present the **accept gate**: `reviews/acceptance.md`, every decision made without the human, the `system/` changes in one line. Always a stop.
 
 ### 6. Retro and close
 

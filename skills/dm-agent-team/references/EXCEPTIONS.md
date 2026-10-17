@@ -19,9 +19,13 @@ On resume, before building:
 
 ## Escalation
 
-A phase escalates when it has one more non-PASS than its size allows, `test-red` persists after the `high`-effort resume, or (lanes) it goes stale a second time. Per the mode table, stop, or mark it `escalated` and keep building the phases that don't depend on it. The spec stage escalates after its REVISE rounds, always as a stop.
+A phase escalates when it has one more non-PASS than its size allows, `test-red` persists after the `high`-effort resume, or (lanes) it goes stale a second time. Per the mode table, stop, or mark it `escalated` and keep building the phases that don't depend on it. The spec stage escalates after one re-check that is not a PASS, always as a stop.
 
 **Human override.** At an escalation stop the human may accept the work despite REVISE findings, giving a reason in words. Log a `D-###` with `kind: override`, the reason, and the finding IDs it waives. For a phase, commit it as a PASS and write `override D-###` in its Notes; for a gate, write `approved (override)`. An override is never automatic, and never covers a hard stop, a builder `blocked`, or a red verify. Acceptance lists every override.
+
+## Reviewer BLOCK
+
+A BLOCK (a broken hard constraint) is a `blocked` stop in every mode, `halt: block: <review path>`, never overridden. As the human directs, discard uncommitted work (§Recover step 3) and rebuild the phase, or undo committed work in a fix phase.
 
 ## Stalled build
 

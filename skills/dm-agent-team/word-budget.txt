@@ -1,15 +1,15 @@
 # Word budgets for the files the Lead and the agents read during a run.
 # Checked by dm-skill-eval/scripts/lint-skill.py. To add a rule, remove one,
 # or raise a budget deliberately in the same commit and say why.
-SKILL.md 2300
-PROTOCOL.md 1850   # lean-3: state.md §Backlog, build/handoff.md, fix: items and the precheck line in dispatch/return
+SKILL.md 2400   # state-machine gaps: phase-review and in-review, ready phases, milestone re-check order, reviewer BLOCK, acceptance re-check failure
+PROTOCOL.md 1930   # state-machine gaps: request changes at every stop, stale rebuild, phase vs run blocked; lean-3: state.md §Backlog, build/handoff.md, fix: items and the precheck line in dispatch/return
 ROUTING.md 450
 agents/dm-at-builder/SKILL.md 800
 agents/dm-at-reviewer/SKILL.md 1100
 references/SPECS.md 1900   # lean-3: 00-probe, executable contracts (§5 examples), harness rules (§10), vertical slices (§13)
 references/PARALLEL.md 500
 references/RUNS.md 1000
-references/EXCEPTIONS.md 600
+references/EXCEPTIONS.md 620   # state-machine gaps: reviewer BLOCK
 references/BROWNFIELD.md 1200
 references/ADOPTION.md 450
 references/host-guardrails.md 550

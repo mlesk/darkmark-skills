@@ -65,6 +65,7 @@ consecutive-escalations: 0
 |---|---|---|---|---|---|---|
 
 Phase status: pending | in-progress | in-review | done | stale | escalated | blocked
+A `blocked` phase waits on a spec change or an `env` fix; it is not the run's `status: blocked`.
 A fix phase (`PHASE-F##`: majors after a milestone's last phase, the backlog sweep, acceptance majors) is a row here too; Notes gives the findings, the owning phase, and `touches:`.
 
 ## Backlog (minors from reviews; swept once before acceptance)
@@ -167,11 +168,13 @@ Agents never ask the human. A gap two reasonable people would settle the same wa
 
 ## Spec changes after the spec gate
 
-Only the Lead edits a frozen spec, and only through a `D-###` with `kind: change` naming the IDs edited and why. A clarification (adds, removes, or widens no `REQ`, `NFR`, `API`, or dependency) the Lead decides itself; a change of scope or of a shared contract goes to the human per the mode table. A change that rests on a measurement cites one covering the setting's whole allowed range. After the edit, every phase tracing to a changed ID is `stale`, and acceptance lists every post-gate change for the reviewer to re-check. An edit to a gated artifact without a `D-###` is drift ([references/EXCEPTIONS.md](./references/EXCEPTIONS.md)).
+Only the Lead edits a frozen spec, and only through a `D-###` with `kind: change` naming the IDs edited and why. A clarification (adds, removes, or widens no `REQ`, `NFR`, `API`, or dependency) the Lead decides itself; a change of scope or of a shared contract goes to the human per the mode table. A change that rests on a measurement cites one covering the setting's whole allowed range. After the edit, every phase tracing to a changed ID is `stale`, rebuilt by a fresh builder from `HEAD` with the changed IDs as `fix:` items, and acceptance lists every post-gate change for the reviewer to re-check. An edit to a gated artifact without a `D-###` is drift ([references/EXCEPTIONS.md](./references/EXCEPTIONS.md)).
 
 ## Stops
 
 Present a stop outcome first: what this decides, the key choices with their IDs, assumptions to confirm, decisions since the last stop, risks, and the options (approve · request changes · switch mode · stop · abandon run; an escalation also offers override with a reason). Use the host's structured question tool if any.
+
+**Request changes** become `D-###`s: at the brief, baseline, or spec gate, applied in place and re-reviewed; at a milestone, accept, or escalation stop, a spec change built in a fix phase and re-checked by that stop's review. Then present the stop again.
 
 ## Command output
 
