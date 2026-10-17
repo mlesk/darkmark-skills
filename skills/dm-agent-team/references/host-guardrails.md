@@ -65,6 +65,10 @@ Claude Code reads `permissions` from `.claude/settings.json`. It already limits 
 
 Check the rule syntax against the current Claude Code permissions documentation before relying on it.
 
+## Sleep
+
+A yolo run trains and tests for hours. In the V001 retro the two longest waits, 10.7 and 11 hours, were single commands spanning the Mac's sleep. `scripts/run.sh` wraps every session in `caffeinate -i -s` (macOS) or `systemd-inhibit` (Linux). For an interactive yolo run, the Lead says at the brief gate that the machine must not sleep and starts the same inhibitor. Neither stops a lid-close sleep; `-s` needs mains power.
+
 ## Other hosts
 
 If the host has no permission rules, say so at the brief gate: the hard stops then rest on the instructions, the precheck, and the reviewer alone.

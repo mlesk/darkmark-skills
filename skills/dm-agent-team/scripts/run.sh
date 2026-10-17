@@ -27,6 +27,12 @@ PROJECT="$PWD"
 MAX_SESSIONS=40
 LEAD_MODEL=""
 EXTRA=()
+# A run trains and tests for hours; a sleeping machine turns a 6-minute command
+# into an overnight one. Wrap each host session in the platform's sleep inhibitor.
+KEEPAWAKE=()
+if command -v caffeinate >/dev/null 2>&1; then KEEPAWAKE=(caffeinate -i -s)
+elif command -v systemd-inhibit >/dev/null 2>&1; then KEEPAWAKE=(systemd-inhibit --what=idle:sleep --why=dm-agent-team)
+fi
 
 usage() { sed -n '4,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
 
@@ -82,12 +88,12 @@ write next-action, and end. End the session after finishing the current stage or
 
 run_host() {
   case "$HOST" in
-    opencode) (cd "$PROJECT" && opencode run "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
+    opencode) (cd "$PROJECT" && "${KEEPAWAKE[@]+"${KEEPAWAKE[@]}"}" opencode run "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
     # The prompt goes first: options such as --allowedTools take a variable
     # number of values and would swallow a prompt placed after them.
-    claude)   (cd "$PROJECT" && claude -p "$PROMPT" --output-format json "${EXTRA[@]+"${EXTRA[@]}"}") ;;
-    copilot)  (cd "$PROJECT" && copilot -p "$PROMPT" "${EXTRA[@]+"${EXTRA[@]}"}") ;;
-    codex)    (cd "$PROJECT" && codex exec "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
+    claude)   (cd "$PROJECT" && "${KEEPAWAKE[@]+"${KEEPAWAKE[@]}"}" claude -p "$PROMPT" --output-format json "${EXTRA[@]+"${EXTRA[@]}"}") ;;
+    copilot)  (cd "$PROJECT" && "${KEEPAWAKE[@]+"${KEEPAWAKE[@]}"}" copilot -p "$PROMPT" "${EXTRA[@]+"${EXTRA[@]}"}") ;;
+    codex)    (cd "$PROJECT" && "${KEEPAWAKE[@]+"${KEEPAWAKE[@]}"}" codex exec "${EXTRA[@]+"${EXTRA[@]}"}" "$PROMPT") ;;
     *) echo "Unsupported host: $HOST" >&2; exit 1 ;;
   esac
 }

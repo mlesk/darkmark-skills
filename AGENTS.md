@@ -10,7 +10,7 @@ Skills live in a flat list under `skills/`. Each skill is a directory containing
 - `dm-agent-team` supersedes `dm-spec-creation` + `dm-spec-execution`. Put new spec and execution features into `dm-agent-team`, not the spec skills. When the spec skills are retired, move both to `skills/deprecated/` in one commit, because `dm-spec-execution` reads `../dm-spec-creation/`.
 - `skills/experimental/` holds work-in-progress skills.
 - `skills/deprecated/` holds disabled skills.
-- Registration is symlink-based: `scripts/link-skills.sh` links only top-level `skills/<name>/SKILL.md` into `~/.agents/skills/`. Nested sub-skills, `experimental/`, and `deprecated/` are never linked. `scripts/unlink-skills.sh` removes links that point into this repo.
+- Registration is symlink-based: `scripts/link-skills.sh` links only top-level `skills/<name>/SKILL.md` into `~/.agents/skills/` (Codex, Copilot, and others) and `~/.claude/skills/` (Claude Code, which does not read `~/.agents/skills/`). Nested sub-skills, `experimental/`, and `deprecated/` are never linked. `scripts/unlink-skills.sh` removes links in both directories that point into this repo.
 - Skills compose by calling siblings through relative paths (`../dm-grill/SKILL.md`). `dm-write` and `dm-decide` are domain packs on the `dm-loopify` engine; `dm-loopify` uses `dm-grill` and `dm-critic`. Keep shared mechanics in the engine, not copied into callers.
 - Keep each `SKILL.md` short; move templates, long rule lists, and examples into `references/` and link them from the step that needs them.
 - Before committing, run `python3 skills/dm-skill-eval/scripts/lint-skill.py --all skills` and fix every error. It also checks the README.

@@ -14,12 +14,12 @@ All user-invocable skills use the `dm-` prefix to avoid conflicts with other plu
 # 1. Clone the repo
 git clone https://github.com/mlesk/darkmark-skills.git ~/darkmark-skills
 
-# 2. Link the skills into the central agent skills directory
+# 2. Link the skills into the agent skills directories
 cd ~/darkmark-skills
 ./scripts/link-skills.sh
 ```
 
-That's it. Your skills are now available as slash commands in every agent that reads `~/.agents/skills/`.
+That's it. Your skills are now available as slash commands in every supported agent. `~/.agents/skills/` is read by Codex, GitHub Copilot, and others; `~/.claude/skills/` is read by Claude Code, which does not read `~/.agents/skills/`.
 
 **Preview what will happen without making changes:**
 
@@ -41,9 +41,12 @@ That's it. Your skills are now available as slash commands in every agent that r
 
 ## Registration
 
-All skills are registered in one central directory: `~/.agents/skills/`. Every supported agent (Claude Code, Codex, GitHub Copilot, and others) reads from there.
+All skills are registered in two directories, because Claude Code does not read `~/.agents/skills/`:
 
-Each skill is symlinked into that directory, so pulling the repo updates the skills everywhere automatically.
+- `~/.agents/skills/` — read by Codex, GitHub Copilot, and others
+- `~/.claude/skills/` — read by Claude Code
+
+Each skill is symlinked into both directories, so pulling the repo updates the skills everywhere automatically.
 
 ## Available Skills
 
@@ -99,11 +102,13 @@ dm-spec-creation ─> dm-spec-execution   (being replaced by dm-agent-team)
 
 ## How It Works
 
-The `scripts/link-skills.sh` script links every top-level skill (`skills/<name>/SKILL.md`) into `~/.agents/skills/`. Anything nested deeper is skipped: the agent-only `dm-at-*` sub-agents under `skills/dm-agent-team/agents/`, the `spec-*` sub-skills under `skills/dm-spec-creation/specs/`, and everything in `skills/experimental/` and `skills/deprecated/`. For example:
+The `scripts/link-skills.sh` script links every top-level skill (`skills/<name>/SKILL.md`) into `~/.agents/skills/` and `~/.claude/skills/`. Anything nested deeper is skipped: the agent-only `dm-at-*` sub-agents under `skills/dm-agent-team/agents/`, the `spec-*` sub-skills under `skills/dm-spec-creation/specs/`, and everything in `skills/experimental/` and `skills/deprecated/`. For example:
 
 ```
-~/.agents/skills/dm-loopify → ~/darkmark-skills/skills/dm-loopify
-~/.agents/skills/dm-agent-team → ~/darkmark-skills/skills/dm-agent-team
+~/.agents/skills/dm-loopify     → ~/darkmark-skills/skills/dm-loopify
+~/.agents/skills/dm-agent-team  → ~/darkmark-skills/skills/dm-agent-team
+~/.claude/skills/dm-loopify     → ~/darkmark-skills/skills/dm-loopify
+~/.claude/skills/dm-agent-team  → ~/darkmark-skills/skills/dm-agent-team
 ```
 
 Because these are symlinks, running `git pull` in the repo updates every agent's skills at once. No reinstalling, no copying.
@@ -119,7 +124,7 @@ Because these are symlinks, running `git pull` in the repo updates every agent's
 ## FAQ
 
 **How do I remove a skill?**
-Move the skill folder to `skills/deprecated/`, then run `./scripts/unlink-skills.sh` followed by `./scripts/link-skills.sh`. `link-skills.sh` never removes old links, so without the unlink step the moved skill leaves a dangling symlink in `~/.agents/skills/`.
+Move the skill folder to `skills/deprecated/`, then run `./scripts/unlink-skills.sh` followed by `./scripts/link-skills.sh`. `link-skills.sh` never removes old links, so without the unlink step the moved skill leaves a dangling symlink in `~/.agents/skills/` and `~/.claude/skills/`.
 
 **What if I only want a subset of skills?**
 Move the skills you don't want into `skills/deprecated/`, then unlink and re-link as above. The script only links top-level skills, so anything there is skipped. Note that `dm-write` and `dm-decide` need `dm-loopify`, `dm-grill`, and `dm-critic`.

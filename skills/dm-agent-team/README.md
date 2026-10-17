@@ -9,14 +9,14 @@
 
 ## 1. What it is
 
-A Lead skill plus two sub-agents (**builder, reviewer**) that take an idea in one folder through **one discovery interview → one pass that writes requirements, UX, architecture and build plan → independent review → a clean-room, test-driven build → independent acceptance**.
+A Lead skill plus two sub-agents (**builder, reviewer**) that take an idea in one folder through **one discovery interview → a measured probe → one pass that writes requirements, UX, architecture and build plan → independent review → a clean-room, test-driven build by a fresh builder per phase that checks itself → independent acceptance**.
 
-This is the **lean-2** version. It is built around one fact: your main conversation keeps its cache for an hour and every subagent is a fresh context paid for from zero, so the Lead does the sequential, context-heavy work itself and dispatches only for what needs a fresh pair of eyes or real parallelism.
+This is the **lean-3** version. It is built around two measured facts: a defect costs about ten times more at every stage boundary it crosses, and every agent turn re-reads its whole context, so a builder carried through many phases is the most expensive thing in a run. The Lead does the sequential work itself, numbers are measured before they are frozen, every mechanical check runs inside the builder's own turn, and what is left is batched for the tail.
 
 - **One interview, then no questions.** The Lead asks everything up front (users, target state, rules, UX direction, stack preferences, quality bar, size, mode), with a recommended answer for each. After the brief gate nobody asks you anything until the next gate: the team decides, records an assumption, and shows it to you.
-- **One warm pass writes the specs.** Requirements, UX (standard and large runs), and architecture with the build plan, in one context, so they agree by construction. One fresh-context review, one spec gate.
-- **A persistent builder.** One builder builds the phases in order and keeps what it learned; on a precheck failure it is resumed, not restarted. Worktrees and parallel lanes only in large runs with independent phases.
-- **Checks where they pay.** `scripts/precheck.sh` (no tokens) after every phase; an independent reviewer at the spec gate, at milestones (standard and large), and at acceptance.
+- **A probe, then one warm pass writes the specs.** The Lead measures the device, the heaviest operation, and the test timings first (`specs/00-probe.md`), then writes requirements, UX (large runs, or when you ask for a designed UI), and architecture with the build plan in one context, under about 10,000 words, so they agree by construction and every number has a source. One fresh-context review, resumed only for majors, one spec gate.
+- **A fresh builder per phase that checks itself.** Each phase is a vertical slice built by a fresh builder that reads `build/handoff.md`, runs verify and `scripts/precheck.sh` before it returns, and leaves its notes for the next. Worktrees and parallel lanes only in large runs with independent phases.
+- **Checks where they pay.** `scripts/precheck.sh` inside every phase and `scripts/coverage.sh` (every Must criterion has a named test) at every milestone, both without tokens; an independent reviewer at the spec gate, at milestones (standard and large), and at acceptance. Majors ride into the next phase's dispatch; minors go to a backlog swept once before acceptance.
 - **Measured.** The driver writes each session's cost to the run's `costs.tsv`; the retro reads it.
 - **Unchanged guarantees:** trace IDs from requirements to tests, a clean room with a dependency allowlist, verify as a hard gate, human gates where they matter, resumable state, a word budget on every runtime file.
 
@@ -34,7 +34,7 @@ This is the **lean-2** version. It is built around one fact: your main conversat
 | S0 Discover | Lead, with you | `brief.md`: target state, direction, size, quality bar, mode | **brief** (always stops) |
 | S0.5 Discovery (brownfield) | Lead, reviewer | the system as it is, `baseline.md` | **baseline** |
 | S1 Spec | Lead; reviewer | `01-requirements.md` (with UX notes in small runs), `02-ux.md` (standard, large), `03-architecture.md` with the build plan in §13 | **spec**: do these reach your target state, and is this how to build it? |
-| S2 Build | builder; Lead runs the precheck and commits | code, tests, one commit per phase | **MS-n** per milestone |
+| S2 Build | a fresh builder per phase runs verify and the precheck; the Lead commits and runs the coverage check | code, tests, one commit per phase | **MS-n** per milestone |
 | S3 Accept | reviewer; Lead folds the run into `system/` | `reviews/acceptance.md` | **accept** (always stops) |
 
 - **`state.md`** in the active run's folder is the single source of truth, with the dispatch log inside it, and its `next-action` line lets any fresh session resume.
@@ -45,10 +45,10 @@ This is the **lean-2** version. It is built around one fact: your main conversat
 | | small | standard | large |
 |---|---|---|---|
 | For | a CLI, library, script, single-screen tool | a multi-screen app or a service | many components, production stakes |
-| Specs | 01 (with UX notes), 03 | 01, 02, 03 | 01, 02, 03 |
-| Phases | 1–4 | 3–8 | ≤ 10 per milestone |
-| Build | one builder, in order | one builder, in order | lanes in worktrees where phases are independent |
-| Build review | precheck; acceptance | plus one review per milestone | plus deep review of `risk: high` phases |
+| Specs | 01 (with UX notes), 03 | 01 (with UX notes), 03; 02 if you ask for a designed UI | 01, 02, 03 |
+| Phases (vertical slices) | 1–3 | 3–6 | ≤ 8 |
+| Build | a fresh builder per phase, in order | the same | lanes in worktrees where phases are independent |
+| Build review | precheck in each phase; coverage and acceptance | plus coverage and one review per milestone | plus deep review of `risk: high` phases |
 | REVISE rounds | 1 | 2 | 2 |
 
 ## 4. Run modes
@@ -80,7 +80,7 @@ Size: small. Quality bar: internal. Mode: stepwise.
 
 1. **Brief gate.** Answer the interview (accept the recommendations you agree with), then approve the brief. This is the one place to be thorough: everything after it runs on what you said here.
 2. **Spec gate.** Read the target state and flows first, then the stack, phases, and quality gate. Changes are cheap here: the Lead edits in place and re-runs the review.
-3. **Milestones** (stepwise), then the **accept gate**. Then read the run's `retro.md`.
+3. **Milestones** (stepwise), then the **accept gate**. Then read the run's `retro.md`, whose measured part `scripts/retro.sh` generates.
 
 Run `/dm-agent-team` again in the folder to resume after a session break.
 
@@ -151,6 +151,6 @@ For unattended runs call each checkout's own `scripts/run.sh`; if you installed 
 | Tiers and effort | [ROUTING.md](./ROUTING.md) |
 | Runs · rare situations · parallel lanes · brownfield · existing specs | [RUNS.md](./references/RUNS.md) · [EXCEPTIONS.md](./references/EXCEPTIONS.md) · [PARALLEL.md](./references/PARALLEL.md) · [BROWNFIELD.md](./references/BROWNFIELD.md) · [ADOPTION.md](./references/ADOPTION.md) |
 | Sub-agents | [`agents/dm-at-builder`](./agents/dm-at-builder/SKILL.md) · [`agents/dm-at-reviewer`](./agents/dm-at-reviewer/SKILL.md) |
-| Driver and precheck | [`scripts/run.sh`](./scripts/run.sh) · [`scripts/precheck.sh`](./scripts/precheck.sh) |
+| Driver, precheck, coverage, retro | [`scripts/run.sh`](./scripts/run.sh) · [`scripts/precheck.sh`](./scripts/precheck.sh) · [`scripts/coverage.sh`](./scripts/coverage.sh) · [`scripts/retro.sh`](./scripts/retro.sh) |
 | Instruction word budgets | [word-budget.txt](./word-budget.txt) |
 | Parked: what an enterprise SDLC would add | [to-enterprise-SDLC.md](./to-enterprise-SDLC.md) |

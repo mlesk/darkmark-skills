@@ -14,9 +14,9 @@ All team state lives under `.agent-team/` at the project root (the **team root**
 ├── system/                  # living specs of the whole system, updated at the end of each run
 └── runs/V002-csv-export/    # one folder per run: the run's **workspace**
     ├── state.md  brief.md  decisions.md  costs.tsv   # Lead-owned (costs.tsv is written by run.sh)
-    ├── specs/               # 01-requirements, 02-ux (standard and large), 03-architecture (with the build plan)
-    ├── build/               # builder: PHASE-###-report.md
-    ├── reviews/             # reviewer and precheck.sh
+    ├── specs/               # 00-probe, 01-requirements, 02-ux (when written), 03-architecture (with the build plan)
+    ├── build/               # builder: PHASE-###-report.md, handoff.md (appended per phase)
+    ├── reviews/             # reviewer, precheck.sh, coverage.sh
     ├── baseline.md  discovery-scope.md            # brownfield only
     ├── retro.md
     ├── logs/                # git-ignored: full command output, never read whole
@@ -24,7 +24,7 @@ All team state lives under `.agent-team/` at the project root (the **team root**
 ```
 
 - **Paths are absolute.** Every dispatch names `workspace:` (the run folder) and `team-root:`. `.agent-team/...` in this skill means `<workspace>/...`, except `active`, `models.md`, `lessons.md`, and `system/`, which are in the team root. A builder in a worktree never reads or writes team files through the worktree's stale copy.
-- **Git** ignores only `.agent-team/runs/*/worktrees/` and `.agent-team/runs/*/logs/`. The Lead commits the rest. Project tooling must ignore `.agent-team/`.
+- **Git** ignores only `.agent-team/runs/*/worktrees/` and `.agent-team/runs/*/logs/`. The Lead commits the rest: a phase's team files in its phase commit, everything else as `agent-team(<run>): <event>`. Project tooling must ignore `.agent-team/`.
 - **Runs** (starting, closing, abandoning, folding into `system/`): [references/RUNS.md](./references/RUNS.md).
 
 ### state.md skeleton
@@ -65,7 +65,10 @@ consecutive-escalations: 0
 |---|---|---|---|---|---|---|
 
 Phase status: pending | in-progress | in-review | done | stale | escalated | blocked
-Fix phases (`PHASE-F##`) go here too; Notes gives the findings, the owning phase, and `touches:`.
+A fix phase (`PHASE-F##`: majors after a milestone's last phase, the backlog sweep, acceptance majors) is a row here too; Notes gives the findings, the owning phase, and `touches:`.
+
+## Backlog (minors from reviews; swept once before acceptance)
+| # | From | Location | Finding | Status |
 
 ## Log (one row per dispatch or resume, when its Return arrives)
 | When (date -u) | Stage | Agent · mode | Tier · effort | Round | Result | Notes |
@@ -105,7 +108,7 @@ Every claim downstream of the brief cites an ID; what can't be traced is out of 
 
 - **Global and run-local.** Spec items (`REQ`, `NFR`, `FLOW`, `SCR`, `ADR`, `COMP`, `DATA`, `API`, `ASM`) are global: a run numbers them after the highest in `system/` and every `runs/*/specs/`. `MS`, `PHASE`, and `D` restart each run and are cited from other runs as `V002/D-014`.
 - **Never reuse or renumber.** A removed item stays as `~~REQ-007~~ removed per D-012`.
-- **IDs in code.** A test for an item under a phase's `acceptance tests:` writes the ID with `-` and `.` as `_`: `REQ-004.2` → `REQ_004_2_rejects_duplicate_email`.
+- **IDs in code.** A test for an item under a phase's `acceptance tests:` writes the ID with `-` and `.` as `_`: `REQ-004.2` → `REQ_004_2_rejects_duplicate_email`; `scripts/coverage.sh` looks for that name.
 - **Change tags (brownfield).** Each item in a brownfield run's specs is tagged `existing`, `new`, `changed`, or `removed` ([references/BROWNFIELD.md](./references/BROWNFIELD.md)).
 
 **Decisions.** Each `D-###` in `decisions.md`:
@@ -117,9 +120,11 @@ affects: <spec paths + IDs | none> · supersedes: <D-### | –>
 decision: <one or two sentences, with the reason>
 ```
 
+A `D-###` records a choice that changes a spec, a gate, or scope; routing a finding to a phase is a §Log note, not a decision.
+
 ## Dispatch
 
-The Lead dispatches an agent with one prompt; there is no handoff file. The prompt carries:
+The Lead dispatches an agent with one prompt that carries:
 
 ```
 Effort: <level>. You are <dm-at-builder | dm-at-reviewer>; read <absolute SKILL.md> and <absolute PROTOCOL.md>, then follow them.
@@ -129,12 +134,13 @@ workspace: <absolute> · team-root: <absolute> · workdir: <absolute> · base: <
 Task: <one or two sentences>
 Inputs (read only these): <paths, with section or ID lists>
 Outputs (write only these): <paths>
-Done when: <checkable criteria>
+Done when: <checkable criteria; for a builder: the exact precheck.sh command, and verify-full: yes | no>
+fix: <review findings on this phase's files, with their review path | none>
 Context: <≤10 lines; cite D-###>
 Reply with only your Return block.
 ```
 
-A **resume** (the same agent continued) carries only what changed: the verdict or review path, the next phase, and anything the Lead decided meanwhile.
+A **resume** (the same agent continued) is for its own task only: a revision, a re-check, a phase unblocked by a spec change. It carries only what changed; the next phase is a new dispatch.
 
 ### Return
 
@@ -147,10 +153,10 @@ outputs: <paths> · trace: <IDs covered>
 summary: <≤5 lines; only what a tool result from this session shows>
 assumptions: <ASM ids with one line each | none>
 blocked-by: <only if blocked: spec-gap | test-red | env | dependency — evidence>
-verify: <command · exit · one-line summary | n/a>
+verify: <command · exit · one-line summary · precheck: PASS | REVISE <review path> | n/a>
 ```
 
-Agents never ask the human. A gap two reasonable people would settle the same way, or that affects only your own work, is yours to decide: record it as an `ASM` and in `assumptions:`. `blocked` is for what you can't settle:
+Agents never ask the human. A gap two reasonable people would settle the same way, or that affects only your own work, is yours to decide and record. `blocked` is for what you can't settle:
 
 | blocked-by | Meaning | The Lead's route |
 |---|---|---|
@@ -161,11 +167,11 @@ Agents never ask the human. A gap two reasonable people would settle the same wa
 
 ## Spec changes after the spec gate
 
-Only the Lead edits a frozen spec, and only through a `D-###` with `kind: change` naming the IDs edited and why. A clarification (adds, removes, or widens no `REQ`, `NFR`, `API`, or dependency) the Lead decides itself; a change of scope or of a shared contract goes to the human per the mode table. After the edit, every phase tracing to a changed ID is `stale`, and acceptance lists every post-gate change for the reviewer to re-check. An edit to a gated artifact without a `D-###` is drift ([references/EXCEPTIONS.md](./references/EXCEPTIONS.md)).
+Only the Lead edits a frozen spec, and only through a `D-###` with `kind: change` naming the IDs edited and why. A clarification (adds, removes, or widens no `REQ`, `NFR`, `API`, or dependency) the Lead decides itself; a change of scope or of a shared contract goes to the human per the mode table. A change that rests on a measurement cites one covering the setting's whole allowed range. After the edit, every phase tracing to a changed ID is `stale`, and acceptance lists every post-gate change for the reviewer to re-check. An edit to a gated artifact without a `D-###` is drift ([references/EXCEPTIONS.md](./references/EXCEPTIONS.md)).
 
 ## Stops
 
-Present a stop outcome first: what this decides, the key choices with their IDs, assumptions to confirm, decisions made since the last stop, risks, and the options (approve · request changes · switch mode · stop · abandon run; an escalation also offers override with a reason). Use the host's structured question tool if it has one.
+Present a stop outcome first: what this decides, the key choices with their IDs, assumptions to confirm, decisions since the last stop, risks, and the options (approve · request changes · switch mode · stop · abandon run; an escalation also offers override with a reason). Use the host's structured question tool if any.
 
 ## Command output
 
@@ -173,6 +179,7 @@ Present a stop outcome first: what this decides, the key choices with their IDs,
 2. Read only the exit code, the last 30 lines, and each failing test's name and first assertion.
 3. Quote at most 10 lines anywhere.
 4. Never re-run a failed command unchanged; different results on the same tree are a flaky test to report.
+5. Every command carries a timeout. One expected past 5 minutes runs in the background while you do independent work; read its result when it lands. A command past its timeout is a finding, not a wait.
 
 ## Phase diff
 
@@ -182,8 +189,8 @@ Builders don't commit, so new files are untracked. In the `workdir:`: `git add -
 
 1. **Local only.** Only the project root and this skill's folder: no web, no remote tools. The package manager may install packages on the 03 §11 allowlist; anything else is a `dependency` block.
 2. **Dirty room.** Only the Lead, while writing 01, reads the brief's *Reference material*, and turns it into behaviour statements, never copied code or text. *Existing specs* in the brief are the human's own documents, cited like a `D-###` ([references/ADOPTION.md](./references/ADOPTION.md)). In brownfield, the project's own code is input everyone may read, cited by `path:line`.
-3. **Spec-derived code.** The builder implements from the approved specs and its own recorded assumptions, never from memory of a specific named project. Phase reports list the sources consulted.
+3. **Spec-derived code.** The builder implements from the approved specs and its own recorded assumptions, never from memory of a specific named project.
 
 ## Direct invocation
 
-If a human invokes `dm-at-builder` or `dm-at-reviewer` directly: if `.agent-team/active` names a run, read its `state.md`, do the task, and tell the human to resume with `/dm-agent-team`. With no run, do the task on what the human gives you, write only your own files, and say there was no independent review.
+If a human invokes `dm-at-builder` or `dm-at-reviewer` directly: with an active run, read its `state.md`, do the task, and say to resume with `/dm-agent-team`; without one, do the task on what the human gives you, write only your own files, and say there was no independent review.

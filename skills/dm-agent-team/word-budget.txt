@@ -2,11 +2,11 @@
 # Checked by dm-skill-eval/scripts/lint-skill.py. To add a rule, remove one,
 # or raise a budget deliberately in the same commit and say why.
 SKILL.md 2300
-PROTOCOL.md 1700
+PROTOCOL.md 1850   # lean-3: state.md §Backlog, build/handoff.md, fix: items and the precheck line in dispatch/return
 ROUTING.md 450
 agents/dm-at-builder/SKILL.md 800
 agents/dm-at-reviewer/SKILL.md 1100
-references/SPECS.md 1700
+references/SPECS.md 1900   # lean-3: 00-probe, executable contracts (§5 examples), harness rules (§10), vertical slices (§13)
 references/PARALLEL.md 500
 references/RUNS.md 1000
 references/EXCEPTIONS.md 600

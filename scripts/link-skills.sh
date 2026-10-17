@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# link-skills.sh — Symlink each skill in this repo into the central
-# ~/.agents/skills directory, which is the single registration point
-# read by all supported AI coding agents (Claude Code, Codex, GitHub
-# Copilot, etc.).
+# link-skills.sh — Symlink each skill in this repo into the registration
+# directories read by the supported AI coding agents:
+#
+#   ~/.agents/skills   read by Codex, GitHub Copilot, and others
+#   ~/.claude/skills   read by Claude Code, which does not read ~/.agents/skills
 #
 # Usage:
 #   ./scripts/link-skills.sh                 # link all skills
@@ -13,7 +14,7 @@ set -euo pipefail
 #   ./scripts/link-skills.sh --help
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-DEST="$HOME/.agents/skills"
+DESTS=("$HOME/.agents/skills" "$HOME/.claude/skills")
 
 DRY_RUN=false
 FORCE=false
@@ -25,8 +26,9 @@ usage() {
   cat <<'EOF'
 Usage: link-skills.sh [OPTIONS]
 
-Symlink every skill in this repository into the central ~/.agents/skills
-directory so it becomes available to all AI coding agents.
+Symlink every skill in this repository into the registration directories
+read by the supported AI coding agents: ~/.agents/skills and
+~/.claude/skills.
 
 Options:
   --dry-run           Print what would be done without making changes.
@@ -47,7 +49,7 @@ ok()    { echo "  ✓  $*"; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agents)
-      warn "--agents is no longer supported: skills are now linked into the central $HOME/.agents/skills directory."
+      warn "--agents is no longer supported: skills are now linked into the registration directories ($HOME/.agents/skills, $HOME/.claude/skills)."
       exit 1
       ;;
     --dry-run) DRY_RUN=true; shift ;;
@@ -61,19 +63,20 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ---------------------------------------------------------------------------
-# Guard: if the skills directory is already a symlink into THIS repo,
+# Guard: if a destination directory is already a symlink into THIS repo,
 # we would end up writing symlinks back into the repo.  Detect and refuse.
 # ---------------------------------------------------------------------------
-if [[ -L "$DEST" ]]; then
-  resolved="$(readlink -f "$DEST" 2>/dev/null || readlink "$DEST")"
+for dest in "${DESTS[@]}"; do
+  [[ -L "$dest" ]] || continue
+  resolved="$(readlink -f "$dest" 2>/dev/null || readlink "$dest")"
   case "$resolved" in
     "$REPO"|"$REPO"/*)
-      warn "$DEST is a symlink into this repo ($resolved)."
-      warn "Remove it (rm \"$DEST\") and re-run; the script will recreate it as a real directory."
+      warn "$dest is a symlink into this repo ($resolved)."
+      warn "Remove it (rm \"$dest\") and re-run; the script will recreate it as a real directory."
       exit 1
       ;;
   esac
-fi
+done
 
 # ---------------------------------------------------------------------------
 # Build the list of skills to link
@@ -100,49 +103,86 @@ fi
 # ---------------------------------------------------------------------------
 # Link
 # ---------------------------------------------------------------------------
-mkdir -p "$DEST"
+total_linked=0
+total_skipped=0
+seen_dests=" "
 
-echo "── ~/.agents/skills ──"
-
-linked=0
-skipped=0
-
-for entry in "${SKILLS[@]}"; do
-  name="${entry%%|*}"
-  src="${entry##*|}"
-  target="$DEST/$name"
-
-  if [[ -e "$target" ]] || [[ -L "$target" ]]; then
-    if $FORCE; then
-      if $DRY_RUN; then
-        info "[dry-run] would remove  $target"
-      else
-        rm -rf "$target"
-      fi
-    else
-      warn "$target already exists — skipping (use --force to overwrite)"
-      skipped=$((skipped + 1))
-      continue
-    fi
+for dest in "${DESTS[@]}"; do
+  if [[ -L "$dest" ]] && [[ ! -d "$dest" ]]; then
+    warn "$dest is a dangling symlink — skipping (remove it and re-run)"
+    continue
   fi
 
   if $DRY_RUN; then
-    info "[dry-run] would link  $name → $src"
-    linked=$((linked + 1))
+    [[ -d "$dest" ]] || info "[dry-run] would create  $dest"
   else
-    ln -sfn "$src" "$target"
-    ok "$name"
-    linked=$((linked + 1))
+    mkdir -p "$dest"
   fi
-done
 
-echo
+  # Two destinations can resolve to the same directory (for example when
+  # ~/.claude/skills is a symlink to ~/.agents/skills): link it once only.
+  if [[ -d "$dest" ]]; then
+    canonical="$(cd "$dest" && pwd -P)"
+    if [[ "$seen_dests" == *" $canonical "* ]]; then
+      info "skipping $dest — same directory as one already linked"
+      continue
+    fi
+    seen_dests="$seen_dests$canonical "
+  fi
+
+  echo "── $dest ──"
+
+  linked=0
+  skipped=0
+
+  for entry in "${SKILLS[@]}"; do
+    name="${entry%%|*}"
+    src="${entry##*|}"
+    target="$dest/$name"
+
+    if [[ -e "$target" ]] || [[ -L "$target" ]]; then
+      if $FORCE; then
+        if $DRY_RUN; then
+          info "[dry-run] would remove  $target"
+        else
+          rm -rf "$target"
+        fi
+      else
+        warn "$target already exists — skipping (use --force to overwrite)"
+        skipped=$((skipped + 1))
+        continue
+      fi
+    fi
+
+    if $DRY_RUN; then
+      info "[dry-run] would link  $name → $src"
+      linked=$((linked + 1))
+    else
+      ln -sfn "$src" "$target"
+      ok "$name"
+      linked=$((linked + 1))
+    fi
+  done
+
+  echo
+
+  if $DRY_RUN; then
+    echo "Dry run complete — $linked link(s) would be created, $skipped skipped in $dest."
+  else
+    echo "Done — $linked skill(s) linked, $skipped skipped in $dest."
+  fi
+
+  echo
+
+  total_linked=$((total_linked + linked))
+  total_skipped=$((total_skipped + skipped))
+done
 
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 if $DRY_RUN; then
-  echo "Dry run complete — $linked link(s) would be created, $skipped skipped."
+  echo "Dry run complete — $total_linked link(s) would be created, $total_skipped skipped in ${#DESTS[@]} directories."
 else
-  echo "Done — $linked skill(s) linked, $skipped skipped in $DEST."
+  echo "Done — $total_linked skill(s) linked, $total_skipped skipped in ${#DESTS[@]} directories."
 fi

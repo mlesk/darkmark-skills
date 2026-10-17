@@ -12,7 +12,7 @@ Start one when `active` is missing or says `none`. If it names a run that ended 
 2. **Kind and name.** If any run in `runs/` ended `done`, this run is brownfield. Otherwise greenfield, unless invoked with `--brownfield`; without the flag, if the folder already holds source code, ask at the brief gate whether to restart with `--brownfield`. The name is the next number after the highest in `runs/` here and on every `agent-team/*` branch (`git ls-tree --name-only <branch> .agent-team/runs/`), plus a name drawn from the request: `V002-csv-export`.
 3. **Git.** If the folder isn't a git repo, ask whether to `git init`; without git the run can produce specs, but the build is a `blocked` stop. Brownfield: run the boot steps in [BROWNFIELD.md](./BROWNFIELD.md) now (clean tree, run branch `agent-team/<run>`).
 4. **`.gitignore`** must list `.agent-team/runs/*/worktrees/` and `.agent-team/runs/*/logs/`, and must not ignore `.agent-team/` itself. If it changed, or the repo has no commits yet, commit it as `chore: agent-team workspace`.
-5. **Run folder.** Create `runs/<name>/` per [PROTOCOL.md §Workspace](../PROTOCOL.md#workspace), write the name to `active`, and fill `state.md`: `run:`, `workspace:`, `team-root:`, `kind:`, `team-version:` (`git -C <skill dir> rev-parse --short HEAD`, or `unknown`).
+5. **Run folder.** Create `runs/<name>/` per [PROTOCOL.md §Workspace](../PROTOCOL.md#workspace) with an empty `build/handoff.md`, write the name to `active`, and fill `state.md`: `run:`, `workspace:`, `team-root:`, `kind:`, `team-version:` (`git -C <skill dir> rev-parse --short HEAD`, or `unknown`).
 6. **Routing.** Write `models.md` in the team root per [ROUTING.md](../ROUTING.md), or reuse it.
 7. **Guardrails.** Read [host-guardrails.md](./host-guardrails.md). If the host config lacks its rules, add one question to the interview: install them (recommended) or not.
 
@@ -22,7 +22,7 @@ Start one when `active` is missing or says `none`. If it names a run that ended 
 
 After acceptance passes, the Lead folds the run into `.agent-team/system/` so the next run starts from the whole system as built. No dispatch: you wrote the specs and acceptance has reviewed them.
 
-- **Greenfield:** copy the run's final 01, 02, and 03 (§13 removed) to `system/`, with `coverage: full` as the first line after each title.
+- **Greenfield:** copy the run's final 00-probe, 01, 02 (if written), and 03 (§13 removed) to `system/`, with `coverage: full` as the first line after each title.
 - **Brownfield:** start from the current `system/` spec (or an empty one) and merge the run's spec: add `existing` items that `system/` lacks or describes differently, add `new` items, replace `changed` items under the same ID, strike `removed` ones as `~~REQ-007~~ removed in V002 per V002/D-014`, drop the change tags, and qualify every run-local ID you copy (`V002/D-014`). Keep or widen the `coverage:` line (`partial: <areas>` after a `--brownfield` run that recovered only part of the system). Change nothing else.
 
 The accept gate approves the `system/` specs together with the run.
