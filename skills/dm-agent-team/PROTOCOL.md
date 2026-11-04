@@ -14,6 +14,7 @@ All team state lives under `.agent-team/` at the project root (the **team root**
 ├── system/                  # living specs of the whole system, updated at the end of each run
 └── runs/V002-csv-export/    # one folder per run: the run's **workspace**
     ├── state.md  brief.md  decisions.md  costs.tsv   # Lead-owned (costs.tsv is written by run.sh)
+    ├── plan.json            # git-ignored: 03 §13 and state.md as a graph, written by scripts/plan-graph.sh
     ├── specs/               # 00-probe, 01-requirements, 02-ux (when written), 03-architecture (with the build plan)
     ├── build/               # builder: PHASE-###-report.md, handoff.md (appended per phase)
     ├── reviews/             # reviewer, precheck.sh, coverage.sh
@@ -24,7 +25,7 @@ All team state lives under `.agent-team/` at the project root (the **team root**
 ```
 
 - **Paths are absolute.** Every dispatch names `workspace:` (the run folder) and `team-root:`. `.agent-team/...` in this skill means `<workspace>/...`, except `active`, `models.md`, `lessons.md`, and `system/`, which are in the team root. A builder in a worktree never reads or writes team files through the worktree's stale copy.
-- **Git** ignores only `.agent-team/runs/*/worktrees/` and `.agent-team/runs/*/logs/`. The Lead commits the rest: a phase's team files in its phase commit, everything else as `agent-team(<run>): <event>`. Project tooling must ignore `.agent-team/`.
+- **Git** ignores only `.agent-team/runs/*/worktrees/`, `.agent-team/runs/*/logs/`, and the derived `.agent-team/runs/*/plan.json`. The Lead commits the rest: a phase's team files in its phase commit, everything else as `agent-team(<run>): <event>`. Project tooling must ignore `.agent-team/`.
 - **Runs** (starting, closing, abandoning, folding into `system/`): [references/RUNS.md](./references/RUNS.md).
 
 ### state.md skeleton

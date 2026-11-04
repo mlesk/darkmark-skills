@@ -73,7 +73,7 @@ Design the simplest system that meets every requirement and NFR, with boundaries
   - `depends-on:` lists only real dependencies; `touches:` lists exact files or narrow folders. In brownfield it also names every baseline test that pins text the phase changes or a list the phase adds to (table and column lists, the footer, the rail, a constant): grep the baseline tests for each such name when writing §13, and run `scripts/suggest-touches.sh` on the builder's diff. With `max-parallel` above 1, phases that can run together must not overlap, and a phase that edits a hotspot names it.
   - **Milestones** end with something a human can run; small runs usually have one. Mark `risk: high` for concurrency, security, a tricky algorithm, or a data migration.
 
-Keep these section numbers and the backticked lines: `scripts/precheck.sh` and `scripts/coverage.sh` read §5, §9–§11 and §13. In brownfield, a run spec **copies** §11 verbatim from `system/03`; a pointer to it reads as an empty allowlist to the scripts. Note that `verified-by:` is read by neither script: an NFR measured by the Lead is a sentence in the owning phase's notes, not a field.
+Keep these section numbers and the backticked lines: `scripts/precheck.sh` and `scripts/coverage.sh` read §5, §9–§11 and §13; `scripts/plan-graph.sh` checks §13 as a graph and weighs the critical path by each phase's optional `size:`. In brownfield, a run spec **copies** §11 verbatim from `system/03`; a pointer to it reads as an empty allowlist to the scripts. Note that `verified-by:` is read by neither script: an NFR measured by the Lead is a sentence in the owning phase's notes, not a field.
 
 ```markdown
 # Architecture: <project>
@@ -113,7 +113,8 @@ goal: <one sentence>
 traces: REQ-…, DATA-…, API-…
 acceptance tests: REQ-001.1 → <test intent>, DATA-003 → <invariant>, API-002 → <contract smoke>
 touches: <exact files or narrow folders>
-depends-on: PHASE-001
+depends-on: PHASE-001 (notes in parentheses)
+size: S | M | L | XL
 behaviour-changes: <brownfield, when it edits a baseline test: D-### …>
 deletes: <brownfield, baseline files it deletes: path (D-###), …>
 ```

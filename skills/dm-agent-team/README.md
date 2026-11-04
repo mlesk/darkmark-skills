@@ -16,7 +16,7 @@ This is the **lean-3** version. It is built around two measured facts: a defect 
 - **One interview, then no questions.** The Lead asks everything up front (users, target state, rules, UX direction, stack preferences, quality bar, size, mode), with a recommended answer for each. After the brief gate nobody asks you anything until the next gate: the team decides, records an assumption, and shows it to you.
 - **A probe, then one warm pass writes the specs.** The Lead measures the device, the heaviest operation, and the test timings first (`specs/00-probe.md`), then writes requirements, UX (large runs, or when you ask for a designed UI), and architecture with the build plan in one context, under about 10,000 words, so they agree by construction and every number has a source. One fresh-context review, resumed only for majors, one spec gate.
 - **A fresh builder per phase that checks itself.** Each phase is a vertical slice built by a fresh builder that reads `build/handoff.md`, runs verify and `scripts/precheck.sh` before it returns, and leaves its notes for the next. Worktrees and parallel lanes only in large runs with independent phases.
-- **Checks where they pay.** `scripts/precheck.sh` inside every phase and `scripts/coverage.sh` (every Must criterion has a named test) at every milestone, both without tokens; an independent reviewer at the spec gate, at milestones (standard and large), and at acceptance. Majors ride into the next phase's dispatch; minors go to a backlog swept once before acceptance.
+- **Checks where they pay.** `scripts/plan-graph.sh` (the build plan is an acyclic graph with no parallel overlaps) before the spec review, `scripts/precheck.sh` inside every phase, and `scripts/coverage.sh` (every Must criterion has a named test) at every milestone, all without tokens; an independent reviewer at the spec gate, at milestones (standard and large), and at acceptance. Majors ride into the next phase's dispatch; minors go to a backlog swept once before acceptance.
 - **Measured.** The driver writes each session's cost to the run's `costs.tsv`; the retro reads it.
 - **Unchanged guarantees:** trace IDs from requirements to tests, a clean room with a dependency allowlist, verify as a hard gate, human gates where they matter, resumable state, a word budget on every runtime file.
 
@@ -111,7 +111,7 @@ After a run finishes, every later run is brownfield: it starts from the living s
 ## 8. Where everything lives
 
 ```
-.agent-team/                 # committed, except runs/*/logs/ and runs/*/worktrees/
+.agent-team/                 # committed, except runs/*/logs/, runs/*/worktrees/, and runs/*/plan.json
 ├── active                   # the run in progress, or none
 ├── models.md                # tier → model mapping (edit overrides here)
 ├── lessons.md               # what the team learned, across runs
@@ -119,7 +119,7 @@ After a run finishes, every later run is brownfield: it starts from the living s
 └── runs/V001-invoice-cli/   # one folder per run
     ├── state.md  brief.md  decisions.md  costs.tsv  retro.md
     ├── specs/  reviews/  build/
-    └── logs/  worktrees/    # git-ignored
+    └── logs/  worktrees/  plan.json   # git-ignored
 ```
 
 Runs, consolidation, and abandoning a run: [references/RUNS.md](./references/RUNS.md). Drift, recovery, escalations: [references/EXCEPTIONS.md](./references/EXCEPTIONS.md). Parallel lanes: [references/PARALLEL.md](./references/PARALLEL.md).
@@ -151,6 +151,6 @@ For unattended runs call each checkout's own `scripts/run.sh`; if you installed 
 | Tiers and effort | [ROUTING.md](./ROUTING.md) |
 | Runs · rare situations · parallel lanes · brownfield · existing specs | [RUNS.md](./references/RUNS.md) · [EXCEPTIONS.md](./references/EXCEPTIONS.md) · [PARALLEL.md](./references/PARALLEL.md) · [BROWNFIELD.md](./references/BROWNFIELD.md) · [ADOPTION.md](./references/ADOPTION.md) |
 | Sub-agents | [`agents/dm-at-builder`](./agents/dm-at-builder/SKILL.md) · [`agents/dm-at-reviewer`](./agents/dm-at-reviewer/SKILL.md) |
-| Driver, precheck, coverage, retro | [`scripts/run.sh`](./scripts/run.sh) · [`scripts/precheck.sh`](./scripts/precheck.sh) · [`scripts/coverage.sh`](./scripts/coverage.sh) · [`scripts/retro.sh`](./scripts/retro.sh) |
+| Driver, plan graph, precheck, coverage, retro | [`scripts/run.sh`](./scripts/run.sh) · [`scripts/plan-graph.sh`](./scripts/plan-graph.sh) · [`scripts/precheck.sh`](./scripts/precheck.sh) · [`scripts/coverage.sh`](./scripts/coverage.sh) · [`scripts/retro.sh`](./scripts/retro.sh) |
 | Instruction word budgets | [word-budget.txt](./word-budget.txt) |
 | Parked: what an enterprise SDLC would add | [to-enterprise-SDLC.md](./to-enterprise-SDLC.md) |

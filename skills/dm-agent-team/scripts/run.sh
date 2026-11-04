@@ -17,7 +17,8 @@ set -euo pipefail
 #
 # Each session's cost and turn count (when the host reports them: Claude Code's
 # JSON output) are appended to <run>/costs.tsv for the retro and for comparing
-# versions of this skill.
+# versions of this skill. After each session, plan-graph.sh refreshes
+# <run>/plan.json from state.md so the plan's live status stays current.
 #
 # Exit codes: 0 done (or no active run) · 1 usage or no run to drive · 2 awaiting human · 3 no progress · 4 host failed · 5 session cap
 
@@ -34,7 +35,7 @@ if command -v caffeinate >/dev/null 2>&1; then KEEPAWAKE=(caffeinate -i -s)
 elif command -v systemd-inhibit >/dev/null 2>&1; then KEEPAWAKE=(systemd-inhibit --what=idle:sleep --why=dm-agent-team)
 fi
 
-usage() { sed -n '4,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
+usage() { sed -n '4,24p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -141,6 +142,8 @@ for ((i = 1; i <= MAX_SESSIONS; i++)); do
     if (( failures >= 2 )); then echo "Host failed twice in a row." >&2; exit 4; fi
   fi
   record_cost "$i" "$log"
+  # Never fatal: a plan error is the Lead's to fix, not the driver's.
+  "$SKILL_DIR/scripts/plan-graph.sh" --workspace "$RUN_DIR" 2>&1 | grep '^plan-graph:' | cut -c1-200 | sed 's/^/  /' || true
   tail -n 3 "$log" | cut -c1-200 | sed 's/^/  │ /'
 
   if [[ "$(state_hash)" == "$before" ]]; then
