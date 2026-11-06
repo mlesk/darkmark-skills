@@ -60,6 +60,7 @@ Each skill is symlinked into that directory, so pulling the repo updates the ski
 - [`dm-agent-team`](skills/dm-agent-team/SKILL.md) - A Lead plus two sub-agents (builder, reviewer) that take a product idea from one discovery interview, through a single warm-context pass that writes requirements, UX, architecture and build plan, through an independent review, to a clean-room, test-driven build by a persistent builder and an independent acceptance. The process scales to the project's size (small, standard, large); three run modes (stepwise, checkpoint, yolo); a script checks every phase, parallel lanes in git worktrees serve large runs, a `--brownfield` mode changes existing systems, and a driver script runs unattended and records cost per session. The successor to `dm-spec-creation` + `dm-spec-execution`. Its agent-only sub-agents are dispatched by the Lead and are not linked as skills:
   - [`dm-at-builder`](skills/dm-agent-team/agents/dm-at-builder/SKILL.md) (agent-only)
   - [`dm-at-reviewer`](skills/dm-agent-team/agents/dm-at-reviewer/SKILL.md) (agent-only)
+- [`dm-outcome-team`](skills/dm-outcome-team/SKILL.md) - An outcome-only alternative to `dm-agent-team`, in one file of about 1,400 words. It states what a finished run must achieve (requirements proven by strong tests, nothing accepted on its author's word, decisions visible, a resumable and current record of the system), the human's decision points, the hard limits, and the quality bars, and leaves the process to the model. It reuses `precheck.sh` and `run.sh` through a short contracts section. Experimental: one accepted test run so far. See its [COMPARISON.md](skills/dm-outcome-team/COMPARISON.md).
 - [`dm-debug`](skills/dm-debug/SKILL.md) - Hypothesis-driven debugging: reproduce, shrink, rank hypotheses, run experiments that tell them apart, and fix the root cause with a regression test seen failing first. Keeps a debug log.
 
 ### Being replaced by `dm-agent-team`
@@ -92,6 +93,7 @@ dm-write  ─┴─> dm-loopify ──┴─> dm-critic  (final independent revi
 dm-pocockify ─> dm-grill, dm-skill-eval
 dm-debug, dm-learn          (standalone; dm-debug may hand off to dm-learn)
 dm-agent-team ──> dm-at-* sub-agents (nested, dispatched by the Lead)
+dm-outcome-team             (standalone; its own copies of precheck.sh and run.sh)
 dm-spec-creation ─> dm-spec-execution   (being replaced by dm-agent-team)
 ```
 
