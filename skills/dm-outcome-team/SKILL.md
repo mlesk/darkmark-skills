@@ -19,7 +19,9 @@ The human has accepted the run, and all of these hold:
 5. **Someone else can pick it up.** The repo explains how to install, run, test, and configure the software. The project holds a current description of the system as it now is: what it does, its rules, its structure, and the decisions behind them. The next change starts from that, not from reading the code from scratch.
 6. **Nothing was decided silently.** Every choice made without the human is recorded with its reason and what it would cost if it were wrong, and the human saw the list before accepting.
 7. **The design was attacked before it was built.** Before building starts, a reviewer who did not write the design names what a principal architect would rewrite before starting. Each rewrite is made, or rejected with a reason the human can see. The design also names the single scenario most likely to break it on day one. A test for that scenario passes before the run counts as done.
-8. **The run leaves a lesson.** A short retrospective records what the run cost, where the effort went, what went wrong, and what would make the next run better. Anything a future run should know that the repo doesn't already record is kept where the next run will find it.
+8. **Invarients are enforced.** Every invariant the system relies on is enforced by the code, and has a test that fails if it is broken. The system never relies on a human to notice a violation.
+9. **State machines**: all state machines are explicit, and have a test that fails if they enter an invalid state. The system never relies on a human to notice a violation, aka an implicit state machine.
+10. **The run leaves a lesson.** A short retrospective records what the run cost, where the effort went, what went wrong, and what would make the next run better. Anything a future run should know that the repo doesn't already record is kept where the next run will find it.
 
 ## The human's part
 
@@ -65,6 +67,7 @@ Every claim of progress or success rests on a tool result from this session. If 
 Two scripts ship with this skill. They work only if you keep these formats.
 
 **Unattended runner (`scripts/run.sh`).** `.agent-team/active` names the current run folder under `.agent-team/runs/`, or holds `none`. That folder's `state.md` has these fields, each on its own line, `key: value`:
+
 - `status:` one of `in-progress`, `awaiting-human`, `blocked`, `done`, `abandoned`
 - `stage:`
 - `mode:` (`stepwise` means the run never goes unattended)
@@ -74,6 +77,7 @@ Two scripts ship with this skill. They work only if you keep these formats.
 The runner treats any change to `state.md` as progress.
 
 **Per-piece precheck (`scripts/precheck.sh`).** The precheck reads `specs/03-architecture.md` in the run folder:
+
 - A `verify:` line.
 - §9, with an optional `suppression exceptions:` line.
 - §10, with a `test files:` line, and §10.1, a table whose 4th column lists the quality config files.
