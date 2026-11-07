@@ -58,6 +58,12 @@ Each skill is symlinked into both directories, so pulling the repo updates the s
 - [`dm-decide`](skills/dm-decide/SKILL.md) - Structured decision-making on the `dm-loopify` engine. Grills the decision through mental-model lenses scaled to reversibility, vetoes options that fail must-pass constraints, scores the rest including the status quo, stress-tests the leader, and delivers a decision record.
 - [`dm-write`](skills/dm-write/SKILL.md) - Improves non-fiction prose with Williams' _Style: Lessons in Clarity and Grace_ on the `dm-loopify` engine. Diagnoses against ten rules, revises in scored rounds, checks with a cold reader, and delivers revised text with a change log.
 
+### Researching
+
+- [`dm-research`](skills/dm-research/SKILL.md) - A Lead plus two sub-agents (researcher, reviewer) that turn an open question into evaluated options and a recommendation: a scoping scan informs one interview, parallel fresh-context researchers write a sourced evidence ledger, options (always the status quo and a bold one) are vetoed and scored on criteria fixed before the evidence, scripts check every citation, and an independent reviewer re-checks load-bearing claims against their sources and red-teams the call. Kinds: business opportunity, decision, exploratory, art of the possible. Reuses `dm-decide`'s scoring rules. Its agent-only sub-agents:
+  - [`dm-rs-researcher`](skills/dm-research/agents/dm-rs-researcher/SKILL.md) (agent-only)
+  - [`dm-rs-reviewer`](skills/dm-research/agents/dm-rs-reviewer/SKILL.md) (agent-only)
+
 ### Building
 
 - [`dm-agent-team`](skills/dm-agent-team/SKILL.md) - A Lead plus two sub-agents (builder, reviewer) that take a product idea from one discovery interview, through a single warm-context pass that writes requirements, UX, architecture and build plan, through an independent review, to a clean-room, test-driven build by a persistent builder and an independent acceptance. The process scales to the project's size (small, standard, large); three run modes (stepwise, checkpoint, yolo); a script checks every phase, parallel lanes in git worktrees serve large runs, a `--brownfield` mode changes existing systems, and a driver script runs unattended and records cost per session. The successor to `dm-spec-creation` + `dm-spec-execution`. Its agent-only sub-agents are dispatched by the Lead and are not linked as skills:
@@ -86,11 +92,31 @@ These still work, but new projects should use `dm-agent-team`. See [GUIDE.md §M
 - [`dm-skill-eval`](skills/dm-skill-eval/SKILL.md) - Tests a skill: static lint (`scripts/lint-skill.py`), trigger evals with near misses, and behavior scenarios run by fresh sub-agents with a separate judge. Saves a pass-rate report next to the skill.
 - [`dm-learn`](skills/dm-learn/SKILL.md) - Turns a session's corrections and failures into small, approved edits to `AGENTS.md`, `CLAUDE.md`, or a skill, so the next session doesn't repeat them.
 
+### Operating
+
+- [`dm-portfolio`](skills/dm-portfolio/SKILL.md) - The weekly planning loop: reads every project's git state, agent runs, tests, deploy gaps, and goals, then produces one file per opportunity plus a ranked `INDEX.md` and a ready-to-paste `NEXT.md`. Claims and closes items. Turns "what should I work on" into a work order.
+- [`dm-router`](skills/dm-router/SKILL.md) - Routes a request to the right skill, model tier, and first action before any work starts, and names the canonical skill when duplicates exist. The fix for a large installed library that rarely gets used.
+- [`dm-retro-apply`](skills/dm-retro-apply/SKILL.md) - Closes the learning loop after a run: extracts every proposed skill change and costliest failure from `retro.md`, turns each into a file-and-line item, applies or explicitly rejects it, adds a regression check, and refuses to close the run while an item is unclassified.
+- [`dm-sweep`](skills/dm-sweep/SKILL.md) - The nightly maintenance lane: deterministic checks (git, tests, TODOs, doc drift, dependency audit, committed secrets, large files, agent-run status) and one digest capped at five decisions. Observes; never edits.
+
 ### How the skills compose
 
 Skills call siblings by relative path (`../dm-grill/SKILL.md`), so install the whole set with `link-skills.sh`.
 
 ```
+dm-sweep ──> signals ──┐
+                       ├─> dm-portfolio ──> backlog/INDEX.md + NEXT.md
+dm-agent-team ──> retros ┘                        │
+                                                  v
+                                            dm-router ──> one skill, one tier
+                                                  │
+        ┌─────────────────────────────────────────┼──────────────────┐
+        v                                         v                  v
+   dm-agent-team                             dm-research        dm-write / dm-decide
+   (build, ship, finish)                     (explore)          (leverage, decide)
+        │
+        └─> dm-retro-apply at close
+
 dm-decide ─┐                ┌─> dm-grill   (intake interview)
 dm-write  ─┴─> dm-loopify ──┴─> dm-critic  (final independent review)
 dm-pocockify ─> dm-grill, dm-skill-eval

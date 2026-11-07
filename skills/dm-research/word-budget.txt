@@ -1,0 +1,10 @@
+# Word budgets for the files the Lead and the agents read during a run.
+# Checked by dm-skill-eval/scripts/lint-skill.py. To add a rule, remove one,
+# or raise a budget deliberately in the same commit and say why.
+SKILL.md 2000
+PROTOCOL.md 1350
+ROUTING.md 300
+agents/dm-rs-researcher/SKILL.md 700
+agents/dm-rs-reviewer/SKILL.md 800
+references/KINDS.md 750
+references/REPORT.md 700

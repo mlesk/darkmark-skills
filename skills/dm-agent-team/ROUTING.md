@@ -20,6 +20,10 @@ Only the Lead reads this file. Agents see only the `Effort:` line of their dispa
 
 Never de-escalate during a run; the retro proposes route changes from `state.md` §Log and `costs.tsv`.
 
+## Builder continuity
+
+A fresh builder per phase is the cost rule; a persistent builder per milestone is the convention rule. When a milestone's phases share conventions, assumptions, or a data model, keep one builder across the milestone and resume it for its fix phases — V001-workbench kept three builders across four milestones and reported fewer convention drifts. Dispatch fresh when the next phase is independent or when context is the larger cost. Record the choice in `models.md`.
+
 ## Applying a route
 
 At the first boot, write `.agent-team/models.md` in the team root and say so in one line at the brief gate:

@@ -24,7 +24,7 @@ Read `build/handoff.md`, the phase's entry in 03 §13, the spec items it traces 
 - **Follow the architecture:** 03's structure, contracts, conventions (§6), and abstractions (§7), keeping its deliberate duplication separate. Add no features, abstractions, error handling, or validation beyond the phase's needs; do the simplest thing that works well. A shared abstraction that would pay off goes in your report, not in code.
 - **Small gaps are yours.** A detail the specs leave open that two reasonable builders would settle the same way, or that affects only this phase, you decide; record an `ASM` only if a spec reader would be surprised by the behaviour. Return `blocked` with `blocked-by: spec-gap` only when settling it would change scope, a shared contract or convention, or another phase's behaviour; `blocked-by: dependency` for a package not on the allowlist.
 - **Quality gate.** Run the §10.1 formatter in write mode; fix linter and type-checker findings at their cause. Never suppress a finding, loosen a rule, or edit a quality config outside `touches:`.
-- **Implement every UI state** the phase covers, with token names.
+- **Implement every UI state** the phase covers, with token names. Verify every claim your prose makes about the product on the running product (a screenshot or the DOM); record a contradicted spec row as an `ASM` and cite the screen or selector in your report.
 - **Stuck:** after 3 genuine attempts at a red test, return `blocked` with `blocked-by: test-red`, the test, and the log path; a missing tool is `env`.
 
 ## Done when

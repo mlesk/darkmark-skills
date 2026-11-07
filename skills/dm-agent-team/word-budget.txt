@@ -1,15 +1,15 @@
 # Word budgets for the files the Lead and the agents read during a run.
 # Checked by dm-skill-eval/scripts/lint-skill.py. To add a rule, remove one,
 # or raise a budget deliberately in the same commit and say why.
-SKILL.md 2400   # state-machine gaps: phase-review and in-review, ready phases, milestone re-check order, reviewer BLOCK, acceptance re-check failure
+SKILL.md 2650   # state-machine gaps; +73 for the V003 probe-walk sentence and the V001 load-rerun rule; +70 V003 retro R4/R5/R7 (mockup cite, SCR walk, readers of changed data); +80 V004 retro R14-R18 (brief edit rule, WIP checkpoint, walk deferral, twin-path fixes)
 PROTOCOL.md 1930   # state-machine gaps: request changes at every stop, stale rebuild, phase vs run blocked; lean-3: state.md §Backlog, build/handoff.md, fix: items and the precheck line in dispatch/return
-ROUTING.md 450
-agents/dm-at-builder/SKILL.md 800
-agents/dm-at-reviewer/SKILL.md 1100
-references/SPECS.md 1900   # lean-3: 00-probe, executable contracts (§5 examples), harness rules (§10), vertical slices (§13)
+ROUTING.md 500   # +30: builder continuity (persistent builder per milestone)
+agents/dm-at-builder/SKILL.md 850   # +34: verify prose claims on the running product (V003)
+agents/dm-at-reviewer/SKILL.md 1250   # +119: Must coverage table, layout measurement, overflow policy, line-number sourcing, locator inventory (V001-V003)
+references/SPECS.md 2090   # lean-3: 00-probe, contracts, harness, vertical slices; +98 for the probe walk, §11 copy rule, verified-by note; +20 V003 retro R6 (suggest-touches); +50 V004 retro R13/R16 (touches for added-to lists, budget worked example)
 references/PARALLEL.md 500
 references/RUNS.md 1000
 references/EXCEPTIONS.md 620   # state-machine gaps: reviewer BLOCK
-references/BROWNFIELD.md 1200
+references/BROWNFIELD.md 1270   # +46: locator inventory, content-hashed build outputs
 references/ADOPTION.md 450
 references/host-guardrails.md 550

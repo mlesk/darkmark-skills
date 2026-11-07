@@ -4,7 +4,7 @@ The Lead reads this once, at S1, after the probe, and writes 01, 02 (when the si
 
 ## 00 Probe
 
-What was run, on what device and versions, how long it took, at what load, and the date. Every number in 01 and 03 not in the brief or a `D-###` cites a probe row. Measure a setting's whole range before claiming anything about it.
+What was run, on what device and versions, how long it took, at what load, and the date. Every number in 01 and 03 not in the brief or a `D-###` cites a probe row. Measure a setting's whole range before claiming anything about it. For a UI change, also walk every screen the change touches on the running product and record each visible label, control, state, and container width in `probe.json`. Every behavioural claim in 01, 02, or 03 cites a probe ID, the brief, or a `D-###`; a claim about the product the probe did not see is a reviewer's major.
 
 ## 01 Requirements
 
@@ -60,7 +60,7 @@ Design the simplest system that meets every requirement and NFR, with boundaries
 - **Style and stack** from the drivers: the few `NFR`s, `REQ`s, and constraints that actually shape the design. Prefer a modular monolith and the standard library unless a driver demands otherwise; use what the brief's *Direction* or an existing spec fixed. Record the choice and the alternatives rejected in a few lines.
 - **Design the interface from the UX** (02, or 01 §UX notes): everything a screen shows comes from an `API` output or is derived from one; every input or action is an `API` operation; every flow is a sequence of `API` calls; every failure state maps to an error the `API` returns. The data model holds exactly what those operations must remember.
 - **Fewest moving parts.** Every component, dependency, and layer traces to a `REQ`, an `NFR`, or an ADR. No services, queues, caches, or AI components unless an `NFR` needs them. ADRs only for decisions a later reader would question.
-- **Executable contracts (§5):** inputs, outputs, errors, and where they matter idempotency, atomicity, concurrency; each with **one worked example** (a concrete input, its output, one error) the owning phase turns into a contract smoke named `API_003_…`. `PHASE-001` ships the smoke runner (boots the product, checks the health contract).
+- **Executable contracts (§5):** inputs, outputs, errors, and where they matter idempotency, atomicity, concurrency; each with **one worked example** (a concrete input, its output, one error) the owning phase turns into a contract smoke named `API_003_…`. A shared budget (LLM calls, fetches, money) gets one worked example at the largest normal input showing each consumer's share; no specified feature may get 0 on a normal day. `PHASE-001` ships the smoke runner (boots the product, checks the health contract).
 - **Conventions (§6)** settle only what a builder would otherwise invent: error kinds and how they surface, configuration, logging, validation, anything else this product needs. One to three checkable lines each.
 - **Abstractions (§7)** only where they materially simplify the design: the same concept changing for the same reason, never code that merely looks alike; real cases now; a benefit that clearly outweighs indirection and coupling; a condition for inlining it again. SOLID, DRY, and pattern names are vocabulary, not reasons. List deliberate duplication too. A function before a class, a module before a framework.
 - **Structure (§8)** that extends by addition, with the shared files every feature must edit listed as hotspots.
@@ -70,10 +70,10 @@ Design the simplest system that meets every requirement and NFR, with boundaries
 - **Allowlist (§11):** minimal; package, pinned version, licence, purpose.
 - **Build plan (§13).** `PHASE-001` is the foundation (toolchain, structure, the quality gate, verify green on a smoke test, the harness rules, the smoke runner, `.gitignore`, the §11 `list command:`, hotspot files, shared §6 plumbing, a README with install, run, and test commands). Every later phase is a **vertical slice**: one capability from storage to the surface the user meets, finished and verified by one builder in one session; a milestone is one to three slices the human can run. Aim for the size's count (`small` 1–3, `standard` 3–6, `large` ≤ 8); never a phase shorter than the checks around it.
   - **Each acceptance criterion is owned once**, by the phase that can test it end to end; a phase that owns no criterion lists the contract items it tests (`DATA-003`, `API-002`, `SCR-004`) under `acceptance tests:`; `scripts/coverage.sh` reads these lines.
-  - `depends-on:` lists only real dependencies; `touches:` lists exact files or narrow folders. With `max-parallel` above 1, phases that can run together must not overlap, and a phase that edits a hotspot names it.
+  - `depends-on:` lists only real dependencies; `touches:` lists exact files or narrow folders. In brownfield it also names every baseline test that pins text the phase changes or a list the phase adds to (table and column lists, the footer, the rail, a constant): grep the baseline tests for each such name when writing §13, and run `scripts/suggest-touches.sh` on the builder's diff. With `max-parallel` above 1, phases that can run together must not overlap, and a phase that edits a hotspot names it.
   - **Milestones** end with something a human can run; small runs usually have one. Mark `risk: high` for concurrency, security, a tricky algorithm, or a data migration.
 
-Keep these section numbers and the backticked lines: `scripts/precheck.sh` and `scripts/coverage.sh` read §5, §9–§11 and §13.
+Keep these section numbers and the backticked lines: `scripts/precheck.sh` and `scripts/coverage.sh` read §5, §9–§11 and §13. In brownfield, a run spec **copies** §11 verbatim from `system/03`; a pointer to it reads as an empty allowlist to the scripts. Note that `verified-by:` is read by neither script: an NFR measured by the Lead is a sentence in the owning phase's notes, not a field.
 
 ```markdown
 # Architecture: <project>

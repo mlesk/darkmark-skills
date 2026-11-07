@@ -1,1 +1,4 @@
 .DS_Store
+.research/runs/*/logs/
+.research/
+.playwright-mcp/

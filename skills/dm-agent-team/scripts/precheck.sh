@@ -9,6 +9,7 @@ set -uo pipefail
 # Usage:
 #   precheck.sh --workspace DIR --workdir DIR --phase PHASE-### --round N --base SHA
 #               [--touches "path ..."] [--ids "REQ-001.1 DATA-003 ..."]
+#               [--ids-untested]   # fix phase: findings fixed without a new named test
 #               [--brownfield --baseline SHA [--behaviour-changes "D-012 ..."] [--deletes "path ..."]]
 #
 # --touches and --ids override what is read from the build plan (03 §13, or an
@@ -25,8 +26,8 @@ set -uo pipefail
 # script cannot parse). On 2, the Lead dispatches dm-at-reviewer in precheck mode.
 
 WORKSPACE="" WORKDIR="" PHASE="" ROUND="" BASE="" TOUCHES_OVERRIDE="" IDS_OVERRIDE=""
-BROWNFIELD=false BASELINE="" BEHAV_OVERRIDE="" DELETES_OVERRIDE=""
-usage() { sed -n '4,25p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
+BROWNFIELD=false BASELINE="" BEHAV_OVERRIDE="" DELETES_OVERRIDE="" IDS_UNTESTED=false
+usage() { sed -n '4,27p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --workspace) WORKSPACE="$2"; shift 2 ;;
@@ -36,6 +37,7 @@ while [[ $# -gt 0 ]]; do
     --base)      BASE="$2"; shift 2 ;;
     --touches)   TOUCHES_OVERRIDE="$2"; shift 2 ;;
     --ids)       IDS_OVERRIDE="$2"; shift 2 ;;
+    --ids-untested) IDS_UNTESTED=true; shift ;;
     --brownfield) BROWNFIELD=true; shift ;;
     --baseline)  BASELINE="$2"; shift 2 ;;
     --behaviour-changes) BEHAV_OVERRIDE="$2"; shift 2 ;;
@@ -169,7 +171,8 @@ for id in $IDS; do
     MISSING+="$id "
   fi
 done
-if [[ -z "$IDS" ]]; then add_row 3 "a test per acceptance-tests item" n/a "no IDs listed (foundation phase?)"
+if $IDS_UNTESTED; then add_row 3 "a test per acceptance-tests item" n/a "--ids-untested: findings fixed without a new named test"
+elif [[ -z "$IDS" ]]; then add_row 3 "a test per acceptance-tests item" n/a "no IDs listed (foundation phase?)"
 elif [[ -z "$MISSING" ]]; then add_row 3 "a test per acceptance-tests item" PASS "found: $IDS"
 else add_row 3 "a test per acceptance-tests item" FAIL "no test name contains: $MISSING"
      add_finding "test files" "no test named for $MISSING" "add a test named with the ID in code form (REQ-004.2 → REQ_004_2)" 3; fi
@@ -195,7 +198,12 @@ fi
 
 # 5. Dependencies ---------------------------------------------------------------
 if [[ -z "$DEPS_CMD" ]]; then
-  add_row 5 "dependencies on the allowlist" n/a "03 §11 has no 'list command:'; check by hand at review"
+  SYS03="$WORKSPACE/../../system/03-architecture.md"
+  if $BROWNFIELD && [[ -f "$SYS03" ]] && grep -q '^list command:' "$SYS03"; then
+    add_row 5 "dependencies on the allowlist" n/a "§11 empty: copy the 'list command:' from system/03 (a pointer reads as an empty allowlist)"
+  else
+    add_row 5 "dependencies on the allowlist" n/a "03 §11 has no 'list command:'; check by hand at review"
+  fi
 else
   DEPS="$(bash -c "$DEPS_CMD" 2>>"$LOG" | strip | grep -v '^$' || true)"
   EXTRA=""
