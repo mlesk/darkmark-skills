@@ -17,6 +17,8 @@ set -uo pipefail
 #
 # Critical path: the longest dependency chain weighted by size: (S 1, M 2, L 3,
 # XL 5; unsized counts as M). remaining_path counts done phases as 0.
+# plan.json also carries the last 60 §Log rows and, per phase, the last lines a
+# builder appended to logs/PHASE-###-progress.log; scripts/monitor.sh renders it.
 #
 # Usage:
 #   plan-graph.sh --workspace DIR [--out FILE] [--max-parallel N] [--check]
@@ -117,6 +119,13 @@ function setfield(i, key, val,   v, t, k, tok, nt, bad) {
 function jstrs(arr, k,   s, j) { s = ""; for (j = 1; j <= k; j++) s = s (j > 1 ? ", " : "") q(arr[j]); return "[" s "]" }
 function jbool(b) { return b ? "true" : "false" }
 function jnum(x) { return (x == "" ? 0 : x + 0) }
+# One §Log row (| When | Stage | Agent · mode | Tier · effort | Round | Result | Notes |) as JSON.
+function logobj(row,   lf, s, ph, np) {
+  split(row, lf, "|"); s = row; ph = ""; np = 0
+  while (match(s, /PHASE-[0-9A-Za-z]+/)) { ph = ph (np++ ? ", " : "") q(substr(s, RSTART, RLENGTH)); s = substr(s, RSTART + RLENGTH) }
+  return "{\"when\": " q(trim(lf[2])) ", \"stage\": " q(trim(lf[3])) ", \"agent\": " q(trim(lf[4])) ", \"tier\": " q(trim(lf[5])) \
+    ", \"round\": " q(trim(lf[6])) ", \"result\": " q(trim(lf[7])) ", \"notes\": " q(trim(lf[8])) ", \"phases\": [" ph "]}"
+}
 
 BEGIN {
   CTRL = ""; for (k = 1; k < 32; k++) CTRL = CTRL sprintf("%c", k)
@@ -174,10 +183,11 @@ FILENAME == statef && index(sec, "## Build") == 1 && /^\| *PHASE-/ {
   next
 }
 FILENAME == statef && index(sec, "## Log") == 1 && /^\| / && $0 !~ /^\| *When/ && $0 !~ /^\| *-/ {
+  allrow[++nall] = $0
   delete rowseen; s = $0
   while (match(s, /PHASE-[0-9A-Za-z]+/)) {
     pid = substr(s, RSTART, RLENGTH); s = substr(s, RSTART + RLENGTH)
-    if (!(pid in rowseen)) { rowseen[pid] = 1; logn[pid]++; logrow[pid] = $0 }
+    if (!(pid in rowseen)) { rowseen[pid] = 1; if (!logn[pid]++) firstrow[pid] = $0; logrow[pid] = $0 }
   }
   next
 }
@@ -327,17 +337,25 @@ END {
     o = o ", \"status\": " q(st[i]) ", \"ready\": " jbool(ready[i]) ", \"lane\": " q(lane[i]) ", \"base\": " q(base[i])
     o = o ", \"revise_rounds\": " jnum(rev[i] ~ /^[0-9]+$/ ? rev[i] : 0) ", \"notes\": " q(notes[i])
     o = o ", \"level\": " jnum(level[i]) ", \"critical\": " jbool(crit[i])
-    o = o ", \"log\": {\"count\": " jnum(logn[ids[i]]) ", \"last\": "
-    if (ids[i] in logrow) {
-      split(logrow[ids[i]], lf, "|")
-      o = o "{\"when\": " q(trim(lf[2])) ", \"stage\": " q(trim(lf[3])) ", \"agent\": " q(trim(lf[4])) ", \"tier\": " q(trim(lf[5]))
-      o = o ", \"round\": " q(trim(lf[6])) ", \"result\": " q(trim(lf[7])) ", \"notes\": " q(trim(lf[8])) "}"
-    } else o = o "null"
-    o = o "}}"
+    o = o ", \"log\": {\"count\": " jnum(logn[ids[i]])
+    if (ids[i] in logrow) { split(firstrow[ids[i]], lf, "|"); o = o ", \"first_when\": " q(trim(lf[2])) ", \"last\": " logobj(logrow[ids[i]]) "}" }
+    else o = o ", \"first_when\": \"\", \"last\": null}"
+    # Builder progress: "<UTC time> <step>" lines; keep the count and the last 8.
+    pf = ws "/logs/" ids[i] "-progress.log"; pn = 0; delete pr
+    while ((getline pl < pf) > 0) { pl = trim(pl); if (pl != "") pr[++pn % 8] = pl }
+    close(pf)
+    o = o ", \"progress\": {\"count\": " pn ", \"lines\": ["
+    for (k = (pn > 8 ? pn - 7 : 1); k <= pn; k++) {
+      pl = pr[k % 8]; c = index(pl, " ")
+      o = o (k > (pn > 8 ? pn - 7 : 1) ? ", " : "") "{\"when\": " q(c ? substr(pl, 1, c - 1) : "") ", \"text\": " q(c ? trim(substr(pl, c + 1)) : pl) "}"
+    }
+    o = o "]}}"
   }
   o = o "\n  ],\n  \"edges\": ["
   for (k = 1; k <= nedge; k++)
     o = o (k > 1 ? "," : "") "\n    {\"from\": " q(ids[efrom[k]]) ", \"to\": " q(ids[eto[k]]) ", \"critical\": " jbool((efrom[k], eto[k]) in critedge) "}"
+  o = o "\n  ],\n  \"log\": ["
+  for (k = (nall > 60 ? nall - 59 : 1); k <= nall; k++) o = o (k > (nall > 60 ? nall - 59 : 1) ? "," : "") "\n    " logobj(allrow[k])
   o = o "\n  ],\n  \"critical_path\": {\"phases\": " jstrs(cp, ncp) ", \"weight\": " jnum(critw) "},\n"
   o = o "  \"remaining_path\": {\"phases\": " jstrs(rp, nrp) ", \"weight\": " jnum(remw) "},\n"
   o = o "  \"summary\": {\"phases\": " n ", \"edges\": " jnum(nedge) ", \"ready\": " jnum(nready)
@@ -355,7 +373,7 @@ END {
 }
 AWK
 
-awk -v planf="$PLAN" -v statef="$STATE" -v json="$TMP/plan.json" -v maxpar="$MAXPAR" -v has13="$HAS13" \
+awk -v planf="$PLAN" -v statef="$STATE" -v json="$TMP/plan.json" -v maxpar="$MAXPAR" -v has13="$HAS13" -v ws="$WORKSPACE" \
     -v now="$(date -u +%Y-%m-%dT%H:%M:%SZ)" -v src="$PLAN" -f "$TMP/graph.awk" "$PLAN" "$STATE"
 rc=$?
 [[ $rc -le 1 && -s "$TMP/plan.json" ]] || fail "awk failed (exit $rc)"

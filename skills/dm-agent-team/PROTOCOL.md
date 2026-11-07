@@ -20,7 +20,7 @@ All team state lives under `.agent-team/` at the project root (the **team root**
     ├── reviews/             # reviewer, precheck.sh, coverage.sh
     ├── baseline.md  discovery-scope.md            # brownfield only
     ├── retro.md
-    ├── logs/                # git-ignored: full command output, never read whole
+    ├── logs/                # git-ignored: full command output, never read whole; builder progress lines; monitor/ (scripts/monitor.sh)
     └── worktrees/           # git-ignored: only when phases build in parallel (references/PARALLEL.md)
 ```
 

@@ -91,6 +91,15 @@ check "critical edges marked" "3" "$(json "$W/plan.json" "sum(e['critical'] for 
 check "milestones with phases (F01 joins MS-1 from state.md)" "MS-1:4 MS-2:3" "$(json "$W/plan.json" "' '.join(m['id']+':'+str(len(m['phases'])) for m in d['milestones'])")"
 check "state header copied" "V001-tally yolo" "$(json "$W/plan.json" "d['state']['run']+' '+d['state']['mode']")"
 
+# ---- 1b. Progress lines (last 8 kept, in order), the log array, first_when -------
+mkdir -p "$W/logs"; for i in 1 2 3 4 5 6 7 8 9 10; do printf '2026-11-03T12:%02d:00Z step %s\n' "$i" "$i"; done > "$W/logs/PHASE-002-progress.log"
+"$here/plan-graph.sh" --workspace "$W" >/dev/null
+check "progress count and last 8 in order" "10 step 3 step 10" "$(json "$W/plan.json" "f\"{d['nodes'][1]['progress']['count']} {d['nodes'][1]['progress']['lines'][0]['text']} {d['nodes'][1]['progress']['lines'][-1]['text']}\"")"
+check "progress time split from text" "2026-11-03T12:10:00Z" "$(json "$W/plan.json" "d['nodes'][1]['progress']['lines'][-1]['when']")"
+check "no progress file is empty" "0 []" "$(json "$W/plan.json" "f\"{d['nodes'][0]['progress']['count']} {d['nodes'][0]['progress']['lines']}\"")"
+check "log array with phases" "2 ['PHASE-002'] REVISE" "$(json "$W/plan.json" "f\"{len(d['log'])} {d['log'][0]['phases']} {d['log'][0]['result']}\"")"
+check "first_when is the first row" "2026-11-03T10:00Z" "$(json "$W/plan.json" "d['nodes'][1]['log']['first_when']")"
+
 # ---- 2. --check writes nothing -------------------------------------------------
 rm -f "$W/plan.json"; "$here/plan-graph.sh" --workspace "$W" --check >/dev/null
 check "--check writes no plan.json" "absent" "$([[ -f "$W/plan.json" ]] && echo present || echo absent)"

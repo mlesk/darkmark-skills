@@ -14,7 +14,7 @@ You are operating autonomously: the human cannot answer. Don't ask; decide, reco
 
 ## Where you work
 
-Write code only in the dispatch's `workdir:` (the project root, or your lane's git worktree). Read specs and write your report and logs through the absolute `workspace:` path, never through a worktree's stale `.agent-team/`. Install missing allowlisted packages.
+Write code only in the dispatch's `workdir:` (the project root, or your lane's git worktree). Read specs and write your report and logs through the absolute `workspace:` path, never through a worktree's stale `.agent-team/`. Install missing allowlisted packages. At each step (handoff read, a test red, green, verify, precheck), append one line to `logs/PHASE-###-progress.log` in the workspace: `printf '%s %s\n' "$(date -u +%FT%TZ)" "<step>" >> <path>`; the human's monitor shows it.
 
 Read `build/handoff.md`, the phase's entry in 03 §13, the spec items it traces to, 03 §6–§11, the UX items it touches, and the code you will change. `fix:` items in the dispatch are review findings on this phase's files: fix them in the same pass. On a revision, fix only the findings.
 

@@ -104,6 +104,8 @@ A headless session can't answer permission prompts: pre-approve `git`, the packa
 | `4` | host failed twice | fix the host or permissions |
 | `5` | hit `--max-sessions` | rerun |
 
+**Watch it.** In another terminal, `scripts/monitor.sh --workspace .agent-team/runs/<run> --open` serves a live page at `http://127.0.0.1:4317/`: the build plan as a graph with each phase's status, dependencies, critical path, retries, and notes, plus a running log of dispatches and builder steps. It refreshes every 3 seconds from `state.md`, the plan, and the builders' progress lines, and writes only `plan.json` and `logs/monitor/`. Without `python3` it prints a `file://` URL instead.
+
 ## 7. Brownfield
 
 After a run finishes, every later run is brownfield: it starts from the living specs in `.agent-team/system/`. On a codebase the team didn't build, invoke `/dm-agent-team --brownfield <change>`. A brownfield run works on a branch `agent-team/<run>` from a clean tree; the Lead records the existing behaviour and a test baseline, the reviewer spot-checks it against the code, and you decide at the **baseline gate** whether to fix or quarantine each failing test. Every spec item is tagged `existing`, `new`, `changed`, or `removed`; characterisation tests pin behaviour before it changes; any regression blocks. You merge the run branch yourself. Details: [references/BROWNFIELD.md](./references/BROWNFIELD.md).
@@ -151,6 +153,6 @@ For unattended runs call each checkout's own `scripts/run.sh`; if you installed 
 | Tiers and effort | [ROUTING.md](./ROUTING.md) |
 | Runs · rare situations · parallel lanes · brownfield · existing specs | [RUNS.md](./references/RUNS.md) · [EXCEPTIONS.md](./references/EXCEPTIONS.md) · [PARALLEL.md](./references/PARALLEL.md) · [BROWNFIELD.md](./references/BROWNFIELD.md) · [ADOPTION.md](./references/ADOPTION.md) |
 | Sub-agents | [`agents/dm-at-builder`](./agents/dm-at-builder/SKILL.md) · [`agents/dm-at-reviewer`](./agents/dm-at-reviewer/SKILL.md) |
-| Driver, plan graph, precheck, coverage, retro | [`scripts/run.sh`](./scripts/run.sh) · [`scripts/plan-graph.sh`](./scripts/plan-graph.sh) · [`scripts/precheck.sh`](./scripts/precheck.sh) · [`scripts/coverage.sh`](./scripts/coverage.sh) · [`scripts/retro.sh`](./scripts/retro.sh) |
+| Driver, plan graph, monitor, precheck, coverage, retro | [`scripts/run.sh`](./scripts/run.sh) · [`scripts/plan-graph.sh`](./scripts/plan-graph.sh) · [`scripts/monitor.sh`](./scripts/monitor.sh) ([`plan.html`](./scripts/plan.html)) · [`scripts/precheck.sh`](./scripts/precheck.sh) · [`scripts/coverage.sh`](./scripts/coverage.sh) · [`scripts/retro.sh`](./scripts/retro.sh) |
 | Instruction word budgets | [word-budget.txt](./word-budget.txt) |
 | Parked: what an enterprise SDLC would add | [to-enterprise-SDLC.md](./to-enterprise-SDLC.md) |
