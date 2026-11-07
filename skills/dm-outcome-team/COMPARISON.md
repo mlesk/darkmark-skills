@@ -11,7 +11,7 @@ Both skills aim at the same result. They take an idea from one interview to soft
 | | dm-agent-team | dm-outcome-team |
 |---|---|---|
 | **Size** | ~11,200 words across SKILL, PROTOCOL, ROUTING, 2 agents, and 7 references; a word budget keeps it from growing | ~1,440 words in one file |
-| **Shape of the instructions** | Steps 1–6, stage names, gate names, and a table for each policy | Seven "Done means" properties, the human's part, hard limits, surviving interruption, spending well, and honest reporting |
+| **Shape of the instructions** | Steps 1–6, stage names, gate names, and a table for each policy | Eight "Done means" properties, the human's part, hard limits, surviving interruption, spending well, and honest reporting |
 | **Scaling to the job** | A small/standard/large table fixes specs, phase counts, review points, and REVISE rounds | "Scale the process to the job" and tell the human the scale at the first stop |
 | **Human stops** | Brief and accept always stop; spec, milestone, and others follow the stepwise/checkpoint/yolo table | Direction and result always stop; design stops unless the human chose more autonomy; the human can ask for more |
 | **Interview** | One batch of at most 12 questions, a fixed topic list, and a recommended answer for each | The same idea, stated as an outcome; now also asks where the work lives |
@@ -56,4 +56,4 @@ The contracts section pulls a lot of dm-agent-team back in. To keep `precheck.sh
 
 ## What would settle it
 
-Run both in the bakeoff the research already proposes, each in a fresh session that has never seen the other skill, on the same kickoff. Score both on the seven "Done means" items, which work as a neutral rubric. Compare cost through `run.sh`'s `costs.tsv`, human stops, defects found at acceptance, and run-to-run variance from two or three runs each. Add a brownfield kickoff, because that is where the drafts differ most.
+Run both in the bakeoff the research already proposes, each in a fresh session that has never seen the other skill, on the same kickoff. Score both on the eight "Done means" items, which work as a neutral rubric. Compare cost through `run.sh`'s `costs.tsv`, human stops, defects found at acceptance, and run-to-run variance from two or three runs each. Add a brownfield kickoff, because that is where the drafts differ most.

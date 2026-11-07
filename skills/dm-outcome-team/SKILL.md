@@ -18,7 +18,8 @@ The human has accepted the run, and all of these hold:
 4. **It meets the chosen quality bar.** The human picks prototype, internal, or production. At every bar the code is formatted, linted, and type-checked where the language allows, and one fast, repeatable command proves it green. The standard rises with the bar. Measurable qualities, such as speed, size, or limits, are measured, or you say why they couldn't be.
 5. **Someone else can pick it up.** The repo explains how to install, run, test, and configure the software. The project holds a current description of the system as it now is: what it does, its rules, its structure, and the decisions behind them. The next change starts from that, not from reading the code from scratch.
 6. **Nothing was decided silently.** Every choice made without the human is recorded with its reason and what it would cost if it were wrong, and the human saw the list before accepting.
-7. **The run leaves a lesson.** A short retrospective records what the run cost, where the effort went, what went wrong, and what would make the next run better. Anything a future run should know that the repo doesn't already record is kept where the next run will find it.
+7. **The design was attacked before it was built.** Before building starts, a reviewer who did not write the design names what a principal architect would rewrite before starting. Each rewrite is made, or rejected with a reason the human can see. The design also names the single scenario most likely to break it on day one. A test for that scenario passes before the run counts as done.
+8. **The run leaves a lesson.** A short retrospective records what the run cost, where the effort went, what went wrong, and what would make the next run better. Anything a future run should know that the repo doesn't already record is kept where the next run will find it.
 
 ## The human's part
 

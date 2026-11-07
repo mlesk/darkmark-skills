@@ -67,7 +67,7 @@ The current skill's most distinctive parts, according to the research, are `prec
 
 ## How to find out if it's better
 
-Add it as an arm in the bakeoff that the research already proposes (old main, lean-2, Superpowers), using the same `tally` kickoff. Score every arm against the seven "Done means" items, and compare cost, human stops, and defects found at acceptance. Run each arm two or three times, because variance is the main risk here.
+Add it as an arm in the bakeoff that the research already proposes (old main, lean-2, Superpowers), using the same `tally` kickoff. Score every arm against the eight "Done means" items, and compare cost, human stops, and defects found at acceptance. Run each arm two or three times, because variance is the main risk here.
 
 ## Changes after the first test run
 
@@ -75,3 +75,11 @@ The first test run built Blockfall on 6 Nov 2026 and was accepted. Its retro led
 
 - **Done means §2 is sharper.** A test must fail if *any* part of its requirement breaks, and a check that a named test exists doesn't count as proof. The scripted precheck passed tests that covered only part of their rule. Only the fresh acceptance reviewer caught them. The section now also asks for timing, limits, and how rules interact, which were most of the 8 gaps the design review found.
 - **The one interview also asks where the work lives** when the project isn't a repository yet. The run had to settle this in the interview, which worked, but the skill didn't say to ask.
+
+## Added on 7 Nov 2026: attack the design before building
+
+Mark asked for two challenges, and they became Done means §7:
+- **What would a principal architect rewrite before starting?** The fresh design reviewer answers this, not the author, because self-review is the weak point. In the test run, the author missed all 8 design gaps that the reviewer found. Each rewrite is either made or rejected with a visible reason.
+- **The single test that breaks the design on day one.** The design names this scenario, and its test must pass before the run is done. Blockfall's lock-delay stall, which let a piece be kept from locking forever, was this kind of flaw, and it surfaced late.
+
+Three other prompts were considered and left out at Mark's choice: "reduce to irreducible constraints", "the higher-level abstraction that makes the problem disappear", and "exercise abstract thinking".
